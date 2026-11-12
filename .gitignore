@@ -6,6 +6,9 @@ node_modules/
 .env.*
 !.env.example
 
+# local report / scratch files
+file.pdf
+
 # logs
 logs
 *.log
