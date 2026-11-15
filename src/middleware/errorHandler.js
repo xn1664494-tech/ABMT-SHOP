@@ -25,7 +25,7 @@ const errorHandler = (err, req, res, next) => {
         const message = fields
             ? `Duplicate fields value entered: ${fields}`
             : 'Duplicate fields value entered';
-        error = new ErrorResponse(message, 400);
+        error = new ErrorResponse(message, 409);
     }
 
     // Mongoose: lỗi validation
@@ -61,10 +61,16 @@ const errorHandler = (err, req, res, next) => {
         }
     }
 
-    return res.status(statusCode).json({
+    const body = {
         success: false,
         error: message
-    });
+    };
+
+    if (error.details) {
+        body.details = error.details;
+    }
+
+    return res.status(statusCode).json(body);
 };
 
 module.exports = errorHandler;
