@@ -1,6 +1,7 @@
 const bcrypt = require('bcryptjs');
 const User = require('../model/User');
 const ErrorResponse = require('../utils/appError');
+const { signAccessToken, signRefreshToken } = require('./tokenService');
 
 const BCRYPT_ROUNDS = 10;
 
@@ -42,4 +43,35 @@ const registerUser = async ({ name, email, password }) => {
   return toPublicUser(user);
 };
 
-module.exports = { registerUser, toPublicUser };
+/**
+ * Đăng nhập bằng email + password.
+ * Trả về user và cặp token (do controller gắn vào cookie HttpOnly).
+ * Mọi trường hợp sai email/password đều trả cùng một thông báo để tránh
+ * dò tài khoản (user enumeration).
+ */
+const loginUser = async ({ email, password }) => {
+  const normalizedEmail = String(email).trim().toLowerCase();
+
+  const user = await User.findOne({ email: normalizedEmail }).select('+passwordHash');
+
+  if (!user) {
+    throw new ErrorResponse('Email hoac mat khau khong chinh xac', 401);
+  }
+
+  const passwordMatches = await bcrypt.compare(password, user.passwordHash);
+  if (!passwordMatches) {
+    throw new ErrorResponse('Email hoac mat khau khong chinh xac', 401);
+  }
+
+  if (user.status !== 'active') {
+    throw new ErrorResponse('Tai khoan da bi khoa', 403);
+  }
+
+  return {
+    user: toPublicUser(user),
+    accessToken: signAccessToken(user),
+    refreshToken: signRefreshToken(user, user.tokenVersion || 0),
+  };
+};
+
+module.exports = { registerUser, loginUser, toPublicUser };

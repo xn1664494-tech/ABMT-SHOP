@@ -26,4 +26,15 @@ const registerSchema = z.object({
   }).optional(),
 });
 
-module.exports = { registerSchema, passwordSchema };
+const loginSchema = z.object({
+  email: z
+    .string({ error: 'Email khong duoc de trong' })
+    .trim()
+    .toLowerCase()
+    .pipe(z.email({ error: 'Email khong hop le' })),
+  password: z
+    .string({ error: 'Mat khau khong duoc de trong' })
+    .min(1, 'Mat khau khong duoc de trong'),
+});
+
+module.exports = { registerSchema, loginSchema, passwordSchema };
