@@ -2,9 +2,24 @@ require('dotenv').config();
 const express = require("express");
 const app = express();
 const { connectDB, disconnectDB } = require("./config/db");
+const notFound = require("./middleware/404");
+const errorHandler = require("./middleware/errorHandler");
 
 const port = process.env.PORT || 3000;
 const SHUTDOWN_TIMEOUT_MS = 10000;
+
+// Body parsers
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// TODO: gắn routes tại đây khi hoàn thiện
+// app.use('/api/products', require('./routes/products.route'));
+
+// 404 cho route không khớp — đăng ký sau toàn bộ routes
+app.use(notFound);
+
+// Xử lý lỗi tập trung — luôn đặt CUỐI CÙNG, sau routes và 404
+app.use(errorHandler);
 
 connectDB()
   .then(() => {
