@@ -70,6 +70,18 @@ const createFakeUserModel = () => {
 
       return options.new ? { ...user } : user;
     },
+    async findByIdAndUpdate(id, update = {}, options = {}) {
+      const index = users.findIndex((item) => String(item._id) === String(id));
+      if (index === -1) {
+        return null;
+      }
+
+      if (update.$set) {
+        Object.assign(users[index], update.$set);
+      }
+
+      return options.new ? { ...users[index] } : users[index];
+    },
   };
 };
 

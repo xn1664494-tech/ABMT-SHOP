@@ -1,5 +1,5 @@
 const asyncHandler = require('../utils/asyncHandler');
-const { getProfileById } = require('../services/profileService');
+const { getProfileById, updateProfile } = require('../services/profileService');
 const { toPublicUser } = require('../services/authService');
 
 /**
@@ -26,4 +26,29 @@ const getProfile = asyncHandler(async (req, res) => {
   });
 });
 
-module.exports = { me, getProfile };
+/**
+ * GET /api/profile/me
+ * Profile của chính user đang đăng nhập (id lấy từ token, không từ client).
+ */
+const getMyProfile = asyncHandler(async (req, res) =>
+  res.status(200).json({
+    success: true,
+    data: { user: toPublicUser(req.user) },
+  }),
+);
+
+/**
+ * PATCH /api/profile/me
+ * Chỉ cập nhật các trường được whitelist (name, email).
+ */
+const updateMyProfile = asyncHandler(async (req, res) => {
+  const user = await updateProfile(req.user._id || req.user.id, req.body);
+
+  return res.status(200).json({
+    success: true,
+    message: 'Cap nhat profile thanh cong',
+    data: { user },
+  });
+});
+
+module.exports = { me, getProfile, getMyProfile, updateMyProfile };

@@ -37,4 +37,25 @@ const loginSchema = z.object({
     .min(1, 'Mat khau khong duoc de trong'),
 });
 
-module.exports = { registerSchema, loginSchema, passwordSchema };
+const updateProfileSchema = z
+  .object({
+    name: z
+      .string({ error: 'Ten khong hop le' })
+      .trim()
+      .min(2, 'Ten phai co it nhat 2 ky tu')
+      .max(100, 'Ten toi da 100 ky tu')
+      .optional(),
+    email: z
+      .string({ error: 'Email khong hop le' })
+      .trim()
+      .toLowerCase()
+      .pipe(z.email({ error: 'Email khong hop le' }))
+      .pipe(z.string().max(254, 'Email toi da 254 ky tu'))
+      .optional(),
+  })
+  .strict('Chi duoc cap nhat name va email')
+  .refine((data) => Object.keys(data).length > 0, {
+    message: 'Can cung cap it nhat mot truong de cap nhat',
+  });
+
+module.exports = { registerSchema, loginSchema, updateProfileSchema, passwordSchema };

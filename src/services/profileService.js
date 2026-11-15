@@ -15,4 +15,30 @@ const getProfileById = async (userId) => {
   return toPublicUser(user);
 };
 
-module.exports = { getProfileById };
+/**
+ * Cập nhật profile của chính user đang đăng nhập.
+ * Chỉ áp dụng các trường đã được validate (name, email); role/status bị chặn
+ * ở validator nên không thể thay đổi qua API này.
+ */
+const updateProfile = async (userId, updates) => {
+  if (updates.email) {
+    const existing = await User.findOne({ email: updates.email });
+    if (existing && String(existing._id || existing.id) !== String(userId)) {
+      throw new ErrorResponse('Email da duoc su dung', 409);
+    }
+  }
+
+  const user = await User.findByIdAndUpdate(
+    userId,
+    { $set: updates },
+    { new: true, runValidators: true },
+  );
+
+  if (!user) {
+    throw new ErrorResponse('Khong tim thay nguoi dung', 404);
+  }
+
+  return toPublicUser(user);
+};
+
+module.exports = { getProfileById, updateProfile };
