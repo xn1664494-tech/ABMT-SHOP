@@ -149,7 +149,11 @@ test('T4-1-1: token bi thu hoi sau logout khong dung duoc', async () => {
   const loginRes = await loginAs(agent, 'customer@example.com');
   const accessCookie = accessCookieOf(loginRes);
 
-  await agent.post('/api/auth/logout').expect(200);
+  const csrfRes = await agent.get('/api/auth/csrf');
+  await agent
+    .post('/api/auth/logout')
+    .set('X-CSRF-Token', csrfRes.body.data.csrfToken)
+    .expect(200);
 
   const res = await request(app)
     .get('/api/auth/me')

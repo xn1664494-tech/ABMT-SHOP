@@ -31,11 +31,19 @@ const seedUser = async (overrides = {}) => {
   });
 };
 
-const refreshCookieOf = (res) => {
+const cookieOf = (res, name) => {
   const cookie = (res.headers['set-cookie'] || []).find((item) =>
-    item.startsWith('refreshToken='),
+    item.startsWith(`${name}=`),
   );
   return cookie ? cookie.split(';')[0] : null;
+};
+
+const csrfPair = async (client) => {
+  const res = await client.get('/api/auth/csrf');
+  return {
+    token: res.body.data.csrfToken,
+    cookie: cookieOf(res, 'csrfToken'),
+  };
 };
 
 const login = (agent) =>
@@ -49,44 +57,53 @@ test('T3-1-3: refresh token hop le cap cap token moi va xoay vong token', async 
   await seedUser();
   const agent = request.agent(app);
   const loginRes = await login(agent);
-  const oldRefresh = refreshCookieOf(loginRes);
+  const oldRefresh = cookieOf(loginRes, 'refreshToken');
+  const csrf = await csrfPair(agent);
 
-  const res = await agent.post('/api/auth/refresh');
+  const res = await agent.post('/api/auth/refresh').set('X-CSRF-Token', csrf.token);
 
   assert.equal(res.status, 200);
   assert.equal(res.body.success, true);
   assert.equal(res.body.data.user.email, EMAIL);
   assert.equal(res.body.data.user.passwordHash, undefined);
 
-  const newRefresh = refreshCookieOf(res);
+  const newRefresh = cookieOf(res, 'refreshToken');
   assert.ok(newRefresh);
   assert.notEqual(newRefresh, oldRefresh);
 
   // Token cũ đã bị thu hồi, không thể dùng lại (replay).
   const replay = await request(app)
     .post('/api/auth/refresh')
-    .set('Cookie', oldRefresh);
+    .set('Cookie', `${oldRefresh}; ${csrf.cookie}`)
+    .set('X-CSRF-Token', csrf.token);
 
   assert.equal(replay.status, 401);
 });
 
 test('T3-1-3: refresh khong co cookie tra 401', async () => {
-  const res = await request(app).post('/api/auth/refresh');
+  const csrf = await csrfPair(request(app));
+  const res = await request(app)
+    .post('/api/auth/refresh')
+    .set('Cookie', csrf.cookie)
+    .set('X-CSRF-Token', csrf.token);
 
   assert.equal(res.status, 401);
   assert.equal(res.body.success, false);
 });
 
 test('T3-1-3: refresh token khong hop le tra 401', async () => {
+  const csrf = await csrfPair(request(app));
   const res = await request(app)
     .post('/api/auth/refresh')
-    .set('Cookie', 'refreshToken=not-a-jwt');
+    .set('Cookie', `refreshToken=not-a-jwt; ${csrf.cookie}`)
+    .set('X-CSRF-Token', csrf.token);
 
   assert.equal(res.status, 401);
 });
 
 test('T3-1-3: refresh token het han tra 401', async () => {
   await seedUser();
+  const csrf = await csrfPair(request(app));
   const expired = jwt.sign(
     { sub: '1', ver: 0, type: 'refresh' },
     process.env.JWT_SECRET,
@@ -95,7 +112,8 @@ test('T3-1-3: refresh token het han tra 401', async () => {
 
   const res = await request(app)
     .post('/api/auth/refresh')
-    .set('Cookie', `refreshToken=${expired}`);
+    .set('Cookie', `refreshToken=${expired}; ${csrf.cookie}`)
+    .set('X-CSRF-Token', csrf.token);
 
   assert.equal(res.status, 401);
 });
@@ -104,14 +122,13 @@ test('T3-1-3: access token khong duoc dung lam refresh token', async () => {
   await seedUser();
   const agent = request.agent(app);
   const loginRes = await login(agent);
-  const accessCookie = (loginRes.headers['set-cookie'] || [])
-    .find((item) => item.startsWith('accessToken='))
-    .split(';')[0];
-  const accessToken = accessCookie.split('=')[1];
+  const accessToken = cookieOf(loginRes, 'accessToken').split('=')[1];
+  const csrf = await csrfPair(request(app));
 
   const res = await request(app)
     .post('/api/auth/refresh')
-    .set('Cookie', `refreshToken=${accessToken}`);
+    .set('Cookie', `refreshToken=${accessToken}; ${csrf.cookie}`)
+    .set('X-CSRF-Token', csrf.token);
 
   assert.equal(res.status, 401);
 });
@@ -120,10 +137,11 @@ test('T3-1-3: tai khoan bi khoa khong the refresh', async () => {
   await seedUser();
   const agent = request.agent(app);
   await login(agent);
+  const csrf = await csrfPair(agent);
 
   fakeUserModel.users[0].status = 'blocked';
 
-  const res = await agent.post('/api/auth/refresh');
+  const res = await agent.post('/api/auth/refresh').set('X-CSRF-Token', csrf.token);
   assert.equal(res.status, 401);
 });
 
@@ -131,9 +149,10 @@ test('T3-1-3: logout xoa cookie va thu hoi refresh token', async () => {
   await seedUser();
   const agent = request.agent(app);
   const loginRes = await login(agent);
-  const oldRefresh = refreshCookieOf(loginRes);
+  const oldRefresh = cookieOf(loginRes, 'refreshToken');
+  const csrf = await csrfPair(agent);
 
-  const res = await agent.post('/api/auth/logout');
+  const res = await agent.post('/api/auth/logout').set('X-CSRF-Token', csrf.token);
 
   assert.equal(res.status, 200);
   assert.equal(res.body.success, true);
@@ -148,15 +167,22 @@ test('T3-1-3: logout xoa cookie va thu hoi refresh token', async () => {
   // Refresh token cũ bị thu hồi ở server, không chỉ xóa cookie phía client.
   const replay = await request(app)
     .post('/api/auth/refresh')
-    .set('Cookie', oldRefresh);
+    .set('Cookie', `${oldRefresh}; ${csrf.cookie}`)
+    .set('X-CSRF-Token', csrf.token);
   assert.equal(replay.status, 401);
 
-  const afterLogout = await agent.post('/api/auth/refresh');
+  const afterLogout = await agent
+    .post('/api/auth/refresh')
+    .set('X-CSRF-Token', csrf.token);
   assert.equal(afterLogout.status, 401);
 });
 
 test('T3-1-3: logout khong co cookie van thanh cong (idempotent)', async () => {
-  const res = await request(app).post('/api/auth/logout');
+  const csrf = await csrfPair(request(app));
+  const res = await request(app)
+    .post('/api/auth/logout')
+    .set('Cookie', csrf.cookie)
+    .set('X-CSRF-Token', csrf.token);
 
   assert.equal(res.status, 200);
   assert.equal(res.body.success, true);
@@ -167,13 +193,18 @@ test('T3-1-3: khong the refresh sau khi token da bi thu hoi boi logout', async (
   const initialVersion = user.tokenVersion;
   const agent = request.agent(app);
   const loginRes = await login(agent);
-  const refreshCookie = refreshCookieOf(loginRes);
+  const refreshCookie = cookieOf(loginRes, 'refreshToken');
+  const csrf = await csrfPair(agent);
 
-  await request(app).post('/api/auth/logout').set('Cookie', refreshCookie);
+  await request(app)
+    .post('/api/auth/logout')
+    .set('Cookie', `${refreshCookie}; ${csrf.cookie}`)
+    .set('X-CSRF-Token', csrf.token);
 
   const res = await request(app)
     .post('/api/auth/refresh')
-    .set('Cookie', refreshCookie);
+    .set('Cookie', `${refreshCookie}; ${csrf.cookie}`)
+    .set('X-CSRF-Token', csrf.token);
 
   assert.equal(res.status, 401);
   assert.ok(fakeUserModel.users[0].tokenVersion > initialVersion);
