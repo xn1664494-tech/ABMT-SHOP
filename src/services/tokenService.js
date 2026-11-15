@@ -33,11 +33,15 @@ const ttlToMs = (ttl) => {
 };
 
 const signAccessToken = (user) =>
-  jwt.sign({ sub: String(user._id || user.id), role: user.role }, getSecret(), {
-    expiresIn: accessTokenTtl(),
-    issuer: ISSUER,
-    audience: AUDIENCE,
-  });
+  jwt.sign(
+    { sub: String(user._id || user.id), role: user.role, ver: user.tokenVersion || 0 },
+    getSecret(),
+    {
+      expiresIn: accessTokenTtl(),
+      issuer: ISSUER,
+      audience: AUDIENCE,
+    },
+  );
 
 const signRefreshToken = (user, tokenVersion = 0) =>
   jwt.sign(
