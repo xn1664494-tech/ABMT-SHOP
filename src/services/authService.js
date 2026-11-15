@@ -1,7 +1,7 @@
 const bcrypt = require('bcryptjs');
 const User = require('../model/User');
 const ErrorResponse = require('../utils/appError');
-const { signAccessToken, signRefreshToken } = require('./tokenService');
+const { signAccessToken, signRefreshToken, verifyToken } = require('./tokenService');
 
 const BCRYPT_ROUNDS = 10;
 
@@ -74,4 +74,78 @@ const loginUser = async ({ email, password }) => {
   };
 };
 
-module.exports = { registerUser, loginUser, toPublicUser };
+/**
+ * Xoay vòng refresh token.
+ * Token chỉ dùng được một lần: tokenVersion tăng nguyên tử, token cũ lập tức
+ * không còn khớp và không thể dùng lại (chống replay).
+ */
+const refreshSession = async (refreshToken) => {
+  if (!refreshToken) {
+    throw new ErrorResponse('Thieu refresh token', 401);
+  }
+
+  let payload;
+  try {
+    payload = verifyToken(refreshToken);
+  } catch (error) {
+    throw new ErrorResponse('Refresh token khong hop le hoac da het han', 401);
+  }
+
+  if (payload.type !== 'refresh') {
+    throw new ErrorResponse('Refresh token khong hop le', 401);
+  }
+
+  const user = await User.findOneAndUpdate(
+    {
+      _id: payload.sub,
+      tokenVersion: payload.ver,
+      status: 'active',
+    },
+    { $inc: { tokenVersion: 1 } },
+    { new: true },
+  );
+
+  if (!user) {
+    throw new ErrorResponse('Refresh token da bi thu hoi', 401);
+  }
+
+  return {
+    user: toPublicUser(user),
+    accessToken: signAccessToken(user),
+    refreshToken: signRefreshToken(user, user.tokenVersion),
+  };
+};
+
+/**
+ * Thu hồi refresh token hiện tại bằng cách tăng tokenVersion.
+ * Idempotent: token thiếu/không hợp lệ không gây lỗi, controller vẫn xóa cookie.
+ */
+const logoutSession = async (refreshToken) => {
+  if (!refreshToken) {
+    return;
+  }
+
+  let payload;
+  try {
+    payload = verifyToken(refreshToken);
+  } catch (error) {
+    return;
+  }
+
+  if (payload.type !== 'refresh') {
+    return;
+  }
+
+  await User.updateOne(
+    { _id: payload.sub, tokenVersion: payload.ver },
+    { $inc: { tokenVersion: 1 } },
+  );
+};
+
+module.exports = {
+  registerUser,
+  loginUser,
+  refreshSession,
+  logoutSession,
+  toPublicUser,
+};

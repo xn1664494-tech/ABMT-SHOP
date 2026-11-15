@@ -52,6 +52,24 @@ const createFakeUserModel = () => {
       }
       return { modifiedCount: user ? 1 : 0 };
     },
+    async findOneAndUpdate(filter = {}, update = {}, options = {}) {
+      const user = users.find(
+        (item) =>
+          String(item._id) === String(filter._id) &&
+          (filter.tokenVersion === undefined || item.tokenVersion === filter.tokenVersion) &&
+          (filter.status === undefined || item.status === filter.status),
+      );
+
+      if (!user) {
+        return null;
+      }
+
+      if (update.$inc && typeof update.$inc.tokenVersion === 'number') {
+        user.tokenVersion = (user.tokenVersion || 0) + update.$inc.tokenVersion;
+      }
+
+      return options.new ? { ...user } : user;
+    },
   };
 };
 

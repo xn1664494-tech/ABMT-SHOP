@@ -43,6 +43,12 @@ const userSchema = new mongoose.Schema(
       },
       default: 'active',
     },
+    // Tăng mỗi lần refresh/logout để thu hồi toàn bộ refresh token cũ.
+    tokenVersion: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
   },
   {
     timestamps: true,
