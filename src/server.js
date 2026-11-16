@@ -1,6 +1,5 @@
 require('dotenv').config();
-const express = require("express");
-const app = express();
+const app = require("./app");
 const { connectDB, disconnectDB } = require("./config/db");
 const configViewEngine = require("./config/viewEngine");
 const router = require("./routes");
