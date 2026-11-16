@@ -2,9 +2,14 @@ require('dotenv').config();
 const express = require("express");
 const app = express();
 const { connectDB, disconnectDB } = require("./config/db");
+const configViewEngine = require("./config/viewEngine");
+const router = require("./routes");
 
 const port = process.env.PORT || 3000;
 const SHUTDOWN_TIMEOUT_MS = 10000;
+
+configViewEngine(app);
+app.use('/', router);
 
 connectDB()
   .then(() => {
