@@ -36,6 +36,9 @@ const createFakeUserModel = () => {
       const user = {
         _id: String(users.length + 1),
         tokenVersion: 0,
+        status: 'active',
+        isDeleted: false,
+        addresses: [],
         createdAt: new Date('2026-01-01T00:00:00.000Z'),
         ...doc,
       };
@@ -57,7 +60,8 @@ const createFakeUserModel = () => {
         (item) =>
           String(item._id) === String(filter._id) &&
           (filter.tokenVersion === undefined || item.tokenVersion === filter.tokenVersion) &&
-          (filter.status === undefined || item.status === filter.status),
+          (filter.status === undefined || item.status === filter.status) &&
+          (filter.isDeleted === undefined || item.isDeleted === filter.isDeleted),
       );
 
       if (!user) {
@@ -68,7 +72,7 @@ const createFakeUserModel = () => {
         user.tokenVersion = (user.tokenVersion || 0) + update.$inc.tokenVersion;
       }
 
-      return options.new ? { ...user } : user;
+      return options.new || options.returnDocument === 'after' ? { ...user } : user;
     },
     async findByIdAndUpdate(id, update = {}, options = {}) {
       const index = users.findIndex((item) => String(item._id) === String(id));
@@ -80,7 +84,9 @@ const createFakeUserModel = () => {
         Object.assign(users[index], update.$set);
       }
 
-      return options.new ? { ...users[index] } : users[index];
+      return options.new || options.returnDocument === 'after'
+        ? { ...users[index] }
+        : users[index];
     },
   };
 };

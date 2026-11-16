@@ -20,11 +20,11 @@ const tokenService = require('../src/services/tokenService');
 const PASSWORD = 'Secret123';
 
 const seedUser = async (overrides = {}) => {
-  const passwordHash = await bcrypt.hash(PASSWORD, 10);
+  const password = await bcrypt.hash(PASSWORD, 10);
   return fakeUserModel.create({
     name: 'Nguyen Van A',
     email: 'customer@example.com',
-    passwordHash,
+    password,
     role: 'customer',
     status: 'active',
     ...overrides,
@@ -47,7 +47,7 @@ test('T3-1-2: login thanh cong tra 200, dat cookie HttpOnly va khong lo token tr
   assert.equal(res.status, 200);
   assert.equal(res.body.success, true);
   assert.equal(res.body.data.user.email, 'customer@example.com');
-  assert.equal(res.body.data.user.passwordHash, undefined);
+  assert.equal(res.body.data.user.password, undefined);
   assert.equal(JSON.stringify(res.body).includes(PASSWORD), false);
 
   const cookies = cookiesOf(res);

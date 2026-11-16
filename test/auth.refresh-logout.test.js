@@ -20,11 +20,11 @@ const PASSWORD = 'Secret123';
 const EMAIL = 'customer@example.com';
 
 const seedUser = async (overrides = {}) => {
-  const passwordHash = await bcrypt.hash(PASSWORD, 10);
+  const password = await bcrypt.hash(PASSWORD, 10);
   return fakeUserModel.create({
     name: 'Nguyen Van A',
     email: EMAIL,
-    passwordHash,
+    password,
     role: 'customer',
     status: 'active',
     ...overrides,
@@ -65,7 +65,7 @@ test('T3-1-3: refresh token hop le cap cap token moi va xoay vong token', async 
   assert.equal(res.status, 200);
   assert.equal(res.body.success, true);
   assert.equal(res.body.data.user.email, EMAIL);
-  assert.equal(res.body.data.user.passwordHash, undefined);
+  assert.equal(res.body.data.user.password, undefined);
 
   const newRefresh = cookieOf(res, 'refreshToken');
   assert.ok(newRefresh);

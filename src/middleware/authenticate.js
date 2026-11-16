@@ -46,7 +46,7 @@ const authenticate = asyncHandler(async (req, res, next) => {
 
   const user = await User.findById(payload.sub);
 
-  if (!user || user.status !== 'active') {
+  if (!user || user.isDeleted || user.status !== 'active') {
     throw new ErrorResponse('Tai khoan khong ton tai hoac da bi khoa', 401);
   }
 

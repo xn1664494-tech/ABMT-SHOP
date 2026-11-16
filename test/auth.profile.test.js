@@ -18,11 +18,11 @@ const app = require('../src/app');
 const PASSWORD = 'Secret123';
 
 const seedUser = async (overrides = {}) => {
-  const passwordHash = await bcrypt.hash(PASSWORD, 10);
+  const password = await bcrypt.hash(PASSWORD, 10);
   return fakeUserModel.create({
     name: 'Nguyen Van A',
     email: 'customer@example.com',
-    passwordHash,
+    password,
     role: 'customer',
     status: 'active',
     ...overrides,
@@ -50,7 +50,7 @@ test('T4-1-3: lay profile cua chinh minh thanh cong', async () => {
 
   assert.equal(res.status, 200);
   assert.equal(res.body.data.user.email, 'customer@example.com');
-  assert.equal(res.body.data.user.passwordHash, undefined);
+  assert.equal(res.body.data.user.password, undefined);
 });
 
 test('T4-1-3: cap nhat profile hop le', async () => {
@@ -150,16 +150,16 @@ test('T4-1-3: khong the cap nhat status hoac passwordHash', async () => {
     .expect(400);
 
   assert.equal(fakeUserModel.users[0].status, 'active');
-  assert.notEqual(fakeUserModel.users[0].passwordHash, 'hacked');
+  assert.notEqual(fakeUserModel.users[0].password, 'hacked');
 });
 
 test('T4-1-3: cap nhat email trung voi nguoi khac tra 409', async () => {
   await seedUser();
-  const passwordHash = await bcrypt.hash(PASSWORD, 10);
+  const password = await bcrypt.hash(PASSWORD, 10);
   await fakeUserModel.create({
     name: 'Other',
     email: 'other@example.com',
-    passwordHash,
+    password,
     role: 'customer',
     status: 'active',
   });
@@ -201,11 +201,11 @@ test('T4-1-3: cap nhat profile thieu CSRF token tra 403', async () => {
 
 test('T4-1-3: khong the cap nhat profile cua nguoi khac qua URL', async () => {
   await seedUser();
-  const passwordHash = await bcrypt.hash(PASSWORD, 10);
+  const password = await bcrypt.hash(PASSWORD, 10);
   await fakeUserModel.create({
     name: 'Other',
     email: 'other@example.com',
-    passwordHash,
+    password,
     role: 'customer',
     status: 'active',
   });

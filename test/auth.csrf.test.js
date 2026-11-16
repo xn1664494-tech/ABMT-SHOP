@@ -20,11 +20,11 @@ const PASSWORD = 'Secret123';
 const EMAIL = 'customer@example.com';
 
 const seedUser = async () => {
-  const passwordHash = await bcrypt.hash(PASSWORD, 10);
+  const password = await bcrypt.hash(PASSWORD, 10);
   return fakeUserModel.create({
     name: 'Customer',
     email: EMAIL,
-    passwordHash,
+    password,
     role: 'customer',
     status: 'active',
   });

@@ -8,7 +8,7 @@ const { toPublicUser } = require('./authService');
 const getProfileById = async (userId) => {
   const user = await User.findById(userId);
 
-  if (!user) {
+  if (!user || user.isDeleted) {
     throw new ErrorResponse('Khong tim thay nguoi dung', 404);
   }
 
@@ -21,6 +21,12 @@ const getProfileById = async (userId) => {
  * ở validator nên không thể thay đổi qua API này.
  */
 const updateProfile = async (userId, updates) => {
+  const current = await User.findById(userId);
+
+  if (!current || current.isDeleted) {
+    throw new ErrorResponse('Khong tim thay nguoi dung', 404);
+  }
+
   if (updates.email) {
     const existing = await User.findOne({ email: updates.email });
     if (existing && String(existing._id || existing.id) !== String(userId)) {

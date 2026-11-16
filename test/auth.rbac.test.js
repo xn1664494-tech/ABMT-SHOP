@@ -21,18 +21,18 @@ const { authorize } = require('../src/middleware/authenticate');
 const PASSWORD = 'Secret123';
 
 const seedUsers = async () => {
-  const passwordHash = await bcrypt.hash(PASSWORD, 10);
+  const password = await bcrypt.hash(PASSWORD, 10);
   const customer = await fakeUserModel.create({
     name: 'Customer',
     email: 'customer@example.com',
-    passwordHash,
+    password,
     role: 'customer',
     status: 'active',
   });
   const admin = await fakeUserModel.create({
     name: 'Admin',
     email: 'admin@example.com',
-    passwordHash,
+    password,
     role: 'admin',
     status: 'active',
   });
@@ -94,7 +94,7 @@ test('T4-1-1: customer xem duoc profile cua chinh minh', async () => {
 
   assert.equal(res.status, 200);
   assert.equal(res.body.data.user.email, 'customer@example.com');
-  assert.equal(res.body.data.user.passwordHash, undefined);
+  assert.equal(res.body.data.user.password, undefined);
 });
 
 test('T4-1-1: customer khong xem duoc profile nguoi khac (IDOR)', async () => {
@@ -183,5 +183,5 @@ test('T4-1-1: /me tra thong tin user hien tai, khong lo password', async () => {
 
   assert.equal(res.status, 200);
   assert.equal(res.body.data.user.email, 'customer@example.com');
-  assert.equal(res.body.data.user.passwordHash, undefined);
+  assert.equal(res.body.data.user.password, undefined);
 });

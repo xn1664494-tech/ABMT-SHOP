@@ -68,9 +68,9 @@ test('T3-1-1: password duoc hash bang bcrypt truoc khi luu', async () => {
   await request(app).post('/api/auth/register').send(validPayload).expect(201);
 
   const stored = users[0];
-  assert.notEqual(stored.passwordHash, validPayload.password);
-  assert.match(stored.passwordHash, /^\$2[aby]\$/);
-  assert.equal(await bcrypt.compare(validPayload.password, stored.passwordHash), true);
+  assert.notEqual(stored.password, validPayload.password);
+  assert.match(stored.password, /^\$2[aby]\$/);
+  assert.equal(await bcrypt.compare(validPayload.password, stored.password), true);
 });
 
 test('T3-1-1: email da ton tai tra 409', async () => {

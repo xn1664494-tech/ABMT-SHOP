@@ -14,6 +14,7 @@ const toPublicUser = (user) => ({
   email: user.email,
   role: user.role,
   status: user.status,
+  phone: user.phone || null,
   createdAt: user.createdAt,
 });
 
@@ -25,7 +26,7 @@ const toPublicUser = (user) => ({
 const registerUser = async ({ name, email, password }) => {
   const normalizedEmail = String(email).trim().toLowerCase();
 
-  const existing = await User.findOne({ email: normalizedEmail });
+  const existing = await User.findOne({ email: normalizedEmail, isDeleted: false });
   if (existing) {
     throw new ErrorResponse('Email da duoc su dung', 409);
   }
@@ -35,7 +36,7 @@ const registerUser = async ({ name, email, password }) => {
   const user = await User.create({
     name,
     email: normalizedEmail,
-    passwordHash,
+    password: passwordHash,
     role: 'customer',
     status: 'active',
   });
@@ -52,13 +53,16 @@ const registerUser = async ({ name, email, password }) => {
 const loginUser = async ({ email, password }) => {
   const normalizedEmail = String(email).trim().toLowerCase();
 
-  const user = await User.findOne({ email: normalizedEmail }).select('+passwordHash');
+  const user = await User.findOne({
+    email: normalizedEmail,
+    isDeleted: false,
+  }).select('+password');
 
   if (!user) {
     throw new ErrorResponse('Email hoac mat khau khong chinh xac', 401);
   }
 
-  const passwordMatches = await bcrypt.compare(password, user.passwordHash);
+  const passwordMatches = await bcrypt.compare(password, user.password);
   if (!passwordMatches) {
     throw new ErrorResponse('Email hoac mat khau khong chinh xac', 401);
   }
@@ -100,9 +104,10 @@ const refreshSession = async (refreshToken) => {
       _id: payload.sub,
       tokenVersion: payload.ver,
       status: 'active',
+      isDeleted: false,
     },
     { $inc: { tokenVersion: 1 } },
-    { new: true },
+    { returnDocument: 'after' },
   );
 
   if (!user) {
@@ -137,7 +142,7 @@ const logoutSession = async (refreshToken) => {
   }
 
   await User.updateOne(
-    { _id: payload.sub, tokenVersion: payload.ver },
+    { _id: payload.sub, tokenVersion: payload.ver, isDeleted: false },
     { $inc: { tokenVersion: 1 } },
   );
 };
