@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "nodemon src/server.js",
     "start": "node src/server.js",
-    "test": "node --test test/auth.register.test.js test/auth.login.test.js test/auth.refresh-logout.test.js test/auth.rbac.test.js test/auth.csrf.test.js test/auth.profile.test.js test/auth.rate-limit.test.js test/auth.admin-route.test.js test/auth.change-password.test.js test/error-handler.test.js test/user.model.test.js",
+    "test": "node --test test/auth.register.test.js test/auth.login.test.js test/auth.refresh-logout.test.js test/auth.rbac.test.js test/auth.csrf.test.js test/auth.profile.test.js test/auth.rate-limit.test.js test/auth.admin-route.test.js test/auth.change-password.test.js test/error-handler.test.js test/trust-proxy.test.js test/user.model.test.js",
     "test:unit": "npm test",
     "test:integration": "node --test test/integration/mongodb.integration.test.js test/integration/rate-limit.integration.test.js",
     "test:all": "node --test",
