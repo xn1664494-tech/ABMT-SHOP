@@ -1,0 +1,314 @@
+{
+  "info": {
+    "name": "T2-2-1 Category API",
+    "description": "Collection kiem thu API Danh muc: CRUD, slug duy nhat, cay cha/con, soft-delete. GET mo cong khai; POST/PUT/PATCH/DELETE chi admin.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_postman_id": "t2-2-1-category-api"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3099", "type": "string" },
+    { "key": "adminToken", "value": "", "type": "string" },
+    { "key": "customerToken", "value": "", "type": "string" },
+    { "key": "categoryId", "value": "", "type": "string" },
+    { "key": "childId", "value": "", "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "Danh muc - Lay danh sach (cong khai)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/categories"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status la 200', function () { pm.response.to.have.status(200); });",
+              "pm.test('Tra thanh cong', function () { pm.response.to.be.success; });",
+              "pm.test('Du lieu la mang', function () { pm.expect(pm.response.json().data).to.be.an('array'); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Danh muc - Tao chua dang nhap (nho 401)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\"name\": \"Ao Thun\"}" },
+        "url": "{{baseUrl}}/api/categories"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status la 401', function () { pm.response.to.have.status(401); });",
+              "pm.test('Khong thanh cong', function () { pm.expect(pm.response.json().success).to.equal(false); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Danh muc - Tao vai khach (nho 403)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{customerToken}}" }
+        ],
+        "body": { "mode": "raw", "raw": "{\"name\": \"Ao Thun\"}" },
+        "url": "{{baseUrl}}/api/categories"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status la 403', function () { pm.response.to.have.status(403); });",
+              "pm.test('Khong thanh cong', function () { pm.expect(pm.response.json().success).to.equal(false); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Danh muc - Tao thanh cong (admin)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+        ],
+        "body": { "mode": "raw", "raw": "{\"name\": \"Ao Thun\", \"order\": 1}" },
+        "url": "{{baseUrl}}/api/categories"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status la 201', function () { pm.response.to.have.status(201); });",
+              "pm.test('Tra thanh cong', function () { pm.expect(pm.response.json().success).to.equal(true); });",
+              "pm.test('Co id va slug', function () { pm.expect(pm.response.json().data.id).to.not.be.empty; pm.expect(pm.response.json().data.slug).to.equal('ao-thun'); });",
+              "pm.test('Luu id bien danh muc', function () { pm.collectionVariables.set('categoryId', pm.response.json().data.id); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Danh muc - Tao ten trung (nho 409)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+        ],
+        "body": { "mode": "raw", "raw": "{\"name\": \"Ao Thun\"}" },
+        "url": "{{baseUrl}}/api/categories"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status la 409', function () { pm.response.to.have.status(409); });",
+              "pm.test('Khong thanh cong', function () { pm.expect(pm.response.json().success).to.equal(false); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Danh muc - Tao danh muc con (admin)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+        ],
+        "body": { "mode": "raw", "raw": "{\"name\": \"Ao Thun Nam\", \"parentId\": \"{{categoryId}}\", \"order\": 2}" },
+        "url": "{{baseUrl}}/api/categories"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status la 201', function () { pm.response.to.have.status(201); });",
+              "pm.test('Tra thanh cong', function () { pm.expect(pm.response.json().success).to.equal(true); });",
+              "pm.test('Co parentId', function () { pm.expect(pm.response.json().data.parentId).to.equal(pm.collectionVariables.get('categoryId')); });",
+              "pm.test('Luu id danh muc con', function () { pm.collectionVariables.set('childId', pm.response.json().data.id); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Danh muc - Lay cay cha/con (cong khai)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/categories/tree"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status la 200', function () { pm.response.to.have.status(200); });",
+              "pm.test('Tra thanh cong', function () { pm.expect(pm.response.json().success).to.equal(true); });",
+              "pm.test('Co goc chua danh muc cha', function () { var ids = pm.response.json().data.map(function(c){return c.id;}); pm.expect(ids).to.include(pm.collectionVariables.get('categoryId')); });",
+              "pm.test('Co con trong danh muc cha', function () { var root = pm.response.json().data.find(function(c){return c.id === pm.collectionVariables.get('categoryId');}); pm.expect(root.children.map(function(c){return c.id;})).to.include(pm.collectionVariables.get('childId')); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Danh muc - Lay chi tiet (cong khai)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/categories/{{categoryId}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status la 200', function () { pm.response.to.have.status(200); });",
+              "pm.test('Tra thanh cong', function () { pm.expect(pm.response.json().success).to.equal(true); });",
+              "pm.test('Id trung khop', function () { pm.expect(pm.response.json().data.id).to.equal(pm.collectionVariables.get('categoryId')); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Danh muc - Cap nhat ten (admin)",
+      "request": {
+        "method": "PUT",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+        ],
+        "body": { "mode": "raw", "raw": "{\"name\": \"Ao Thun Cap Nhat\", \"order\": 5}" },
+        "url": "{{baseUrl}}/api/categories/{{categoryId}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status la 200', function () { pm.response.to.have.status(200); });",
+              "pm.test('Tra thanh cong', function () { pm.expect(pm.response.json().success).to.equal(true); });",
+              "pm.test('Ten duoc cap nhat', function () { pm.expect(pm.response.json().data.name).to.equal('Ao Thun Cap Nhat'); });",
+              "pm.test('Order duoc cap nhat', function () { pm.expect(pm.response.json().data.order).to.equal(5); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Danh muc - Xoa danh muc co con (nho 409)",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+        ],
+        "url": "{{baseUrl}}/api/categories/{{categoryId}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status la 409 vi con con', function () { pm.response.to.have.status(409); });",
+              "pm.test('Khong thanh cong', function () { pm.expect(pm.response.json().success).to.equal(false); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Danh muc - Xoa danh muc con (admin)",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+        ],
+        "url": "{{baseUrl}}/api/categories/{{childId}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status la 200', function () { pm.response.to.have.status(200); });",
+              "pm.test('Tra thanh cong', function () { pm.expect(pm.response.json().success).to.equal(true); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Danh muc - Xoa danh muc cha (admin)",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+        ],
+        "url": "{{baseUrl}}/api/categories/{{categoryId}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status la 200', function () { pm.response.to.have.status(200); });",
+              "pm.test('Tra thanh cong', function () { pm.expect(pm.response.json().success).to.equal(true); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Danh muc - Id sai dinh dang (nho 400)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/categories/not-a-valid-id"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status la 400', function () { pm.response.to.have.status(400); });",
+              "pm.test('Khong thanh cong', function () { pm.expect(pm.response.json().success).to.equal(false); });"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
