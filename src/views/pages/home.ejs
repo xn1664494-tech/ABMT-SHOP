@@ -1,0 +1,149 @@
+﻿<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title %></title>
+  <link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+  <%- include('../partials/header') %>
+  <main id="main-content" class="main-content">
+    <!-- Banner -->
+    <section id="home-banner" class="section banner-section">
+      <div class="container">
+        <div class="banner-slider" id="banner-slider">
+          <div class="banner-slide is-active">
+            <img src="/images/placeholder/banner.svg" alt="Bộ sưu tập mới ABMT SHOP" class="banner-image">
+            <div class="banner-content">
+              <p class="banner-eyebrow">Bộ sưu tập 2026</p>
+              <h1 class="banner-title">Phong cách tối giản cho Nam &amp; Nữ</h1>
+              <a href="#section-new-men" class="btn btn-primary">Khám phá ngay</a>
+            </div>
+          </div>
+          <div class="banner-slide">
+            <img src="/images/placeholder/banner.svg" alt="Ưu đãi mùa mới" class="banner-image">
+            <div class="banner-content">
+              <p class="banner-eyebrow">Ưu đãi đặc biệt</p>
+              <h2 class="banner-title">Giảm giá lên đến 30%</h2>
+              <a href="#section-sale" class="btn btn-primary">Mua ngay</a>
+            </div>
+          </div>
+        </div>
+        <div class="banner-dots" id="banner-dots" aria-label="Chuyển banner">
+          <button class="banner-dot is-active" type="button" data-slide="0" aria-label="Banner 1"></button>
+          <button class="banner-dot" type="button" data-slide="1" aria-label="Banner 2"></button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Lối tắt -->
+    <section id="section-shortcuts" class="section shortcuts-section">
+      <div class="container">
+        <h2 class="section-title">Lối tắt</h2>
+        <div class="shortcuts-grid">
+          <a href="#section-new-men" class="shortcut-card">Nam</a>
+          <a href="#section-new-women" class="shortcut-card">Nữ</a>
+          <a href="#section-new-men" class="shortcut-card">Sản phẩm mới</a>
+          <a href="#section-sale" class="shortcut-card">Giảm giá</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- Voucher -->
+    <section id="section-vouchers" class="section vouchers-section">
+      <div class="container">
+        <h2 class="section-title">Voucher</h2>
+        <div class="voucher-grid">
+          <% vouchers.forEach(function(v){ %>
+            <article class="voucher-card">
+              <p class="voucher-code"><%= v.code %></p>
+              <p class="voucher-desc"><%= v.desc %></p>
+              <p class="voucher-note"><%= v.note %></p>
+            </article>
+          <% }) %>
+        </div>
+      </div>
+    </section>
+
+    <!-- Danh mục -->
+    <section id="section-categories" class="section categories-section">
+      <div class="container">
+        <h2 class="section-title">Danh mục</h2>
+        <div class="category-grid">
+          <% categories.forEach(function(cat){ %>
+            <a href="#" class="category-card" id="cat-<%= cat.slug %>">
+              <div class="category-thumb">
+                <img src="<%= cat.image %>" alt="<%= cat.name %>">
+              </div>
+              <p class="category-name"><%= cat.name %></p>
+            </a>
+          <% }) %>
+        </div>
+      </div>
+    </section>
+
+    <!-- Sản phẩm mới – Nam -->
+    <section id="section-new-men" class="section products-section">
+      <div class="container">
+        <div class="section-head">
+          <h2 class="section-title">Sản phẩm mới – Nam</h2>
+          <a href="#" class="section-link">Xem tất cả</a>
+        </div>
+        <div class="product-grid">
+          <% productsNewMen.forEach(function(product){ %>
+            <%- include('../partials/product-card', { product: product }) %>
+          <% }) %>
+        </div>
+      </div>
+    </section>
+
+    <!-- Sản phẩm mới – Nữ -->
+    <section id="section-new-women" class="section products-section">
+      <div class="container">
+        <div class="section-head">
+          <h2 class="section-title">Sản phẩm mới – Nữ</h2>
+          <a href="#" class="section-link">Xem tất cả</a>
+        </div>
+        <div class="product-grid">
+          <% productsNewWomen.forEach(function(product){ %>
+            <%- include('../partials/product-card', { product: product }) %>
+          <% }) %>
+        </div>
+      </div>
+    </section>
+
+    <!-- Đang giảm giá -->
+    <section id="section-sale" class="section products-section">
+      <div class="container">
+        <div class="section-head">
+          <h2 class="section-title">Đang giảm giá</h2>
+          <a href="#" class="section-link">Xem tất cả</a>
+        </div>
+        <div class="product-grid">
+          <% productsSale.forEach(function(product){ %>
+            <%- include('../partials/product-card', { product: product }) %>
+          <% }) %>
+        </div>
+      </div>
+    </section>
+
+    <!-- Bán chạy -->
+    <section id="section-bestseller" class="section products-section">
+      <div class="container">
+        <div class="section-head">
+          <h2 class="section-title">Bán chạy</h2>
+          <a href="#" class="section-link">Xem tất cả</a>
+        </div>
+        <div class="product-grid">
+          <% productsBestSeller.forEach(function(product){ %>
+            <%- include('../partials/product-card', { product: product }) %>
+          <% }) %>
+        </div>
+      </div>
+    </section>
+  </main>
+  <%- include('../partials/footer') %>
+  <script src="/js/home.js"></script>
+</body>
+</html>

@@ -5,6 +5,12 @@ const newman = require('newman');
 const app = require('../src/server');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-change-me';
+process.env.JWT_SECRET = JWT_SECRET;
+const ISSUER = 'abmt-shop';
+const AUDIENCE = 'abmt-shop-client';
+
+const signToken = (sub, role, ver = 0) =>
+  jwt.sign({ sub, role, ver }, JWT_SECRET, { issuer: ISSUER, audience: AUDIENCE });
 
 (async () => {
   const mongod = await MongoMemoryServer.create();
@@ -13,14 +19,30 @@ const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-change-me';
 
   await mongoose.connect(uri);
   const Category = require('../src/model/Category');
+  const User = require('../src/model/User');
   await Category.init();
+  await User.init();
+
+  // Tao thuc te admin va customer user trong DB de authenticate (main) lay duoc
+  const adminUser = await User.create({
+    name: 'Admin Test',
+    email: 'postman.admin@test.com',
+    password: 'password123',
+    role: 'admin',
+  });
+  const customerUser = await User.create({
+    name: 'Customer Test',
+    email: 'postman.customer@test.com',
+    password: 'password123',
+    role: 'customer',
+  });
 
   const server = app.listen(3099);
   await new Promise((resolve) => server.once('listening', resolve));
   console.log('[postman-test] Server chay tai http://localhost:3099');
 
-  const adminToken = jwt.sign({ id: 'admin-test', role: 'admin' }, JWT_SECRET);
-  const customerToken = jwt.sign({ id: 'customer-test', role: 'customer' }, JWT_SECRET);
+  const adminToken = signToken(adminUser._id.toString(), 'admin');
+  const customerToken = signToken(customerUser._id.toString(), 'customer');
 
   const collection = require('../postman/Category.postman_collection.json');
   const environment = {

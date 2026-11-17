@@ -1,0 +1,18 @@
+﻿<article class="product-card" id="product-<%= product.slug %>">
+  <a href="#" class="product-link">
+    <div class="product-thumb">
+      <img src="<%= product.image %>" alt="<%= product.name %>" loading="lazy">
+    </div>
+    <div class="product-info">
+      <h3 class="product-name"><%= product.name %></h3>
+      <div class="product-price">
+        <% if (product.salePrice) { %>
+          <span class="price-current"><%= product.salePrice.toLocaleString('vi-VN') %>₫</span>
+          <span class="price-old"><%= product.price.toLocaleString('vi-VN') %>₫</span>
+        <% } else { %>
+          <span class="price-current"><%= product.price.toLocaleString('vi-VN') %>₫</span>
+        <% } %>
+      </div>
+    </div>
+  </a>
+</article>

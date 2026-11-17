@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 const Category = require('../model/Category');
 const slugify = require('slugify');
-const AppError = require('../utils/appError');
+const ErrorResponse = require('../utils/appError');
 
 const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id);
 
@@ -35,7 +35,7 @@ const validateCategoryInput = ({ name, order, parentId }) => {
 };
 
 const throwValidation = (errors) => {
-  const err = new AppError('Dữ liệu đầu vào không hợp lệ', 400);
+  const err = new ErrorResponse('Dữ liệu đầu vào không hợp lệ', 400);
   err.details = Object.entries(errors).map(([field, message]) => ({ field, message }));
   throw err;
 };
@@ -43,11 +43,11 @@ const throwValidation = (errors) => {
 const ensureParentValid = async (parentId) => {
   if (!parentId) return null;
   if (!isValidObjectId(parentId)) {
-    throw new AppError('Id danh mục cha không hợp lệ', 400);
+    throw new ErrorResponse('Id danh mục cha không hợp lệ', 400);
   }
   const parent = await Category.findById(parentId);
-  if (!parent) throw new AppError('Danh mục cha không tồn tại', 404);
-  if (parent.isDeleted) throw new AppError('Danh mục cha đã bị xóa', 400);
+  if (!parent) throw new ErrorResponse('Danh mục cha không tồn tại', 404);
+  if (parent.isDeleted) throw new ErrorResponse('Danh mục cha đã bị xóa', 400);
   return parent;
 };
 
@@ -114,9 +114,9 @@ module.exports = {
   },
 
   async getById(id) {
-    if (!isValidObjectId(id)) throw new AppError('Id danh mục không hợp lệ', 400);
+    if (!isValidObjectId(id)) throw new ErrorResponse('Id danh mục không hợp lệ', 400);
     const cat = await Category.findById(id);
-    if (!cat || cat.isDeleted) throw new AppError('Danh mục không tồn tại', 404);
+    if (!cat || cat.isDeleted) throw new ErrorResponse('Danh mục không tồn tại', 404);
     return cat;
   },
 
@@ -128,7 +128,7 @@ module.exports = {
 
     const slug = buildSlug(name);
     const exists = await Category.findOne({ slug });
-    if (exists) throw new AppError('Tên danh mục đã tồn tại', 409);
+    if (exists) throw new ErrorResponse('Tên danh mục đã tồn tại', 409);
 
     const cat = new Category({ name, parentId: parentId || null, order: order || 0 });
     await cat.save();
@@ -136,29 +136,29 @@ module.exports = {
   },
 
   async update(id, input = {}) {
-    if (!isValidObjectId(id)) throw new AppError('Id danh mục không hợp lệ', 400);
+    if (!isValidObjectId(id)) throw new ErrorResponse('Id danh mục không hợp lệ', 400);
     const { name, parentId, order } = input;
 
     const errors = validateCategoryInput({ name, order, parentId });
     if (Object.keys(errors).length) throwValidation(errors);
 
     const cat = await Category.findById(id);
-    if (!cat || cat.isDeleted) throw new AppError('Danh mục không tồn tại', 404);
+    if (!cat || cat.isDeleted) throw new ErrorResponse('Danh mục không tồn tại', 404);
 
     if (parentId !== undefined) {
       if (parentId === null || parentId === '') {
         cat.parentId = null;
       } else {
-        if (!isValidObjectId(parentId)) throw new AppError('Id danh mục cha không hợp lệ', 400);
+        if (!isValidObjectId(parentId)) throw new ErrorResponse('Id danh mục cha không hợp lệ', 400);
         const parent = await Category.findById(parentId);
-        if (!parent) throw new AppError('Danh mục cha không tồn tại', 404);
-        if (parent.isDeleted) throw new AppError('Danh mục cha đã bị xóa', 400);
+        if (!parent) throw new ErrorResponse('Danh mục cha không tồn tại', 404);
+        if (parent.isDeleted) throw new ErrorResponse('Danh mục cha đã bị xóa', 400);
         if (parent._id.equals(cat._id)) {
-          throw new AppError('Danh mục không thể là cha của chính nó', 400);
+          throw new ErrorResponse('Danh mục không thể là cha của chính nó', 400);
         }
         const circular = await hasCircularReference(cat._id, parent._id);
         if (circular) {
-          throw new AppError('Không thể đặt danh mục con làm cha (vòng lặp cha/con)', 400);
+          throw new ErrorResponse('Không thể đặt danh mục con làm cha (vòng lặp cha/con)', 400);
         }
         cat.parentId = parent._id;
       }
@@ -172,16 +172,16 @@ module.exports = {
   },
 
   async softDelete(id) {
-    if (!isValidObjectId(id)) throw new AppError('Id danh mục không hợp lệ', 400);
+    if (!isValidObjectId(id)) throw new ErrorResponse('Id danh mục không hợp lệ', 400);
     const cat = await Category.findById(id);
-    if (!cat || cat.isDeleted) throw new AppError('Danh mục không tồn tại', 404);
+    if (!cat || cat.isDeleted) throw new ErrorResponse('Danh mục không tồn tại', 404);
 
     const childrenCount = await Category.countDocuments({
       parentId: id,
       isDeleted: false,
     });
     if (childrenCount > 0) {
-      throw new AppError('Không thể xóa danh mục này vì còn danh mục con', 409);
+      throw new ErrorResponse('Không thể xóa danh mục này vì còn danh mục con', 409);
     }
 
     cat.isDeleted = true;

@@ -5,8 +5,11 @@ const jwt = require('jsonwebtoken');
 const { default: request } = require('supertest');
 const app = require('../src/server');
 const Category = require('../src/model/Category');
+const User = require('../src/model/User');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-change-me';
+const ISSUER = 'abmt-shop';
+const AUDIENCE = 'abmt-shop-client';
 
 const TEST_URI =
   process.env.TEST_MONGODB_URI || 'mongodb://127.0.0.1:27017/abmt_shop_category_test';
@@ -17,8 +20,16 @@ const slugOf = (name) => `${RUN_ID}-${name}`.toLowerCase().replace(/\s+/g, '-');
 let available = false;
 let skipReason = '';
 
-const adminToken = jwt.sign({ id: 'admin-test', role: 'admin' }, JWT_SECRET);
-const customerToken = jwt.sign({ id: 'customer-test', role: 'customer' }, JWT_SECRET);
+const adminToken = jwt.sign(
+  { sub: 'admin-test-id', role: 'admin', ver: 0 },
+  JWT_SECRET,
+  { issuer: ISSUER, audience: AUDIENCE },
+);
+const customerToken = jwt.sign(
+  { sub: 'customer-test-id', role: 'customer', ver: 0 },
+  JWT_SECRET,
+  { issuer: ISSUER, audience: AUDIENCE },
+);
 
 const authHeader = (token) => ({ Authorization: `Bearer ${token}` });
 
@@ -33,6 +44,7 @@ const skipIfUnavailable = (t) => {
 const cleanup = async () => {
   if (!available) return;
   await Category.deleteMany({ name: { $regex: `^${RUN_ID}` } });
+  await User.deleteMany({ email: { $regex: `^${RUN_ID}` } });
 };
 
 test.before(async () => {
@@ -58,6 +70,22 @@ test.before(async () => {
   try {
     await mongoose.connect(TEST_URI, { serverSelectionTimeoutMS: 3000 });
     await Category.init();
+    await User.init();
+
+    // Tao thuc te admin user trong DB de authenticate (main) lay duoc user
+    await User.create({
+      name: 'Admin Test',
+      email: `${RUN_ID}admin@test.com`,
+      password: 'password123',
+      role: 'admin',
+    });
+    await User.create({
+      name: 'Customer Test',
+      email: `${RUN_ID}customer@test.com`,
+      password: 'password123',
+      role: 'customer',
+    });
+
     available = true;
   } catch (error) {
     skipReason = `Khong ket noi duoc MongoDB test (${error.name})`;
@@ -71,7 +99,7 @@ test.after(async () => {
   }
 });
 
-test('GET /api/categories - danh sach danh mục ban dau trong', async (t) => {
+test('GET /api/categories - danh sach danh muc ban dau trong', async (t) => {
   if (skipIfUnavailable(t)) return;
   const res = await request(app).get('/api/categories');
   assert.equal(res.statusCode, 200);
@@ -133,7 +161,7 @@ test('POST /api/categories ten trung tra 409', async (t) => {
   assert.equal(res.body.success, false);
 });
 
-test('POST /api/categories tao danh mục con', async (t) => {
+test('POST /api/categories tao danh muc con', async (t) => {
   if (skipIfUnavailable(t)) return;
   const res = await request(app)
     .post('/api/categories')
@@ -227,4 +255,5 @@ test('DELETE /api/categories/:id xoa cha thanh cong', async (t) => {
 
 test.after(() => {
   mongoose.deleteModel(/Category/);
+  mongoose.deleteModel(/User/);
 });
