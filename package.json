@@ -13,7 +13,8 @@
     "test:jest": "cross-env NODE_ENV=test jest",
     "test:jest:watch": "cross-env NODE_ENV=test jest --watch",
     "check:env": "node scripts/check-env.js",
-    "seed": "node scripts/seed.js"
+    "seed": "node scripts/seed.js",
+    "test:seed-verify": "node --test test/index.seed.verify.test.js"
   },
   "keywords": [],
   "author": "",
