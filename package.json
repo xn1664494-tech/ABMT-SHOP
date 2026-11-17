@@ -5,19 +5,38 @@
   "main": "src/server.js",
   "scripts": {
     "dev": "nodemon src/server.js",
-    "start": "node src/server.js"
+    "start": "node src/server.js",
+    "test": "node --test test/category.api.test.js",
+    "test:unit": "npm test",
+    "test:integration": "node --test test/integration/",
+    "test:all": "node --test",
+    "test:api": "node --test test/category.api.test.js",
+    "test:postman": "node scripts/run-postman-test.js",
+    "check:env": "node scripts/check-env.js",
+    "seed": "node scripts/seed.js",
+    "test:seed-verify": "node --test test/index.seed.verify.test.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "cookie-parser": "^1.4.7",
     "dotenv": "^18.0.9",
     "express": "^5.3.0",
+    "express-rate-limit": "^8.7.4",
+    "jsonwebtoken": "^9.0.3",
     "mongoose": "^9.12.0",
-    "nodemon": "^3.1.14"
+    "nodemon": "^3.1.14",
+    "slugify": "^1.6.9"
   },
   "devDependencies": {
-    "@mermaid-js/mermaid-cli": "^12.2.0"
+    "@mermaid-js/mermaid-cli": "^12.2.0",
+    "cross-env": "^10.1.0",
+    "jest": "^30.5.2",
+    "mongodb-memory-server": "^11.3.0",
+    "newman": "^6.2.3",
+    "supertest": "^7.3.2"
   }
 }
