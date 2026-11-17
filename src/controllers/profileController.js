@@ -1,6 +1,7 @@
 const asyncHandler = require('../utils/asyncHandler');
-const { getProfileById, updateProfile } = require('../services/profileService');
+const { getProfileById, updateProfile, changePassword } = require('../services/profileService');
 const { toPublicUser } = require('../services/authService');
+const { clearAuthCookies } = require('../services/tokenService');
 
 /**
  * GET /api/auth/me
@@ -51,4 +52,22 @@ const updateMyProfile = asyncHandler(async (req, res) => {
   });
 });
 
-module.exports = { me, getProfile, getMyProfile, updateMyProfile };
+/**
+ * PATCH /api/profile/me/password
+ * Đổi mật khẩu của chính user đang đăng nhập.
+ * - Yêu cầu authenticate + CSRF + validate.
+ * - Xác minh mật khẩu hiện tại, hash mật khẩu mới bằng bcrypt.
+ * - Tăng tokenVersion để vô hiệu hoá phiên/token cũ và xoá auth cookies
+ *   (client phải đăng nhập lại bằng mật khẩu mới).
+ */
+const changeMyPassword = asyncHandler(async (req, res) => {
+  await changePassword(req.user._id || req.user.id, req.body);
+  clearAuthCookies(res);
+
+  return res.status(200).json({
+    success: true,
+    message: 'Doi mat khau thanh cong. Vui long dang nhap lai.',
+  });
+});
+
+module.exports = { me, getProfile, getMyProfile, updateMyProfile, changeMyPassword };
