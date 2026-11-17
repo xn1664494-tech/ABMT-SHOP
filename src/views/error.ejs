@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title %> | ABMT SHOP</title>
+  <link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+  <%- include('partials/header') %>
+  <main id="main-content" class="main-content">
+    <section class="section">
+      <div class="container" style="text-align:center; padding: 48px 16px;">
+        <p class="banner-eyebrow">Lỗi <%= statusCode %></p>
+        <h1 class="section-title"><%= message %></h1>
+        <p style="margin: 16px 0 24px;">Đã xảy ra sự cố khi xử lý yêu cầu của bạn.</p>
+        <a href="/" class="btn btn-primary">Về trang chủ</a>
+      </div>
+    </section>
+  </main>
+  <%- include('partials/footer') %>
+</body>
+</html>
