@@ -58,4 +58,28 @@ const updateProfileSchema = z
     message: 'Can cung cap it nhat mot truong de cap nhat',
   });
 
-module.exports = { registerSchema, loginSchema, updateProfileSchema, passwordSchema };
+/**
+ * Doi mat khau: bat buoc xac minh mat khau hien tai.
+ * - Khong nhan `passwordHash`/`role`/`status`.
+ * - Mat khau moi phai khac mat khau hien tai.
+ */
+const changePasswordSchema = z
+  .object({
+    currentPassword: z
+      .string({ error: 'Mat khau hien tai khong duoc de trong' })
+      .min(1, 'Mat khau hien tai khong duoc de trong'),
+    newPassword: passwordSchema,
+  })
+  .strict('Chi duoc cap nhat mat khau')
+  .refine((data) => data.currentPassword !== data.newPassword, {
+    message: 'Mat khau moi phai khac mat khau hien tai',
+    path: ['newPassword'],
+  });
+
+module.exports = {
+  registerSchema,
+  loginSchema,
+  updateProfileSchema,
+  changePasswordSchema,
+  passwordSchema,
+};

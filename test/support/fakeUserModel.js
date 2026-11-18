@@ -45,7 +45,7 @@ const createFakeUserModel = () => {
       users.push(user);
       return user;
     },
-    async findById(id) {
+    findById(id) {
       return withSelect(users.find((user) => String(user._id) === String(id)) || null);
     },
     async updateOne(filter = {}, update = {}) {
@@ -66,6 +66,10 @@ const createFakeUserModel = () => {
 
       if (!user) {
         return null;
+      }
+
+      if (update.$set) {
+        Object.assign(user, update.$set);
       }
 
       if (update.$inc && typeof update.$inc.tokenVersion === 'number') {
