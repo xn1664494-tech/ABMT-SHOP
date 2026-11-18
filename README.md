@@ -145,11 +145,13 @@ npm run test:jest:watch
 
 > Lưu ý (đã xác định nguyên nhân gốc): với `mongodb@7.x`, driver dùng dynamic `import()`; trong Jest VM cần bật cờ VM modules, nếu không metadata handshake sẽ rỗng và MongoDB trả `Missing required sub-document 'driver'`.
 >
+> Hai script trên **đã** set sẵn `NODE_OPTIONS=--experimental-vm-modules` bằng `cross-env`, nên không cần export biến thủ công. Nếu chạy Jest trực tiếp (`npx jest`), phải tự bật cờ:
+>
 > ```bash
 > # Windows PowerShell
-> $env:NODE_OPTIONS="--experimental-vm-modules"; npm run test:jest
+> $env:NODE_OPTIONS="--experimental-vm-modules"; npx jest
 > # Linux/macOS
-> NODE_OPTIONS=--experimental-vm-modules npm run test:jest
+> NODE_OPTIONS=--experimental-vm-modules npx jest
 > ```
 >
 > Bộ `node:test` (unit + integration) là bằng chứng kiểm thử chính được xác minh trong quy trình Dev 1 Phase 2.
