@@ -37,111 +37,186 @@
       </div>
     </section>
 
+    <%
+      const menCategory = categories.find(function (cat) { return cat.name === 'Nam'; });
+      const womenCategory = categories.find(function (cat) { return cat.name === 'Nữ'; });
+    %>
+
     <!-- Lối tắt -->
-    <section id="section-shortcuts" class="section shortcuts-section">
+    <section id="section-shortcuts" class="section shortcuts-section" aria-label="Lối tắt">
       <div class="container">
-        <h2 class="section-title">Lối tắt</h2>
         <div class="shortcuts-grid">
-          <a href="#section-new-men" class="shortcut-card">Nam</a>
-          <a href="#section-new-women" class="shortcut-card">Nữ</a>
-          <a href="#section-new-men" class="shortcut-card">Sản phẩm mới</a>
-          <a href="#section-sale" class="shortcut-card">Giảm giá</a>
+          <a href="#section-new-men" class="shortcut-card">
+            <span class="shortcut-icon">
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3z"/>
+              </svg>
+            </span>
+            <span class="shortcut-text"><strong>Sản phẩm mới</strong><span>Vừa lên kệ</span></span>
+          </a>
+          <a href="#section-sale" class="shortcut-card">
+            <span class="shortcut-icon">
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M3 12V4h8l10 10-8 8L3 12z"/>
+                <circle cx="7.5" cy="7.5" r="1"/>
+              </svg>
+            </span>
+            <span class="shortcut-text"><strong>Giảm giá</strong><span>Giá tốt hôm nay</span></span>
+          </a>
+          <a href="#section-bestseller" class="shortcut-card">
+            <span class="shortcut-icon">
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M12 2.8l2.8 5.8 6.4.9-4.6 4.5 1.1 6.3L12 17.2l-5.7 3.1 1.1-6.3L2.8 9.5l6.4-.9z"/>
+              </svg>
+            </span>
+            <span class="shortcut-text"><strong>Bán chạy</strong><span>Được chọn nhiều</span></span>
+          </a>
         </div>
       </div>
     </section>
 
-    <!-- Voucher -->
-    <section id="section-vouchers" class="section vouchers-section">
-      <div class="container">
-        <h2 class="section-title">Voucher</h2>
-        <div class="voucher-grid">
-          <% vouchers.forEach(function(v){ %>
-            <article class="voucher-card">
-              <p class="voucher-code"><%= v.code %></p>
-              <p class="voucher-desc"><%= v.desc %></p>
-              <p class="voucher-note"><%= v.note %></p>
-            </article>
-          <% }) %>
+    <!-- Mã giảm giá -->
+    <% if (vouchers.length > 0) { %>
+      <section id="section-vouchers" class="section vouchers-section">
+        <div class="container">
+          <div class="section-head">
+            <h2 class="section-title">Mã giảm giá</h2>
+            <p class="section-note">Sao chép mã rồi dán ở trang thanh toán</p>
+          </div>
+          <div class="voucher-grid">
+            <% vouchers.forEach(function (v) { %>
+              <article class="voucher-card">
+                <p class="voucher-code"><%= v.code %></p>
+                <p class="voucher-desc"><%= v.desc %></p>
+                <p class="voucher-note"><%= v.note %></p>
+                <button type="button" class="voucher-copy" data-code="<%= v.code %>">Sao chép mã</button>
+              </article>
+            <% }) %>
+          </div>
         </div>
-      </div>
-    </section>
+      </section>
+    <% } %>
 
-    <!-- Danh mục -->
-    <section id="section-categories" class="section categories-section">
-      <div class="container">
-        <h2 class="section-title">Danh mục</h2>
-        <div class="category-grid">
-          <% categories.forEach(function(cat){ %>
-            <a href="#" class="category-card" id="cat-<%= cat.slug %>">
-              <div class="category-thumb">
-                <img src="<%= cat.image %>" alt="<%= cat.name %>">
+    <!-- Mua theo danh mục -->
+    <% if (categories.length > 0) { %>
+      <section id="section-categories" class="section categories-section">
+        <div class="container">
+          <h2 class="section-title">Mua theo danh mục</h2>
+          <div class="category-tiles">
+            <% categories.slice(0, 2).forEach(function (cat, index) { %>
+              <div class="category-tile category-tile--<%= index + 1 %>">
+                <a href="/categories/<%= cat.slug %>" class="category-tile-link">
+                  <h3 class="category-tile-name"><%= cat.name %></h3>
+                  <span class="category-tile-sub">Xem tất cả đồ <%= cat.name.toLowerCase() %></span>
+                </a>
+                <% if (cat.children && cat.children.length > 0) { %>
+                  <div class="category-chips">
+                    <% cat.children.slice(0, 6).forEach(function (child) { %>
+                      <a href="/categories/<%= child.slug %>" class="category-chip"><%= child.name %></a>
+                    <% }) %>
+                  </div>
+                <% } %>
               </div>
-              <p class="category-name"><%= cat.name %></p>
-            </a>
-          <% }) %>
+            <% }) %>
+          </div>
         </div>
-      </div>
-    </section>
+      </section>
+    <% } %>
 
-    <!-- Sản phẩm mới – Nam -->
-    <section id="section-new-men" class="section products-section">
-      <div class="container">
-        <div class="section-head">
-          <h2 class="section-title">Sản phẩm mới – Nam</h2>
-          <a href="#" class="section-link">Xem tất cả</a>
+    <!-- Sản phẩm mới cho nam -->
+    <% if (productsNewMen.length > 0) { %>
+      <section id="section-new-men" class="section products-section">
+        <div class="container">
+          <div class="section-head">
+            <h2 class="section-title">Sản phẩm mới cho nam</h2>
+            <a href="<%= menCategory ? '/categories/' + menCategory.slug : '#' %>" class="section-link">Xem tất cả</a>
+          </div>
+          <div class="product-grid">
+            <% productsNewMen.forEach(function (product) { %>
+              <%- include('../partials/product-card', { product: product, badge: 'Mới' }) %>
+            <% }) %>
+          </div>
         </div>
-        <div class="product-grid">
-          <% productsNewMen.forEach(function(product){ %>
-            <%- include('../partials/product-card', { product: product }) %>
-          <% }) %>
-        </div>
-      </div>
-    </section>
+      </section>
+    <% } %>
 
-    <!-- Sản phẩm mới – Nữ -->
-    <section id="section-new-women" class="section products-section">
-      <div class="container">
-        <div class="section-head">
-          <h2 class="section-title">Sản phẩm mới – Nữ</h2>
-          <a href="#" class="section-link">Xem tất cả</a>
+    <!-- Sản phẩm mới cho nữ -->
+    <% if (productsNewWomen.length > 0) { %>
+      <section id="section-new-women" class="section products-section">
+        <div class="container">
+          <div class="section-head">
+            <h2 class="section-title">Sản phẩm mới cho nữ</h2>
+            <a href="<%= womenCategory ? '/categories/' + womenCategory.slug : '#' %>" class="section-link">Xem tất cả</a>
+          </div>
+          <div class="product-grid">
+            <% productsNewWomen.forEach(function (product) { %>
+              <%- include('../partials/product-card', { product: product, badge: 'Mới' }) %>
+            <% }) %>
+          </div>
         </div>
-        <div class="product-grid">
-          <% productsNewWomen.forEach(function(product){ %>
-            <%- include('../partials/product-card', { product: product }) %>
-          <% }) %>
-        </div>
-      </div>
-    </section>
+      </section>
+    <% } %>
 
     <!-- Đang giảm giá -->
-    <section id="section-sale" class="section products-section">
-      <div class="container">
-        <div class="section-head">
-          <h2 class="section-title">Đang giảm giá</h2>
-          <a href="#" class="section-link">Xem tất cả</a>
+    <% if (productsSale.length > 0) { %>
+      <section id="section-sale" class="section products-section">
+        <div class="container">
+          <div class="sale-box">
+            <div class="section-head">
+              <h2 class="section-title">Đang giảm giá</h2>
+              <p class="section-note">Những mẫu được yêu thích với mức giá tốt</p>
+              <a href="#" class="section-link">Xem tất cả</a>
+            </div>
+            <div class="carousel" data-carousel>
+              <button type="button" class="carousel-arrow carousel-arrow--prev" aria-label="Xem trước" data-carousel-prev>
+                <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M15 5l-7 7 7 7"/>
+                </svg>
+              </button>
+              <div class="carousel-track" id="carousel-sale">
+                <% productsSale.forEach(function (product) { %>
+                  <%- include('../partials/product-card', { product: product, badge: 'Giảm giá' }) %>
+                <% }) %>
+              </div>
+              <button type="button" class="carousel-arrow carousel-arrow--next" aria-label="Xem tiếp" data-carousel-next>
+                <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M9 5l7 7-7 7"/>
+                </svg>
+              </button>
+            </div>
+          </div>
         </div>
-        <div class="product-grid">
-          <% productsSale.forEach(function(product){ %>
-            <%- include('../partials/product-card', { product: product }) %>
-          <% }) %>
-        </div>
-      </div>
-    </section>
+      </section>
+    <% } %>
 
     <!-- Bán chạy -->
-    <section id="section-bestseller" class="section products-section">
-      <div class="container">
-        <div class="section-head">
-          <h2 class="section-title">Bán chạy</h2>
-          <a href="#" class="section-link">Xem tất cả</a>
+    <% if (productsBestSeller.length > 0) { %>
+      <section id="section-bestseller" class="section products-section">
+        <div class="container">
+          <div class="section-head">
+            <h2 class="section-title">Bán chạy</h2>
+            <a href="#" class="section-link">Xem tất cả</a>
+          </div>
+          <div class="carousel" data-carousel>
+            <button type="button" class="carousel-arrow carousel-arrow--prev" aria-label="Xem trước" data-carousel-prev>
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M15 5l-7 7 7 7"/>
+              </svg>
+            </button>
+            <div class="carousel-track" id="carousel-bestseller">
+              <% productsBestSeller.forEach(function (product, index) { %>
+                <%- include('../partials/product-card', { product: product, rank: index + 1 }) %>
+              <% }) %>
+            </div>
+            <button type="button" class="carousel-arrow carousel-arrow--next" aria-label="Xem tiếp" data-carousel-next>
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M9 5l7 7-7 7"/>
+              </svg>
+            </button>
+          </div>
         </div>
-        <div class="product-grid">
-          <% productsBestSeller.forEach(function(product){ %>
-            <%- include('../partials/product-card', { product: product }) %>
-          <% }) %>
-        </div>
-      </div>
-    </section>
+      </section>
+    <% } %>
   </main>
   <%- include('../partials/footer') %>
   <script src="/js/home.js"></script>
