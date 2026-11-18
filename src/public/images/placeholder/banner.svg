@@ -1,5 +1,7 @@
-﻿<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="460" viewBox="0 0 1200 460">
-  <rect width="1200" height="460" fill="#ebe7e1"/>
-  <rect x="40" y="40" width="1120" height="380" fill="#f3f1ed"/>
-  <text x="600" y="240" font-family="Segoe UI, Arial" font-size="42" fill="#6b6660" text-anchor="middle">ABMT SHOP BANNER</text>
+﻿<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600">
+  <rect width="800" height="600" fill="#F1EEF8"/>
+  <path d="M100 450 Q200 350 300 450 Q400 350 500 450 Q600 350 700 450 L700 550 L100 550 Z" fill="#C9C3B6"/>
+  <path d="M80 400 L40 300 L120 300 L72 400 M680 400 L720 300 L680 300 L620 400" fill="#C9C3B6"/>
+  <circle cx="200" cy="150" r="80" fill="#EEF6F1" opacity="0.5"/>
+  <circle cx="600" cy="150" r="80" fill="#FCF1E8" opacity="0.5"/>
 </svg>
