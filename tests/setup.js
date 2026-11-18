@@ -7,7 +7,14 @@ const mongoose = require("mongoose");
 dotenv.config({ path: path.resolve(__dirname, "../.env.test"), quiet: true });
 process.env.NODE_ENV = "test";
 
-const uri = process.env.MONGODB_URI_TEST;
+const LEGACY_URI = process.env.TEST_MONGODB_URI;
+const uri = process.env.MONGODB_URI_TEST || LEGACY_URI;
+
+if (!process.env.MONGODB_URI_TEST && LEGACY_URI) {
+  console.warn(
+    "[deprecated] TEST_MONGODB_URI đã được thay bằng MONGODB_URI_TEST; tên cũ sẽ bị bỏ sau 1 sprint.",
+  );
+}
 
 // Lấy tên database từ chuỗi kết nối: mongodb(+srv)://host/<dbName>?options
 const getDbName = (connectionString) => {

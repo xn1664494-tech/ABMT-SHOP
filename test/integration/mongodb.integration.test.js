@@ -1,15 +1,20 @@
-/**
+﻿/**
  * Integration test chay tren MongoDB that (local test instance).
  *
  * - Khong bao gio dung MONGODB_URI production tu .env.
- * - URI lay tu TEST_MONGODB_URI, mac dinh mongodb://127.0.0.1:27017/abmt_shop_test
+ * - URI lay tu MONGODB_URI_TEST (bat buoc, fail-fast neu thieu)
  * - Bat buoc ten database phai chua "test" truoc khi ket noi/xoa du lieu.
  * - Chi xoa cac user do lan chay nay tao ra (tien to email it-<runId>-).
  */
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const path = require('node:path');
+const dotenv = require('dotenv');
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
+
+// Nạp biến môi trường test từ .env.test (không đọc .env của dev/production).
+dotenv.config({ path: path.resolve(__dirname, '../../.env.test'), quiet: true });
 
 process.env.NODE_ENV = 'test';
 process.env.JWT_SECRET = 'integration-test-jwt-secret-at-least-32-chars';
@@ -23,8 +28,26 @@ const request = require('supertest');
 const app = require('../../src/app');
 const User = require('../../src/model/User');
 
-const TEST_URI =
-  process.env.TEST_MONGODB_URI || 'mongodb://127.0.0.1:27017/abmt_shop_test';
+/**
+ * URI test chuẩn: `MONGODB_URI_TEST`.
+ * `TEST_MONGODB_URI` là tên cũ, chỉ còn hỗ trợ tạm 1 sprint và sẽ bị bỏ.
+ * Không fallback im lặng về localhost nữa: thiếu biến thì dừng ngay để tránh
+ * chạy test trên nhầm database.
+ */
+const LEGACY_TEST_URI = process.env.TEST_MONGODB_URI;
+const TEST_URI = process.env.MONGODB_URI_TEST || LEGACY_TEST_URI;
+
+if (!TEST_URI) {
+  throw new Error(
+    'Thiếu MONGODB_URI_TEST. Tạo file .env.test từ .env.test.example rồi chạy lại.',
+  );
+}
+
+if (!process.env.MONGODB_URI_TEST && LEGACY_TEST_URI) {
+  console.warn(
+    '[deprecated] TEST_MONGODB_URI đã được thay bằng MONGODB_URI_TEST; tên cũ sẽ bị bỏ sau 1 sprint.',
+  );
+}
 
 const PASSWORD = 'Secret123';
 const RUN_ID = `it-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -82,7 +105,7 @@ test.before(async () => {
 
   // Chi cho phep database testing.
   if (!dbName || !dbName.toLowerCase().includes('test')) {
-    skipReason = 'TEST_MONGODB_URI phai tro toi database co ten chua "test"';
+    skipReason = 'MONGODB_URI_TEST phai tro toi database co ten chua "test"';
     return;
   }
 

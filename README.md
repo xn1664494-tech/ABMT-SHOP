@@ -124,7 +124,19 @@ npm run test:all
 
 ## 12. Cấu hình `.env.test` và chạy Jest
 
-`tests/setup.js` (Jest) yêu cầu `MONGODB_URI_TEST` trỏ tới database có tên chứa `test` và sẽ kết nối/xoá dữ liệu collection trong DB test sau mỗi test.
+`tests/setup.js` (Jest) và integration test (`node --test`) dùng **cùng một biến chuẩn `MONGODB_URI_TEST`**, trỏ tới database có tên chứa `test`.
+
+```bash
+# Windows PowerShell
+Copy-Item .env.test.example .env.test
+# Linux/macOS
+cp .env.test.example .env.test
+```
+
+Quy tắc an toàn:
+- Thiếu `MONGODB_URI_TEST` → test **dừng ngay** với thông báo rõ (không fallback im lặng về localhost, tránh chạy nhầm DB).
+- Tên database không chứa `test` → test từ chối chạy.
+- Tên cũ `TEST_MONGODB_URI` chỉ còn hỗ trợ tạm 1 sprint và có cảnh báo deprecated.
 
 ```bash
 npm run test:jest
