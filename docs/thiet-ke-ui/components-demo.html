@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="vi" dir="ltr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ABMT SHOP – UI Component Demo</title>
+  <link rel="stylesheet" href="../../src/public/css/app.css">
+  <style>
+    /* Demo-specific: make body height enough for scrolling, container max-width */
+    body { height: 3000px; }
+  </style>
+</head>
+<body>
+
+<noscript>Trang web cần JavaScript bật. Vì đây là trang demo tĩnh CSS, các hiệu ứng :focus-visible và trạng thái disabled vẫn hoạt động ở trình duyệt.</noscript>
+
+<div class="container">
+
+  <!-- ===== SECTION: BUTTON ===== -->
+  <section class="section" id="section-btn">
+    <h2 class="section-title">Button</h2>
+    <div style="display:gap:16px;flex-wrap:wrap">
+      <!-- Primary -->
+      <button class="btn btn-primary">Primary</button>
+      <!-- Ghost -->
+      <button class="btn btn-ghost">Ghost</button>
+      <!-- Soft -->
+      <button class="btn btn-soft">Soft</button>
+      <!-- Danger -->
+      <button class="btn btn-danger">Danger</button>
+      <!-- Small -->
+      <button class="btn btn-sm">Small</button>
+      <!-- Block -->
+      <button class="btn btn-sm btn-block">Block button</button>
+      <!-- Icon -->
+      <button class="btn btn-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M5 12h14M12 5l7 7-7 7"/></svg></button>
+      <!-- Disabled -->
+      <button class="btn btn-primary" disabled>Disabled</button>
+      <button class="btn btn-ghost" aria-disabled="true">Disabled aria</button>
+      <!-- Loading (static example) -->
+      <button class="btn btn-primary is-loading">Loading</button>
+    </div>
+  </section>
+
+  <!-- ===== SECTION: INPUT / FORM ===== -->
+  <section class="section" id="section-form">
+    <h2 class="section-title">Input / Form</h2>
+    <div class="field">
+      <label class="label" for="demo-input">Họ và tên</label>
+      <input class="input" id="demo-input" placeholder="Nhập họ và tên" aria-describedby="demo-hint">
+      <p class="field-hint" id="demo-hint">Tối thiểu 6 ký tự</p>
+    </div>
+    <div class="field field-error">
+      <label class="label" for="demo-input-error">Email</label>
+      <input class="input is-invalid" id="demo-input-error" placeholder="example@email.com">
+      <p class="field-error">Vui lòng nhập email đúng định dạng</p>
+    </div>
+    <div class="field">
+      <label class="label" for="demo-select">Thành phố</label>
+      <select class="select" id="demo-select">
+        <option>Hà Nội</option>
+        <option>TP. Hồ Chí Minh</option>
+        <option>Đà Nẵng</option>
+      </select>
+    </div>
+    <textarea class="textarea" placeholder="Nhắn tin..."></textarea>
+    <div class="check">
+      <input type="checkbox" id="demo-check">
+      <label for="demo-check">Tôi đồng ý với điều khoản</label>
+    </div>
+    <div class="field-row">
+      <div>
+        <label class="label" for="demo-first">Họ</label>
+        <input class="input" id="demo-first" placeholder="Họ">
+      </div>
+      <div>
+        <label class="label" for="demo-last">Tên</label>
+        <input class="input" id="demo-last" placeholder="Tên">
+      </div>
+    </div>
+    <input class="input" id="demo-readonly" readonly placeholder="Chỉ đọc">
+  </section>
+
+  <!-- ===== SECTION: BADGE ===== -->
+  <section class="section" id="section-badge">
+    <h2 class="section-title">Badge</h2>
+    <span class="badge">Bình thường</span>
+    <span class="badge badge-sale">Sale</span>
+    <span class="badge badge-soft">Soft</span>
+    <span class="badge badge-outline">Outline</span>
+    <span class="badge badge-danger">Danger</span>
+    <div class="has-badge">
+      <span class="badge badge-sale">Sale</span>
+      <span class="badge-count">3</span>
+    </div>
+  </section>
+
+  <!-- ===== SECTION: CARD ===== -->
+  <section class="section" id="section-card">
+    <h2 class="section-title">Card</h2>
+    <div class="card">
+      <h3 class="card-title">Thông tin tài khoản</h3>
+      <p class="card-text">Mô tả ngắn về nội dung trong card này.</p>
+      <div class="card-footer">
+        <small>14 giờ trước</small>
+      </div>
+    </div>
+    <div class="card card-lg">
+      <h3 class="card-title">Card lớn</h3>
+      <p class="card-text">Card có padding lớn hơn.</p>
+    </div>
+    <div class="card card-mint">
+      <h3 class="card-title">Card Mint</h3>
+      <p class="card-text">Màu pastel mint.</p>
+    </div>
+    <div class="card card-peach">
+      <h3 class="card-title">Card Peach</h3>
+      <p class="card-text">Màu pastel peach.</p>
+    </div>
+    <div class="card card-sky">
+      <h3 class="card-title">Card Sky</h3>
+      <p class="card-text">Màu pastel sky.</p>
+    </div>
+    <div class="card card-lilac">
+      <h3 class="card-title">Card Lilac</h3>
+      <p class="card-text">Màu pastel lilac.</p>
+    </div>
+    <div class="card card-sand">
+      <h3 class="card-title">Card Sand</h3>
+      <p class="card-text">Màu pastel sand.</p>
+    </div>
+  </section>
+
+  <!-- ===== SECTION: GRID ===== -->
+  <section class="section" id="section-grid">
+    <h2 class="section-title">Lưới (Grid)</h2>
+    <p style="color:var(--muted); margin-bottom:16px; font-size:13px;">Demo hiển thị số cột thay đổi theo chiều trình duyệt.</p>
+    <div class="grid-2" style="background:var(--sand); min-height: 120px;">
+      <div style="background:var(--surface); padding:12px; border:1px solid var(--line);">Ô 1</div>
+      <div style="background:var(--surface); padding:12px; border:1px solid var(--line);">Ô 2</div>
+    </div>
+    <div class="grid-3" style="background:var(--sand); min-height: 120px;">
+      <div style="background:var(--surface); padding:12px; border:1px solid var(--line);">Ô 1</div>
+      <div style="background:var(--surface); padding:12px; border:1px solid var(--line);">Ô 2</div>
+      <div style="background:var(--surface); padding:12px; border:1px solid var(--line);">Ô 3</div>
+    </div>
+    <div class="grid-4" style="background:var(--sand); min-height: 120px;">
+      <div style="background:var(--surface); padding:12px; border:1px solid var(--line);">Ô 1</div>
+      <div style="background:var(--surface); padding:12px; border:1px solid var(--line);">Ô 2</div>
+      <div style="background:var(--surface); padding:12px; border:1px solid var(--line);">Ô 3</div>
+      <div style="background:var(--surface); padding:12px; border:1px solid var(--line);">Ô 4</div>
+    </div>
+    <div class="grid grid-1-mobile" style="background:var(--sand); min-height: 120px;">
+      <div style="background:var(--surface); padding:12px; border:1px solid var(--line);">Ô 1 (mobile)</div>
+    </div>
+  </section>
+
+</div>
+
+<p class="text-center text-muted">Trang minh họa component, dùng để kiểm tra giao diện và làm style guide; không phải trang của website.</p>
+
+</body>
+</html>
