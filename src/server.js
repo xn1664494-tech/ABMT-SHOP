@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const cookieParser = require('cookie-parser');
 const connectDB = require('./config/db');
+const viewEngine = require('./config/viewEngine');
 const routes = require('./routes');
 const errorHandler = require('./middleware/errorHandler');
 
@@ -12,7 +13,8 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-app.use('/api', routes);
+viewEngine(app);
+app.use('/', routes);
 app.use(errorHandler);
 
 if (require.main === module) {
