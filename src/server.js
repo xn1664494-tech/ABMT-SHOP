@@ -1,29 +1,19 @@
 require('dotenv').config();
-const express = require('express');
-const cookieParser = require('cookie-parser');
+const app = require('./app');
 const connectDB = require('./config/db');
-const routes = require('./routes');
-const errorHandler = require('./middleware/errorHandler');
 
-const app = express();
 const port = process.env.PORT || 3000;
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-app.use(cookieParser());
-
-app.use('/api', routes);
-app.use(errorHandler);
-
+// Chỉ khởi động HTTP server khi chạy trực tiếp (không phải khi test require).
 if (require.main === module) {
   connectDB()
     .then(() => {
       app.listen(port, () => {
-        console.log(`Server đang chạy trên cổng: ${port}`);
+        console.log(`Server dang chay tren cong: ${port}`);
       });
     })
     .catch((error) => {
-      console.error('Không thể kết nối MongoDB:', error.message);
+      console.error('Khong the ket noi MongoDB:', error.message);
       process.exit(1);
     });
 }
