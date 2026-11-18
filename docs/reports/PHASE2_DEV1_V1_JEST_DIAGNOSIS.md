@@ -1,5 +1,9 @@
 # PHASE 2 DEV 1 — V1 JEST DIAGNOSIS
 
+> **TRẠNG THÁI CUỐI: ĐÃ ĐÓNG (CLOSED) — 2026-11-19**
+> Phương án **A** đã được duyệt và triển khai trên branch `fix/V1-jest-vm-modules`, PR **#27**, merge commit `491f9a4`.
+> Kết quả sau merge: `npm run test:jest` → **3 suite / 8 test PASS** (~4s), không cần export biến môi trường thủ công.
+
 - **Task ID:** V1 (Phase 1 verification gap)
 - **Branch dự kiến:** `chore/V1-jest-diagnosis` (**chưa tạo** — cần bạn duyệt)
 - **Môi trường:** Windows 11, Node **v24.14.0**, jest **30.5.2**, mongoose **9.12.0**, mongodb **7.8.0**
@@ -145,7 +149,19 @@ Sửa **một dòng** trong `package.json`:
 3. Chạy lại `npm run test:jest` + `npm test` + `npm run test:integration` trên target → ghi kết quả.
 4. Người dùng tạo/merge PR.
 
-Hiện trạng V1: **PENDING APPROVAL** (chưa sửa gì).
+Hiện trạng V1: **CLOSED** — xem đầu tài liệu (PR #27, merge `491f9a4`).
+
+### 6.1. Kết quả triển khai (2026-11-19)
+
+| Hạng mục | Giá trị |
+|---|---|
+| Branch | `fix/V1-jest-vm-modules` |
+| PR | #27 |
+| Merge commit | `491f9a4` |
+| Thay đổi | `package.json` (`test:jest`, `test:jest:watch` thêm `NODE_OPTIONS=--experimental-vm-modules`), `README.md` §12 |
+| Trước | 3 suites failed / 8 tests failed |
+| Sau | **3 suites passed / 8 tests passed / ~4s** |
+| Regression | `npm test` 165 pass (16 fail pre-existing Dev 2), integration 20/20 tại thời điểm đó |
 
 ---
 
