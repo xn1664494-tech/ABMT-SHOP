@@ -4,6 +4,7 @@ const slugify = require('slugify');
 /**
  * Schema danh mục theo data dictionary T2-2-1 (categories).
  * Hỗ trợ cây danh mục cha/con qua parentId (tự tham chiếu).
+ * Soft-delete qua isDeleted / deletedAt.
  */
 const categorySchema = new mongoose.Schema(
   {
@@ -48,6 +49,7 @@ const categorySchema = new mongoose.Schema(
     toJSON: {
       virtuals: true,
       transform(doc, ret) {
+        ret.id = ret._id ? ret._id.toString() : undefined;
         delete ret._id;
         delete ret.__v;
         delete ret.isDeleted;
