@@ -1,4 +1,201 @@
-﻿<header class="site-header" id="site-header">
+<style>
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-left: auto;
+    flex-shrink: 0;
+  }
+
+  .header-icon-btn {
+    width: 40px;
+    height: 40px;
+    min-width: 40px;
+    min-height: 40px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--r-pill);
+    color: var(--ink);
+    position: relative;
+    transition: background-color 0.15s ease, color 0.15s ease;
+    flex-shrink: 0;
+  }
+
+  .header-icon-btn:hover {
+    background-color: var(--line);
+    color: var(--ink-strong);
+  }
+
+  .header-cart {
+    position: relative;
+  }
+
+  .header-cart-badge {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    min-width: 16px;
+    height: 16px;
+    padding: 0 4px;
+    border-radius: var(--r-pill);
+    background: var(--accent);
+    color: var(--ink-strong);
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 16px;
+    text-align: center;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+  }
+
+  .header-search {
+    display: flex;
+    align-items: center;
+    height: 38px;
+    width: 240px;
+    background: var(--canvas);
+    border: 1px solid var(--line-strong);
+    border-radius: var(--r-pill);
+    transition: border-color 0.2s ease;
+  }
+
+  .header-search:focus-within {
+    border-color: var(--ink);
+  }
+
+  .header-search:focus-within:has(:focus-visible) {
+    outline: 2px solid var(--accent-deep);
+    outline-offset: 2px;
+  }
+
+  .header-search-input {
+    flex: 1;
+    height: 100%;
+    border: none;
+    background: transparent;
+    padding: 0 8px 0 16px;
+    font: inherit;
+    font-size: 13px;
+    color: var(--ink);
+    min-width: 0;
+    outline: none;
+  }
+
+  .header-search-input::placeholder {
+    color: var(--muted);
+  }
+
+  .header-search-input::-webkit-search-decoration,
+  .header-search-input::-webkit-search-cancel-button {
+    -webkit-appearance: none;
+  }
+
+  .header-search-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    margin-right: 1px;
+    color: var(--ink);
+    border-radius: var(--r-pill);
+    flex-shrink: 0;
+    transition: color 0.15s ease;
+  }
+
+  .header-search-btn:hover {
+    color: var(--ink-strong);
+  }
+
+  .header-search-bar {
+    padding-bottom: 12px;
+  }
+
+  .header-search-bar-form {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    height: 40px;
+    background: var(--canvas);
+    border: 1px solid var(--line-strong);
+    border-radius: var(--r-pill);
+    transition: border-color 0.2s ease;
+  }
+
+  .header-search-bar-form:focus-within {
+    border-color: var(--ink);
+  }
+
+  .header-search-bar-form:focus-within:has(:focus-visible) {
+    outline: 2px solid var(--accent-deep);
+    outline-offset: 2px;
+  }
+
+  .header-search-bar-input {
+    flex: 1;
+    height: 100%;
+    border: none;
+    background: transparent;
+    padding: 0 8px 0 16px;
+    font: inherit;
+    font-size: 14px;
+    color: var(--ink);
+    min-width: 0;
+    outline: none;
+  }
+
+  .header-search-bar-input::placeholder {
+    color: var(--muted);
+  }
+
+  .header-search-bar-input::-webkit-search-decoration,
+  .header-search-bar-input::-webkit-search-cancel-button {
+    -webkit-appearance: none;
+  }
+
+  @media (min-width: 768px) {
+    .header-search {
+      display: flex;
+    }
+    .header-search-toggle {
+      display: none;
+    }
+    .header-search-bar {
+      display: none !important;
+    }
+  }
+
+  @media (max-width: 767.98px) {
+    .header-inner {
+      gap: 6px;
+    }
+    .header-search {
+      display: none;
+    }
+    .header-search-toggle {
+      display: inline-flex;
+    }
+    .header-actions {
+      order: 2;
+      margin-left: auto;
+      gap: 2px;
+    }
+    .menu-toggle {
+      order: 3;
+      margin-left: 0;
+      min-width: 40px;
+      min-height: 40px;
+      display: inline-flex;
+      justify-content: center;
+      align-items: center;
+    }
+  }
+</style>
+
+<header class="site-header" id="site-header">
   <div class="container header-inner">
     <a href="/" class="site-logo" id="site-logo">ABMT SHOP</a>
     <button class="menu-toggle" id="menu-toggle" type="button" aria-expanded="false" aria-controls="site-nav" aria-label="Mở menu">
@@ -15,6 +212,106 @@
         <li><a href="#section-sale" class="nav-link">Giảm giá</a></li>
       </ul>
     </nav>
+    <div class="header-actions">
+      <!-- 1) Ô tìm kiếm (desktop, từ 768px trở lên hiển thị) -->
+      <form class="header-search" action="/products" method="GET" role="search">
+        <input class="header-search-input" type="search" name="q" placeholder="Tìm sản phẩm..." aria-label="Tìm sản phẩm" value="<%= locals.q || '' %>" autocomplete="off">
+        <button class="header-search-btn" type="submit" aria-label="Tìm kiếm">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="11" cy="11" r="6.5"/>
+            <path d="M16 16l4.5 4.5"/>
+          </svg>
+        </button>
+      </form>
+
+      <!-- 2) Nút mở tìm kiếm (CHỈ hiện dưới 768px) -->
+      <button type="button" class="header-icon-btn header-search-toggle" id="header-search-toggle" aria-label="Mở ô tìm kiếm" aria-expanded="false" aria-controls="header-search-bar">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="6.5"/>
+          <path d="M16 16l4.5 4.5"/>
+        </svg>
+      </button>
+
+      <!-- 3) Tài khoản -->
+      <a class="header-icon-btn" href="<%= locals.user ? '/account' : '/login' %>" aria-label="<%= locals.user ? 'Tài khoản của tôi' : 'Đăng nhập' %>">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="8" r="4"/>
+          <path d="M4.5 20.5c1-4 4-6 7.5-6s6.5 2 7.5 6"/>
+        </svg>
+      </a>
+
+      <!-- 4) Giỏ hàng -->
+      <% const cartCount = Number(locals.cartCount) || 0; %>
+      <a class="header-icon-btn header-cart" href="/cart" aria-label="Giỏ hàng<%= cartCount > 0 ? ', ' + cartCount + ' sản phẩm' : '' %>">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M5 8h14l-1 12H6L5 8z"/>
+          <path d="M9 8V6.5a3 3 0 016 0V8"/>
+        </svg>
+        <% if (cartCount > 0) { %><span class="header-cart-badge" aria-hidden="true"><%= cartCount > 99 ? '99+' : cartCount %></span><% } %>
+      </a>
+    </div>
     <div class="nav-overlay" id="nav-overlay"></div>
   </div>
+
+  <!-- 5) Hàng tìm kiếm trên điện thoại -->
+  <div class="header-search-bar container" id="header-search-bar" hidden>
+    <form class="header-search-bar-form" action="/products" method="GET" role="search">
+      <input class="header-search-bar-input" type="search" name="q" placeholder="Tìm sản phẩm..." aria-label="Tìm sản phẩm" value="<%= locals.q || '' %>" autocomplete="off">
+      <button class="header-search-btn" type="submit" aria-label="Tìm kiếm">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="6.5"/>
+          <path d="M16 16l4.5 4.5"/>
+        </svg>
+      </button>
+    </form>
+  </div>
 </header>
+
+<script>
+  (function () {
+    var searchToggle = document.getElementById('header-search-toggle');
+    var searchBar = document.getElementById('header-search-bar');
+    if (!searchToggle || !searchBar) return;
+
+    var searchInput = searchBar.querySelector('input[name="q"]');
+
+    function openSearch() {
+      searchBar.hidden = false;
+      searchBar.removeAttribute('hidden');
+      searchToggle.setAttribute('aria-expanded', 'true');
+      searchToggle.setAttribute('aria-label', 'Đóng ô tìm kiếm');
+      if (searchInput) {
+        searchInput.focus();
+      }
+    }
+
+    function closeSearch(restoreFocus) {
+      if (searchBar.hidden && searchBar.hasAttribute('hidden')) return;
+      searchBar.hidden = true;
+      searchBar.setAttribute('hidden', '');
+      searchToggle.setAttribute('aria-expanded', 'false');
+      searchToggle.setAttribute('aria-label', 'Mở ô tìm kiếm');
+      if (restoreFocus) {
+        searchToggle.focus();
+      }
+    }
+
+    searchToggle.addEventListener('click', function () {
+      var isHidden = searchBar.hidden || searchBar.hasAttribute('hidden');
+      if (isHidden) {
+        openSearch();
+      } else {
+        closeSearch(false);
+      }
+    });
+
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' || e.key === 'Esc') {
+        var isHidden = searchBar.hidden || searchBar.hasAttribute('hidden');
+        if (!isHidden) {
+          closeSearch(true);
+        }
+      }
+    });
+  })();
+</script>

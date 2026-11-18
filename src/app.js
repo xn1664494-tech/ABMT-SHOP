@@ -44,6 +44,11 @@ app.use(cookieParser());
 app.use('/api', routes);
 app.use('/', routes);
 
+// Smoke check: server còn sống
+app.get("/health", (req, res) => {
+  res.status(200).json({ status: "ok" });
+});
+
 // 404 cho route không khớp — sau toàn bộ routes
 app.use(notFound);
 
@@ -51,3 +56,4 @@ app.use(notFound);
 app.use(errorHandler);
 
 module.exports = app;
+
