@@ -1,11 +1,15 @@
 # PHASE 2 — DEV 1 COMPLETION REPORT (ABMT Shop)
 
-- **Ngày hoàn tất:** 2026-11-17
+- **Ngày hoàn tất:** 2026-11-17 — **cập nhật trạng thái tích hợp:** 2026-11-18
 - **Phạm vi:** Hoàn thiện các phần còn thiếu của Dev 1 trong Phase 2 trên cơ sở báo cáo `docs/reports/PHASE2_DEV1_BAO_CAO_2026-11-15.md` + WBS `docs/ABMT_Phan_chia_cong_viec.xlsx` (sheet `02_WBS`).
 - **Chiến lược Git:** Stacked branches, mỗi task một branch riêng; không merge vào `main`/`develop`; không force-push/reset/clean/restore; không xoá branch/commit/reflog.
-- **Branch nền xác minh:** `feature/post-phase2-hardening` @ `aa2f414a9d4e0b795af290ddc64e62e2e19c7227` (đã có trên `origin`).
+- **Branch nền xác minh:** `feature/post-phase2-hardening` — tại thời điểm viết `aa2f414a9d4e0b795af290ddc64e62e2e19c7227`; hiện tại đã tích hợp PR #15, #19, #20, #22, #23, #24.
 
-> Báo cáo KHÔNG tuyên bố Phase 2 hoàn thành 100%: còn 1 task **BLOCKED** (Category dependency thuộc Dev 2) và 1 số hạng mục **chưa xác minh** (Jest, proxy thật, Redis).
+> Báo cáo KHÔNG tuyên bố Phase 2 hoàn thành 100%: còn 1 task **BLOCKED** (Category dependency thuộc Dev 2), 1 task **PARTIAL** (T4-1-2 thiếu vế "quên mật khẩu") và một số hạng mục **chưa xác minh** (Jest, proxy thật, Redis, V2/V3).
+>
+> **Quy ước trạng thái:** `PASS` = đã là ancestor của `feature/post-phase2-hardening` và test trên target xanh; `PASS ON BRANCH` = đã chạy xanh trên branch nhưng **chưa** tích hợp; `NOT VERIFIED` = chưa có môi trường/bằng chứng.
+>
+> **Phạm vi WBS:** `T2-1-1`, `T2-1-2`, `T2-1-3` là **Phase 1**, không tính vào % hoàn thành Phase 2. Phase 2 của Dev 1 gồm 6 task: `T3-1-1`, `T3-1-2`, `T3-1-3`, `T4-1-1`, `T4-1-2`, `T4-1-3`. T5/trust proxy/README là **hardening ngoài WBS**.
 
 ---
 
@@ -13,13 +17,13 @@
 
 | # | Task | Nội dung | Trạng thái | Branch | Commit |
 |---|---|---|---|---|---|
-| 1 | T4-1-1 | RBAC/IDOR trên route thật | **PASS** | `feature/T4-1-1-rbac-route-integration` | `75c30db7f727aa9741593f90a5ba214562b37cf2` |
-| 2 | T4-1-3 | API đổi mật khẩu | **PASS** | `feature/T4-1-3-change-password` | `e8e5af354e228747b92da20a72d8b9c6d1482723` |
-| 3 | T2-1-3 | `.env.test` + integration MongoDB thật | **PASS** (Code/test không đổi) | `feature/T2-1-3-env-test-integration` | Không có commit (`.env.test` local, gitignored) |
+| 1 | T4-1-1 | RBAC/IDOR trên route thật | **PASS** (merge `952b2f3`, PR #15) | `feature/T4-1-1-rbac-route-integration` | `75c30db7f727aa9741593f90a5ba214562b37cf2` |
+| 2 | T4-1-3 | API đổi mật khẩu | **PASS** (merge `b4be920`, PR #20) | `feature/T4-1-3-change-password` | `e8e5af354e228747b92da20a72d8b9c6d1482723` |
+| 3 | T2-1-3 | `.env.test` + integration MongoDB thật | **Phase 1 — dependency readiness** (không tính % Phase 2) | `feature/T2-1-3-env-test-integration` | Không có commit (`.env.test` local, gitignored) |
 | 4 | T2-2-1 | Category model dependency | **BLOCKED** (thuộc Dev 2) | `feature/T2-2-1-category-dependency-review` | `26b0ac9c55d2604e517e6324016d0ca2f3dc4330` |
-| 5 | T5 | Error handling hardening | **PASS** | `feature/T5-error-page-hardening` | `6e9063a6f55d1eb85853abda801a56417935d465` |
-| 6 | T4-1-2 | Trust proxy hardening | **PASS** | `feature/T4-1-2-trust-proxy-hardening` | `55274810cdd2174a09b8046abd40f099f52d81ba` |
-| 7 | T7 | README/tài liệu | **PASS** | `docs/phase2-dev1-readme` | `6e4c12731064a039215d02e13003a15aa0e20445` |
+| 5 | T5 | Error handling hardening (ngoài WBS) | **PASS** (merge `3b790ca`, PR #23) | `feature/T5-error-page-hardening` | `6e9063a6f55d1eb85853abda801a56417935d465` |
+| 6 | T4-1-2 | Trust proxy hardening (ngoài WBS) | **PASS** (merge `101c990`, PR #24) | `feature/T4-1-2-trust-proxy-hardening` | `55274810cdd2174a09b8046abd40f099f52d81ba` |
+| 7 | T7 | README/tài liệu | **PENDING MERGE** (chính là PR này) | `docs/phase2-dev1-readme` | `6e4c12731064a039215d02e13003a15aa0e20445` |
 
 ### 6 task chính (Dev 1 Phase 2)
 
@@ -29,8 +33,8 @@
 | T3-1-2 JWT Cookie Login | PASS (giữ nguyên) | Đã PASS; cookie `HttpOnly` được kiểm thử. |
 | T3-1-3 Logout/Refresh | PASS (giữ nguyên) | Đã PASS; rotation/replay được kiểm thử. |
 | T4-1-1 RBAC/IDOR | **PASS** | Task 1 — `authorize('admin')` gắn route thật + IDOR. |
-| T4-1-2 Rate Limit/CSRF | **PASS** (một phần hardening) | Task 6 — bổ sung trust proxy; memory store vẫn là nợ kỹ thuật. |
-| T4-1-3 Profile API | **PASS** | Task 2 — bổ sung đổi mật khẩu theo DoD WBS. |
+| T4-1-2 Rate Limit/CSRF | **PARTIAL** (rate limit + CSRF PASS trên target) | Task 6 bổ sung trust proxy; memory store vẫn là nợ kỹ thuật; **vế "quên mật khẩu" chưa có endpoint** → chưa đạt đủ DoD WBS. |
+| T4-1-3 Profile API | **PASS** (merge `b4be920`, PR #20) | Task 2 — xem/cập nhật hồ sơ + đổi mật khẩu; 10 test change-password + 96 regression xanh trên target. |
 
 ### 3 công việc nền tảng
 
@@ -126,7 +130,7 @@
 - **Tests PASS:** 8 (error handler) + 104 (regression) / **FAIL:** 0 / **SKIP:** 0
 - **MongoDB real integration:** NO (không cần cho error handling)
 - **Security review:** không lộ `error.message`/stack 500 ở production; không log secret; HTML/JSON phân biệt đúng; không đổi format lỗi 4xx hiện có.
-- **Final status:** **PASS**
+- **Final status:** **PASS** — merge commit `3b790ca` (PR #23); verify trên target: 104/104 unit + 12/12 integration.
 
 ### TASK 6 — T4-1-2 Trust Proxy Hardening (PASS)
 
@@ -143,9 +147,9 @@
 - **MongoDB real integration:** NO (không cần)
 - **Security review:** không tin `X-Forwarded-For` khi không có proxy tin cậy; không bật trust proxy tuỳ tiện; secure cookie vẫn theo `NODE_ENV=production`; memory rate limit giữ nguyên và được ghi nhận là nợ kỹ thuật.
 - **Remaining issues:** **Memory Store** không chia sẻ giữa nhiều instance → chưa phải distributed rate limit; chỉ cân nhắc Redis khi có hạ tầng.
-- **Final status:** **PASS**
+- **Final status:** **PASS** — merge commit `101c990` (PR #24); verify trên target: 107/107 unit + 12/12 integration; **staging NOT VERIFIED**.
 
-### TASK 7 — Documentation (PASS)
+### TASK 7 — Documentation (PENDING MERGE)
 
 - **Branch:** `docs/phase2-dev1-readme`
 - **Parent:** `feature/T4-1-2-trust-proxy-hardening`
@@ -157,7 +161,27 @@
 - **Tests executed:** `npm test`; `npm run test:integration` (xác nhận tài liệu không ảnh hưởng code)
 - **Tests PASS:** 107 unit + 12 integration / **FAIL:** 0 / **SKIP:** 0
 - **MongoDB real integration:** YES (12/12)
-- **Final status:** **PASS**
+- **Final status:** **PENDING MERGE** — chính là PR này; chỉ được ghi PASS sau khi merge vào `feature/post-phase2-hardening`.
+
+---
+
+## 1.1. Verification gaps (cập nhật 2026-11-18)
+
+| Mã | Nội dung | Trạng thái | Ghi chú |
+|---|---|---|---|
+| V1 | Jest `Missing required sub-document 'driver'` | **ROOT CAUSE FOUND — chờ duyệt fix** | Driver `mongodb@7.8.0` gọi dynamic `import()`; Jest VM không bật `--experimental-vm-modules` → metadata handshake rỗng → server từ chối. Đã chứng minh: `NODE_OPTIONS=--experimental-vm-modules npm run test:jest` → 7/7 pass. |
+| V2 | Integration MongoDB thật cho change-password (11 case) | **NOT VERIFIED** | Chưa có test refresh-token cũ bị từ chối / `tokenVersion` / user khác không ảnh hưởng. |
+| V3 | Trust proxy trên staging thật | **NOT VERIFIED** | Không có môi trường staging. |
+| V4 | `TEST_MONGODB_URI` vs `MONGODB_URI_TEST` | **NOT VERIFIED — chờ duyệt tên chuẩn** | Integration fallback im lặng; `.env.test.example` dùng DB name `urbanminimal_test` (không khớp `abmt_shop_test`). |
+| — | Category verification (12 tiêu chí) | **NOT VERIFIED** | Target chưa sync `main` nên chưa có Category API (thuộc Dev 2). |
+
+### 1.2. Tỷ lệ hoàn thành Phase 2 (theo WBS, 6 task)
+
+| Cách tính | Kết quả |
+|---|---|
+| Nghiêm ngặt (PARTIAL = không đạt) | **4/6 = 66.7%** |
+| Chấp nhận vế "quên mật khẩu" của T4-1-2 là N/A | **5/6 = 83.3%** |
+| 100% | **Chưa đạt** — cần xử lý T4-1-2 và các gap V1–V4 |
 
 ---
 

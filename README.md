@@ -131,7 +131,16 @@ npm run test:jest
 npm run test:jest:watch
 ```
 
-> Lưu ý: khả năng chạy Jest phụ thuộc toolchain/môi trường (mongoose/mongodb driver + Node). Bộ `node:test` (unit + integration) là bằng chứng kiểm thử chính được xác minh trong quy trình Dev 1 Phase 2.
+> Lưu ý (đã xác định nguyên nhân gốc): với `mongodb@7.x`, driver dùng dynamic `import()`; trong Jest VM cần bật cờ VM modules, nếu không metadata handshake sẽ rỗng và MongoDB trả `Missing required sub-document 'driver'`.
+>
+> ```bash
+> # Windows PowerShell
+> $env:NODE_OPTIONS="--experimental-vm-modules"; npm run test:jest
+> # Linux/macOS
+> NODE_OPTIONS=--experimental-vm-modules npm run test:jest
+> ```
+>
+> Bộ `node:test` (unit + integration) là bằng chứng kiểm thử chính được xác minh trong quy trình Dev 1 Phase 2.
 
 ## 13. Các API Auth/Profile hiện có
 
