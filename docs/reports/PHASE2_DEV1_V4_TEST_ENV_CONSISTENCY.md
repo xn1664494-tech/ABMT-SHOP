@@ -1,4 +1,8 @@
-# PHASE 2 DEV 1 — V4 TEST ENV VARIABLE CONSISTENCY (ĐỀ XUẤT)
+# PHASE 2 DEV 1 — V4 TEST ENV VARIABLE CONSISTENCY
+
+> **TRẠNG THÁI CUỐI: ĐÃ ĐÓNG (CLOSED) — 2026-11-19**
+> Chuẩn hoá theo `MONGODB_URI_TEST` + fail-fast, triển khai trên `fix/V4-test-env-consistency`, PR **#28**, merge `7985e9e`.
+> `npm run test:integration` → **20/20 pass**; xoá `.env.test` → dừng ngay với thông báo rõ.
 
 - **Task ID:** V4 (Phase 1 verification gap)
 - **Branch dự kiến:** `fix/V4-test-env-variable-consistency` (**chưa tạo** — chờ duyệt)
@@ -111,6 +115,25 @@ Nếu dùng biến deprecated → in **cảnh báo** `console.warn` một lần.
 | Hạng mục | Trạng thái |
 |---|---|
 | Audit hiện trạng | **HOÀN THÀNH** |
-| Đề xuất chuẩn | **PENDING APPROVAL** |
-| Thay đổi code/config | **CHƯA THỰC HIỆN** |
-| Rủi ro dữ liệu production | **THẤP** (đã có guard tên DB ở cả hai đường) |
+| Đề xuất chuẩn | **ĐÃ DUYỆT** (`MONGODB_URI_TEST` + fail-fast) |
+| Thay đổi code/config | **ĐÃ THỰC HIỆN** (PR #28, merge `7985e9e`) |
+| Rủi ro dữ liệu production | **THẤP** (guard tên DB chứa "test" ở cả integration và Jest) |
+
+### 6.1. Kết quả triển khai (2026-11-19)
+
+| File | Thay đổi |
+|---|---|
+| `test/integration/mongodb.integration.test.js` | tự nạp `.env.test`; bắt buộc `MONGODB_URI_TEST`, **không** fallback im lặng; legacy `TEST_MONGODB_URI` + cảnh báo deprecated |
+| `tests/setup.js` | thêm fallback legacy có cảnh báo |
+| `.env.test.example` | `abmt_shop_test` local, Atlas để dạng comment |
+| `README.md` §12 | 1 biến chuẩn + quy tắc an toàn + hướng dẫn copy `.env.test` |
+
+Bằng chứng:
+
+| Tình huống | Kết quả |
+|---|---|
+| Có `.env.test` | integration **20/20 pass** (sau V2: **32/32**) |
+| Xoá `.env.test` | `Error: Thiếu MONGODB_URI_TEST. Tạo file .env.test từ .env.test.example rồi chạy lại.` |
+| DB name không chứa `test` | test skip/từ chối chạy |
+
+**Còn lại (Dev 2):** `catalog.integration.test.js` và `checkout.integration.test.js` vẫn đọc `TEST_MONGODB_URI` + default localhost → đề nghị chuyển sang `MONGODB_URI_TEST`.
