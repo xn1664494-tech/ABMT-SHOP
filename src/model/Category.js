@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const slugify = require('slugify');
+const softDeletePlugin = require('../plugins/softDelete');
 
 /**
  * Schema danh mục theo data dictionary T2-2-1 (categories).
@@ -83,6 +84,8 @@ categorySchema.pre('validate', function rejectSelfParent() {
 
 // Cây danh mục: duyệt theo cha và thứ tự sắp xếp.
 categorySchema.index({ parentId: 1, order: 1 });
+
+categorySchema.plugin(softDeletePlugin);
 
 module.exports =
   mongoose.models.Category || mongoose.model('Category', categorySchema);

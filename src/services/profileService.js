@@ -31,7 +31,9 @@ const updateProfile = async (userId, updates) => {
   }
 
   if (updates.email) {
-    const existing = await User.findOne({ email: updates.email });
+    const existing = await User.findOne({ email: updates.email }).setOptions({
+      includeDeleted: true,
+    });
     if (existing && String(existing._id || existing.id) !== String(userId)) {
       throw new ErrorResponse('Email da duoc su dung', 409);
     }
