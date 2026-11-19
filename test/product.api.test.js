@@ -175,7 +175,11 @@ test('GET /api/products - danh sach cong khai', async (t) => {
 
   assert.equal(res.statusCode, 200);
   assert.equal(res.body.success, true);
-  assert.ok(Array.isArray(res.body.data));
+  assert.ok(Array.isArray(res.body.data.items));
+  assert.equal(res.body.data.pagination.page, 1);
+  assert.equal(res.body.data.pagination.limit, 20);
+  assert.equal(typeof res.body.data.pagination.total, 'number');
+  assert.equal(typeof res.body.data.pagination.totalPages, 'number');
 });
 
 test('POST /api/products chua dang nhap tra 401', async (t) => {
@@ -387,7 +391,7 @@ test('GET /api/products tra san pham vua tao', async (t) => {
   const res = await agent.get('/api/products');
 
   assert.equal(res.statusCode, 200);
-  assert.ok(res.body.data.some((item) => item.id === productId));
+  assert.ok(res.body.data.items.some((item) => item.id === productId));
 });
 
 test('GET /api/products/:id tra chi tiet', async (t) => {
@@ -421,7 +425,9 @@ test('GET /api/products an san pham inactive voi khach', async (t) => {
   inactiveProductId = createRes.body.data.id;
 
   const listRes = await agent.get('/api/products');
-  assert.ok(!listRes.body.data.some((item) => item.id === inactiveProductId));
+  assert.ok(
+    !listRes.body.data.items.some((item) => item.id === inactiveProductId),
+  );
 
   const detailRes = await agent.get(`/api/products/${inactiveProductId}`);
   assert.equal(detailRes.statusCode, 404);
@@ -429,7 +435,9 @@ test('GET /api/products an san pham inactive voi khach', async (t) => {
   const adminList = await agent
     .get('/api/products?includeInactive=true')
     .set(authHeader(adminToken));
-  assert.ok(adminList.body.data.some((item) => item.id === inactiveProductId));
+  assert.ok(
+    adminList.body.data.items.some((item) => item.id === inactiveProductId),
+  );
 
   const adminDetail = await agent
     .get(`/api/products/${inactiveProductId}?includeInactive=true`)
@@ -571,7 +579,7 @@ test('GET /api/products loc size+color chi khop cung mot bien the', async (t) =>
     .query({ size: 'M', color: 'Đỏ' });
 
   assert.equal(res.statusCode, 200);
-  const ids = res.body.data.map((item) => item.id);
+  const ids = res.body.data.items.map((item) => item.id);
   assert.ok(ids.includes(match.id));
   assert.ok(!ids.includes(split.id), 'khong duoc ghep M cua bien the nay voi Do cua bien the khac');
   assert.ok(!ids.includes(outOfStock.id), 'bien the M-Do het hang khong duoc khop');
@@ -580,7 +588,7 @@ test('GET /api/products loc size+color chi khop cung mot bien the', async (t) =>
     .get('/api/products')
     .query({ size: 'm', color: 'đỏ' });
   assert.equal(lowerCase.statusCode, 200);
-  assert.ok(lowerCase.body.data.some((item) => item.id === match.id));
+  assert.ok(lowerCase.body.data.items.some((item) => item.id === match.id));
 });
 
 test('GET /api/products loc theo category, khoang gia, keyword, inStock', async (t) => {
@@ -602,9 +610,9 @@ test('GET /api/products loc theo category, khoang gia, keyword, inStock', async 
     .get('/api/products')
     .query({ category: categoryId, keyword: MARKER });
   assert.equal(byCategoryId.statusCode, 200);
-  assert.ok(byCategoryId.body.data.length > 0);
+  assert.ok(byCategoryId.body.data.items.length > 0);
   assert.ok(
-    byCategoryId.body.data.every(
+    byCategoryId.body.data.items.every(
       (item) => String(item.category) === String(categoryId),
     ),
   );
@@ -613,33 +621,37 @@ test('GET /api/products loc theo category, khoang gia, keyword, inStock', async 
     .get('/api/products')
     .query({ category: categorySlug });
   assert.equal(byCategorySlug.statusCode, 200);
-  assert.ok(byCategorySlug.body.data.some((item) => item.slug.startsWith(MARKER)));
+  assert.ok(
+    byCategorySlug.body.data.items.some((item) =>
+      item.slug.startsWith(MARKER),
+    ),
+  );
 
   const byPrice = await agent
     .get('/api/products')
     .query({ category: categoryId, minPrice: 305000, maxPrice: 315000 });
   assert.deepEqual(
-    byPrice.body.data.map((item) => item.basePrice),
+    byPrice.body.data.items.map((item) => item.basePrice),
     [310000],
   );
 
   const byKeyword = await agent
     .get('/api/products')
     .query({ category: categoryId, keyword: `${MARKER} Filter Split` });
-  assert.equal(byKeyword.body.data.length, 1);
-  assert.equal(byKeyword.body.data[0].basePrice, 310000);
+  assert.equal(byKeyword.body.data.items.length, 1);
+  assert.equal(byKeyword.body.data.items[0].basePrice, 310000);
 
   const escapedKeyword = await agent
     .get('/api/products')
     .query({ keyword: `${MARKER} Filter Match M.*Do` });
-  assert.equal(escapedKeyword.body.data.length, 0);
+  assert.equal(escapedKeyword.body.data.items.length, 0);
 
   const inStock = await agent
     .get('/api/products')
     .query({ category: categoryId, inStock: 'true' });
-  assert.ok(inStock.body.data.length > 0);
+  assert.ok(inStock.body.data.items.length > 0);
   assert.ok(
-    inStock.body.data.every((item) =>
+    inStock.body.data.items.every((item) =>
       item.variants.some((variant) => variant.stock > 0),
     ),
   );
@@ -668,12 +680,16 @@ test('DELETE /api/products/:id xoa mem thanh cong', async (t) => {
   assert.equal(publicDetail.statusCode, 404);
 
   const publicList = await agent.get('/api/products');
-  assert.ok(!publicList.body.data.some((item) => item.id === productId));
+  assert.ok(
+  !publicList.body.data.items.some((item) => item.id === productId),
+);
 
   const adminList = await agent
     .get('/api/products?includeDeleted=true')
     .set(authHeader(adminToken));
-  assert.ok(adminList.body.data.some((item) => item.id === productId));
+  assert.ok(
+  adminList.body.data.items.some((item) => item.id === productId),
+);
 
   const adminDetail = await agent
     .get(`/api/products/${productId}?includeDeleted=true`)
