@@ -385,3 +385,107 @@ body.no-scroll { overflow: hidden; }
 }
 .text-muted { color: var(--muted); }
 .text-center { text-align: center; }
+
+/* ===== SALE SECTION: HORIZONTAL CAROUSEL ===== */
+#section-sale .carousel {
+  display: flex;
+  overflow-x: auto;
+  gap: 16px;
+  scroll-snap-type: x mandatory;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+#section-sale .carousel::-webkit-scrollbar { display: none; }
+#section-sale .carousel .carousel-track {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 16px;
+  align-items: start;
+}
+#section-sale .carousel .carousel-track .product-card {
+  flex: 0 0 44%;
+  scroll-snap-align: start;
+  min-width: 0;
+}
+@media (min-width: 768px) {
+  #section-sale .carousel .carousel-track .product-card {
+    flex: 0 0 calc((100% - 3*16px)/4);
+  }
+}
+@media (min-width: 1280px) {
+  #section-sale .carousel .carousel-track .product-card {
+    flex: 0 0 calc((100% - 5*16px)/6);
+  }
+}
+
+/* Sale section product image constraints (ensure base styles apply) */
+#section-sale .product-card { display: block; min-width: 0; border-radius: 0; }
+#section-sale .product-thumb { aspect-ratio: 3 / 4; border-radius: 0; overflow: hidden; }
+#section-sale .product-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+/* ===== SALE SECTION: SECTION HEAD LAYOUT ===== */
+#section-sale .section-head {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+@media (min-width: 768px) {
+  #section-sale .section-head {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+  }
+}
+#section-sale .section-title,
+#section-sale .section-note {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--ink-strong);
+  margin: 0;
+}
+#section-sale .section-note {
+  font-size: 13px;
+  color: var(--ink-soft);
+  margin: 0;
+}
+#section-sale .section-link {
+  font-size: 13px;
+  color: var(--accent-deep);
+}
+
+/* ===== SALE SECTION: CAROUSEL ARROWS ===== */
+#section-sale .carousel-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 38px;
+  height: 38px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-pill);
+  background: var(--surface);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+  font-size: 20px;
+  color: var(--ink);
+  cursor: pointer;
+  transition: background 0.2s;
+  display: none; /* Ẩn mặc định; bật lại khi home.js có xử lý cuộn băng */
+}
+#section-sale .carousel-arrow:hover {
+  background: var(--surface);
+  color: var(--ink-strong);
+}
+#section-sale .carousel-arrow.prev { left: 10px; }
+#section-sale .carousel-arrow.next { right: 10px; }
+
+/* Show arrows on desktop when home.js provides scroll handling */
+/* Cách bật lại: remove display:none hoặc thêm class .carousel-arrow-visible */
+/* Quan trọng: kiểm tra src/public/js/home.js - nếu đã có logic cuộn, 
+   có thể bật arrows bằng: #section-sale .carousel-arrow { display: block; } */
+@media (min-width: 768px) {
+  #section-sale .carousel-arrow { display: block; }
+}
