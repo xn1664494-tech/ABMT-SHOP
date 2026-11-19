@@ -95,6 +95,17 @@ const userSchema = new mongoose.Schema(
       default: 0,
       min: 0,
     },
+    // Reset mật khẩu: chỉ lưu hash của token, không lưu token thô.
+    resetPasswordTokenHash: {
+      type: String,
+      default: null,
+      select: false,
+    },
+    resetPasswordExpires: {
+      type: Date,
+      default: null,
+      select: false,
+    },
   },
   {
     timestamps: true,
@@ -105,6 +116,8 @@ const userSchema = new mongoose.Schema(
         delete ret.__v;
         delete ret.password;
         delete ret.passwordHash;
+        delete ret.resetPasswordTokenHash;
+        delete ret.resetPasswordExpires;
         delete ret.isDeleted;
         return ret;
       },

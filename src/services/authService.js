@@ -153,4 +153,5 @@ module.exports = {
   refreshSession,
   logoutSession,
   toPublicUser,
+  BCRYPT_ROUNDS,
 };

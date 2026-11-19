@@ -5,6 +5,10 @@ const {
   clearAuthCookies,
   REFRESH_COOKIE,
 } = require('../services/tokenService');
+const {
+  requestPasswordReset,
+  resetPassword: resetPasswordWithToken,
+} = require('../services/resetPasswordService');
 
 /**
  * POST /api/auth/register
@@ -72,4 +76,46 @@ const logout = asyncHandler(async (req, res) => {
   });
 });
 
-module.exports = { register, login, refresh, logout };
+/**
+ * POST /api/auth/forgot-password
+ * Luôn trả 202 + message chung cho mọi email hợp lệ (chống enumeration).
+ * Ở môi trường không phải production, trả thêm token để dev/test không cần email.
+ */
+const forgotPassword = asyncHandler(async (req, res) => {
+  const result = await requestPasswordReset({ email: req.body.email });
+
+  const payload = {
+    success: true,
+    message: 'Neu email ton tai, huong dan dat lai mat khau da duoc gui',
+  };
+
+  if (result && process.env.NODE_ENV !== 'production') {
+    payload.data = {
+      resetToken: result.resetToken,
+      expiresAt: result.expiresAt,
+    };
+  }
+
+  return res.status(202).json(payload);
+});
+
+/**
+ * POST /api/auth/reset-password
+ * Body: { token, newPassword }. Token dùng một lần; tokenVersion tăng để
+ * thu hồi access/refresh token cũ. Cookie auth cũng bị xóa.
+ */
+const resetPassword = asyncHandler(async (req, res) => {
+  await resetPasswordWithToken({
+    token: req.body.token,
+    newPassword: req.body.newPassword,
+  });
+
+  clearAuthCookies(res);
+
+  return res.status(200).json({
+    success: true,
+    message: 'Dat lai mat khau thanh cong',
+  });
+});
+
+module.exports = { register, login, refresh, logout, forgotPassword, resetPassword };

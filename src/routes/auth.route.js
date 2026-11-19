@@ -1,7 +1,19 @@
 const express = require('express');
 const validate = require('../middleware/validate');
-const { registerSchema, loginSchema } = require('../validators/authValidator');
-const { register, login, refresh, logout } = require('../controllers/authController');
+const {
+  registerSchema,
+  loginSchema,
+  forgotPasswordSchema,
+  resetPasswordSchema,
+} = require('../validators/authValidator');
+const {
+  register,
+  login,
+  refresh,
+  logout,
+  forgotPassword,
+  resetPassword,
+} = require('../controllers/authController');
 const { me } = require('../controllers/profileController');
 const { authenticate } = require('../middleware/authenticate');
 const { authLimiter } = require('../middleware/rateLimiters');
@@ -13,6 +25,8 @@ router.get('/csrf', issueCsrfToken);
 
 router.post('/register', authLimiter, validate(registerSchema), register);
 router.post('/login', authLimiter, validate(loginSchema), login);
+router.post('/forgot-password', authLimiter, validate(forgotPasswordSchema), forgotPassword);
+router.post('/reset-password', authLimiter, validate(resetPasswordSchema), resetPassword);
 router.post('/refresh', authLimiter, csrfProtection, refresh);
 router.post('/logout', authLimiter, csrfProtection, logout);
 router.get('/me', authenticate, me);
