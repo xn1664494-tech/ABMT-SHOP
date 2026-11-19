@@ -1,0 +1,498 @@
+{
+  "info": {
+    "name": "T4-2-1 Product Filter",
+    "description": "Collection kiem thu bo loc san pham: category (id/slug), khoang gia, keyword da escape regex, Size + Mau cung mot bien the qua $elemMatch va ton kho > 0. Minh chung chinh: loc 'M + Do' KHONG tra san pham chi co M-Xanh va S-Do.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_postman_id": "t4-2-1-product-filter"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3099", "type": "string" },
+    { "key": "adminToken", "value": "", "type": "string" },
+    { "key": "csrfToken", "value": "", "type": "string" },
+    { "key": "runId", "value": "", "type": "string" },
+    { "key": "categoryId", "value": "", "type": "string" },
+    { "key": "categorySlug", "value": "", "type": "string" },
+    { "key": "otherCategoryId", "value": "", "type": "string" },
+    { "key": "pMatchId", "value": "", "type": "string" },
+    { "key": "pSplitId", "value": "", "type": "string" },
+    { "key": "pOutId", "value": "", "type": "string" },
+    { "key": "pOtherId", "value": "", "type": "string" }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "if (!['GET', 'HEAD', 'OPTIONS'].includes(pm.request.method)) {",
+          "  var token = pm.collectionVariables.get('csrfToken');",
+          "  if (token && !pm.request.headers.get('X-CSRF-Token')) {",
+          "    pm.request.headers.add({ key: 'X-CSRF-Token', value: token });",
+          "  }",
+          "}"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "Filter - Lay CSRF token",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/auth/csrf"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status la 200', function () { pm.response.to.have.status(200); });",
+              "pm.test('Luu csrf token va runId', function () {",
+              "  pm.collectionVariables.set('csrfToken', pm.response.json().data.csrfToken);",
+              "  pm.collectionVariables.set('runId', String(Date.now()));",
+              "  pm.expect(pm.collectionVariables.get('csrfToken')).to.not.be.empty;",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Filter - Tao danh muc loc",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+        ],
+        "body": { "mode": "raw", "raw": "{\"name\": \"PF Category {{runId}}\"}" },
+        "url": "{{baseUrl}}/api/categories"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status la 201', function () { pm.response.to.have.status(201); });",
+              "pm.test('Luu category id va slug', function () {",
+              "  var data = pm.response.json().data;",
+              "  pm.collectionVariables.set('categoryId', data.id);",
+              "  pm.collectionVariables.set('categorySlug', data.slug);",
+              "  pm.expect(data.id).to.not.be.empty;",
+              "  pm.expect(data.slug).to.not.be.empty;",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Filter - Tao danh muc khac",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+        ],
+        "body": { "mode": "raw", "raw": "{\"name\": \"PF Other {{runId}}\"}" },
+        "url": "{{baseUrl}}/api/categories"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status la 201', function () { pm.response.to.have.status(201); });",
+              "pm.test('Luu other category id', function () {",
+              "  pm.collectionVariables.set('otherCategoryId', pm.response.json().data.id);",
+              "  pm.expect(pm.collectionVariables.get('otherCategoryId')).to.not.be.empty;",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Filter - Tao P1 (M-Do con hang)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"name\": \"PF Filter Match {{runId}}\", \"category\": \"{{categoryId}}\", \"basePrice\": 300000, \"variants\": [{\"size\": \"M\", \"color\": \"Đỏ\", \"sku\": \"SP-AO-970-M-DO\", \"stock\": 5}, {\"size\": \"L\", \"color\": \"Xanh\", \"sku\": \"SP-AO-970-L-XANH\", \"stock\": 5}]}"
+        },
+        "url": "{{baseUrl}}/api/products"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status la 201', function () { pm.response.to.have.status(201); });",
+              "pm.test('Luu P1 id', function () {",
+              "  pm.collectionVariables.set('pMatchId', pm.response.json().data.id);",
+              "  pm.expect(pm.collectionVariables.get('pMatchId')).to.not.be.empty;",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Filter - Tao P2 (M-Xanh + S-Do, khong cung bien the)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"name\": \"PF Filter Split {{runId}}\", \"category\": \"{{categoryId}}\", \"basePrice\": 310000, \"variants\": [{\"size\": \"M\", \"color\": \"Xanh\", \"sku\": \"SP-AO-971-M-XANH\", \"stock\": 5}, {\"size\": \"S\", \"color\": \"Đỏ\", \"sku\": \"SP-AO-971-S-DO\", \"stock\": 5}]}"
+        },
+        "url": "{{baseUrl}}/api/products"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status la 201', function () { pm.response.to.have.status(201); });",
+              "pm.test('Luu P2 id', function () {",
+              "  pm.collectionVariables.set('pSplitId', pm.response.json().data.id);",
+              "  pm.expect(pm.collectionVariables.get('pSplitId')).to.not.be.empty;",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Filter - Tao P3 (M-Do het hang)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"name\": \"PF Filter Out {{runId}}\", \"category\": \"{{categoryId}}\", \"basePrice\": 320000, \"variants\": [{\"size\": \"M\", \"color\": \"Đỏ\", \"sku\": \"SP-AO-972-M-DO\", \"stock\": 0}, {\"size\": \"L\", \"color\": \"Xanh\", \"sku\": \"SP-AO-972-L-XANH\", \"stock\": 0}]}"
+        },
+        "url": "{{baseUrl}}/api/products"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status la 201', function () { pm.response.to.have.status(201); });",
+              "pm.test('Luu P3 id', function () {",
+              "  pm.collectionVariables.set('pOutId', pm.response.json().data.id);",
+              "  pm.expect(pm.collectionVariables.get('pOutId')).to.not.be.empty;",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Filter - Tao P4 (danh muc khac)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"name\": \"PF Filter Other {{runId}}\", \"category\": \"{{otherCategoryId}}\", \"basePrice\": 200000, \"variants\": [{\"size\": \"M\", \"color\": \"Đỏ\", \"sku\": \"SP-AO-973-M-DO\", \"stock\": 5}]}"
+        },
+        "url": "{{baseUrl}}/api/products"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status la 201', function () { pm.response.to.have.status(201); });",
+              "pm.test('Luu P4 id', function () {",
+              "  pm.collectionVariables.set('pOtherId', pm.response.json().data.id);",
+              "  pm.expect(pm.collectionVariables.get('pOtherId')).to.not.be.empty;",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Filter - 'M + Do' chi khop cung bien the, con hang",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/products?size=M&color=%C4%90%E1%BB%8F"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status la 200', function () { pm.response.to.have.status(200); });",
+              "var ids = pm.response.json().data.map(function (item) { return item.id; });",
+              "pm.test('Co P1 (M-Do con hang)', function () {",
+              "  pm.expect(ids).to.include(pm.collectionVariables.get('pMatchId'));",
+              "});",
+              "pm.test('Khong co P2 (M-Xanh va S-Do khac bien the)', function () {",
+              "  pm.expect(ids).to.not.include(pm.collectionVariables.get('pSplitId'));",
+              "});",
+              "pm.test('Khong co P3 (M-Do het hang)', function () {",
+              "  pm.expect(ids).to.not.include(pm.collectionVariables.get('pOutId'));",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Filter - 'm + do' khong phan biet hoa thuong",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/products?size=m&color=%C4%91%E1%BB%8F"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status la 200', function () { pm.response.to.have.status(200); });",
+              "var ids = pm.response.json().data.map(function (item) { return item.id; });",
+              "pm.test('Van khop P1', function () {",
+              "  pm.expect(ids).to.include(pm.collectionVariables.get('pMatchId'));",
+              "});",
+              "pm.test('Van khong khop P2', function () {",
+              "  pm.expect(ids).to.not.include(pm.collectionVariables.get('pSplitId'));",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Filter - category bang id",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/products?category={{categoryId}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status la 200', function () { pm.response.to.have.status(200); });",
+              "var data = pm.response.json().data;",
+              "var categoryId = pm.collectionVariables.get('categoryId');",
+              "pm.test('Moi ket qua thuoc dung danh muc', function () {",
+              "  pm.expect(data.every(function (item) { return String(item.category) === categoryId; })).to.equal(true);",
+              "});",
+              "pm.test('Co P1 va khong co P4', function () {",
+              "  var ids = data.map(function (item) { return item.id; });",
+              "  pm.expect(ids).to.include(pm.collectionVariables.get('pMatchId'));",
+              "  pm.expect(ids).to.not.include(pm.collectionVariables.get('pOtherId'));",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Filter - category bang slug",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/products?category={{categorySlug}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status la 200', function () { pm.response.to.have.status(200); });",
+              "var ids = pm.response.json().data.map(function (item) { return item.id; });",
+              "pm.test('Slug duoc tra sang id va co P1', function () {",
+              "  pm.expect(ids).to.include(pm.collectionVariables.get('pMatchId'));",
+              "});",
+              "pm.test('Khong co P4', function () {",
+              "  pm.expect(ids).to.not.include(pm.collectionVariables.get('pOtherId'));",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Filter - khoang gia 305000..315000",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/products?category={{categoryId}}&minPrice=305000&maxPrice=315000"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status la 200', function () { pm.response.to.have.status(200); });",
+              "var data = pm.response.json().data;",
+              "pm.test('Chi con P2 (310000)', function () {",
+              "  pm.expect(data).to.have.lengthOf(1);",
+              "  pm.expect(data[0].id).to.equal(pm.collectionVariables.get('pSplitId'));",
+              "  pm.expect(data[0].basePrice).to.equal(310000);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Filter - keyword khop ten",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/products?category={{categoryId}}&keyword=PF%20Filter%20Split"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status la 200', function () { pm.response.to.have.status(200); });",
+              "var data = pm.response.json().data;",
+              "pm.test('Chi tra P2', function () {",
+              "  pm.expect(data).to.have.lengthOf(1);",
+              "  pm.expect(data[0].id).to.equal(pm.collectionVariables.get('pSplitId'));",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Filter - keyword co ky tu regex duoc escape",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/products?keyword=PF%20Filter%20Match%20M.*Do"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status la 200', function () { pm.response.to.have.status(200); });",
+              "pm.test('Khong khop P1 vi .* la ky tu thuong', function () {",
+              "  var ids = pm.response.json().data.map(function (item) { return item.id; });",
+              "  pm.expect(ids).to.not.include(pm.collectionVariables.get('pMatchId'));",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Filter - inStock loai san pham het hang",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/products?category={{categoryId}}&inStock=true"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status la 200', function () { pm.response.to.have.status(200); });",
+              "var data = pm.response.json().data;",
+              "var ids = data.map(function (item) { return item.id; });",
+              "pm.test('Co P1, khong co P3 (het hang)', function () {",
+              "  pm.expect(ids).to.include(pm.collectionVariables.get('pMatchId'));",
+              "  pm.expect(ids).to.not.include(pm.collectionVariables.get('pOutId'));",
+              "});",
+              "pm.test('Moi san pham co it nhat mot bien the ton kho > 0', function () {",
+              "  pm.expect(data.every(function (item) {",
+              "    return item.variants.some(function (variant) { return variant.stock > 0; });",
+              "  })).to.equal(true);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Filter - khoang gia sai tra 400",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/products?minPrice=500000&maxPrice=100000"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status la 400', function () { pm.response.to.have.status(400); });",
+              "pm.test('Khong thanh cong va co details', function () {",
+              "  var body = pm.response.json();",
+              "  pm.expect(body.success).to.equal(false);",
+              "  pm.expect(body.details).to.be.an('array').that.is.not.empty;",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Filter - slug danh muc khong ton tai tra rong",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/products?category=khong-ton-tai-{{runId}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status la 200', function () { pm.response.to.have.status(200); });",
+              "pm.test('Danh sach rong', function () {",
+              "  pm.expect(pm.response.json().data).to.be.an('array').that.is.empty;",
+              "});"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
