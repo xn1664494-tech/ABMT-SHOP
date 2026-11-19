@@ -13,7 +13,7 @@ const visibilityOptions = (req) => {
   };
 };
 
-const filterOptions = (req) => ({
+const listQuery = (req) => ({
   category: req.query.category,
   minPrice: req.query.minPrice,
   maxPrice: req.query.maxPrice,
@@ -21,12 +21,15 @@ const filterOptions = (req) => ({
   size: req.query.size,
   color: req.query.color,
   inStock: req.query.inStock,
+  page: req.query.page,
+  limit: req.query.limit,
+  sort: req.query.sort,
 });
 
 const ProductsController = {
   list: asyncHandler(async (req, res) => {
     const data = await productService.list(
-      filterOptions(req),
+      listQuery(req),
       visibilityOptions(req),
     );
     return sendResponse(
