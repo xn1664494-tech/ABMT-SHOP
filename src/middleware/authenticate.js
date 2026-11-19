@@ -60,6 +60,40 @@ const authenticate = asyncHandler(async (req, res, next) => {
 });
 
 /**
+ * Xác thực tùy chọn cho endpoint công khai.
+ * - Có token hợp lệ: gắn req.user để mở rộng quyền đọc (ví dụ admin xem ẩn).
+ * - Không có token / token sai / tài khoản bị khóa: bỏ qua, KHÔNG trả 401.
+ */
+const optionalAuthenticate = asyncHandler(async (req, res, next) => {
+  const token = extractAccessToken(req);
+  if (!token) return next();
+
+  let payload;
+  try {
+    payload = verifyToken(token);
+  } catch (error) {
+    return next();
+  }
+
+  if (payload.type === 'refresh') return next();
+
+  let user;
+  try {
+    user = await User.findById(payload.sub);
+  } catch (error) {
+    return next();
+  }
+
+  if (!user || user.isDeleted || user.status !== 'active') return next();
+
+  if (Number(payload.ver || 0) !== Number(user.tokenVersion || 0)) return next();
+
+  req.user = user;
+  req.auth = payload;
+  return next();
+});
+
+/**
  * Phân quyền theo role lấy từ DB (req.user.role).
  * Dùng sau authenticate: router.get('/admin', authenticate, authorize('admin'), ...)
  */
@@ -99,4 +133,9 @@ const requireSelfOrAdmin =
     return next(new ErrorResponse('Khong co quyen truy cap tai nguyen nay', 403));
   };
 
-module.exports = { authenticate, authorize, requireSelfOrAdmin };
+module.exports = {
+  authenticate,
+  optionalAuthenticate,
+  authorize,
+  requireSelfOrAdmin,
+};
