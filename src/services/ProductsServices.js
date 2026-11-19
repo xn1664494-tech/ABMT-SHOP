@@ -26,6 +26,13 @@ const buildVisibilityFilter = ({
   return filter;
 };
 
+const applyDeletedOption = (query, { includeDeleted = false } = {}) => {
+  if (includeDeleted) {
+    query.setOptions({ includeDeleted: true });
+  }
+  return query;
+};
+
 const ensureCategoryValid = async (categoryId) => {
   if (!isValidObjectId(categoryId)) {
     throw new ErrorResponse('Id danh mục không hợp lệ', 400);
@@ -45,9 +52,10 @@ const ensureCategoryValid = async (categoryId) => {
 
 module.exports = {
   async list(options = {}) {
-    return Product.find(buildVisibilityFilter(options)).sort({
+    const query = Product.find(buildVisibilityFilter(options)).sort({
       createdAt: -1,
     });
+    return applyDeletedOption(query, options);
   },
 
   async getById(id, options = {}) {
@@ -55,10 +63,13 @@ module.exports = {
       throw new ErrorResponse('Id sản phẩm không hợp lệ', 400);
     }
 
-    const product = await Product.findOne({
-      _id: id,
-      ...buildVisibilityFilter(options),
-    });
+    const product = await applyDeletedOption(
+      Product.findOne({
+        _id: id,
+        ...buildVisibilityFilter(options),
+      }),
+      options,
+    );
 
     if (!product) {
       throw new ErrorResponse('Sản phẩm không tồn tại', 404);

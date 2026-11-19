@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const softDeletePlugin = require('../plugins/softDelete');
 
 /**
  * Địa chỉ nhúng trong user (data dictionary: addresses: Address[], tối đa 3).
@@ -137,5 +138,7 @@ userSchema
 
 // Index trạng thái theo mô tả tài liệu.
 userSchema.index({ status: 1 });
+
+userSchema.plugin(softDeletePlugin);
 
 module.exports = mongoose.models.User || mongoose.model('User', userSchema);

@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const slugify = require('slugify');
 const { SKU_REGEX } = require('../utils/sku');
+const softDeletePlugin = require('../plugins/softDelete');
 
 const URL_REGEX = /^https?:\/\/\S+$/i;
 
@@ -212,6 +213,8 @@ productSchema.index({ 'variants.size': 1, 'variants.color': 1 });
 
 // Lọc sản phẩm đang hiển thị.
 productSchema.index({ isActive: 1, isDeleted: 1 });
+
+productSchema.plugin(softDeletePlugin);
 
 module.exports =
   mongoose.models.Product || mongoose.model('Product', productSchema);

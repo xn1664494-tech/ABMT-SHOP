@@ -45,7 +45,9 @@ const ensureParentValid = async (parentId) => {
   if (!isValidObjectId(parentId)) {
     throw new ErrorResponse('Id danh mục cha không hợp lệ', 400);
   }
-  const parent = await Category.findById(parentId);
+  const parent = await Category.findById(parentId).setOptions({
+    includeDeleted: true,
+  });
   if (!parent) throw new ErrorResponse('Danh mục cha không tồn tại', 404);
   if (parent.isDeleted) throw new ErrorResponse('Danh mục cha đã bị xóa', 400);
   return parent;
@@ -150,7 +152,9 @@ module.exports = {
         cat.parentId = null;
       } else {
         if (!isValidObjectId(parentId)) throw new ErrorResponse('Id danh mục cha không hợp lệ', 400);
-        const parent = await Category.findById(parentId);
+        const parent = await Category.findById(parentId).setOptions({
+          includeDeleted: true,
+        });
         if (!parent) throw new ErrorResponse('Danh mục cha không tồn tại', 404);
         if (parent.isDeleted) throw new ErrorResponse('Danh mục cha đã bị xóa', 400);
         if (parent._id.equals(cat._id)) {

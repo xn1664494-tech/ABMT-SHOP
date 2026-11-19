@@ -47,7 +47,6 @@ const getNavCategories = async () => {
 
   const roots = await Category.find({
     $or: [{ parentId: null }, { parentId: { $exists: false } }],
-    isVisible: true,
   })
     .select('name slug')
     .sort({ order: 1 })
@@ -58,7 +57,6 @@ const getNavCategories = async () => {
 
   const children = await Category.find({
     parentId: { $in: roots.map((root) => root._id) },
-    isVisible: true,
   })
     .select('name slug parentId')
     .sort({ order: 1 })

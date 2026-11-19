@@ -177,6 +177,14 @@ npm run test:jest:watch
 | PUT / PATCH | `/api/products/:id` | access token + `admin` | Có | Cập nhật sản phẩm |
 | DELETE | `/api/products/:id` | access token + `admin` | Có | Xóa mềm sản phẩm |
 
+### Query helper loại bản ghi đã xóa
+
+- `User`, `Category`, `Product` dùng plugin `src/plugins/softDelete.js`.
+- Mặc định mọi truy vấn `find*`, `countDocuments` và `aggregate` tự thêm điều kiện `isDeleted != true`.
+- Truy vấn có `isDeleted` tường minh (ví dụ `{ isDeleted: true }`) được giữ nguyên.
+- Muốn đọc cả bản ghi đã xóa, dùng `.setOptions({ includeDeleted: true })`; Product admin dùng query flag `?includeDeleted=true`.
+- Kiểm thử: `test/soft-delete.plugin.test.js` và collection `postman/QueryHelper.postman_collection.json` (chạy qua `npm run test:postman`).
+
 Các API nghiệp vụ khác (Cart/Order, Admin CRUD đầy đủ, bộ lọc nâng cao, Audit log, Cron, v.v.) **chưa** thuộc phạm vi đã hoàn thành trong tài liệu này.
 
 ## 14. Quy tắc Git branch của team
