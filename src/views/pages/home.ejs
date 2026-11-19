@@ -99,20 +99,20 @@
 
     <!-- Mua theo danh mục -->
     <% if (categories.length > 0) { %>
-      <section id="section-categories" class="section categories-section">
+      <section id="section-categories" class="section categories-section" aria-labelledby="h-cat">
         <div class="container">
-          <h2 class="section-title">Mua theo danh mục</h2>
-          <div class="category-tiles">
-            <% categories.slice(0, 2).forEach(function (cat, index) { %>
-              <div class="category-tile category-tile--<%= index + 1 %>">
-                <a href="/categories/<%= cat.slug %>" class="category-tile-link">
-                  <h3 class="category-tile-name"><%= cat.name %></h3>
-                  <span class="category-tile-sub">Xem tất cả đồ <%= cat.name.toLowerCase() %></span>
+          <div class="section-head"><h2 class="section-title" id="h-cat">Mua theo danh mục</h2></div>
+          <div class="category-grid">
+            <% categories.forEach(function(cat){ %>
+              <div class="category-card" id="cat-<%= cat.slug %>">
+                <a class="category-link" href="<%= cat.url %>">
+                  <b class="category-name"><%= cat.name %></b>
+                  <span class="category-note"><%= cat.note %></span>
                 </a>
-                <% if (cat.children && cat.children.length > 0) { %>
+                <% if (cat.children && cat.children.length) { %>
                   <div class="category-chips">
-                    <% cat.children.slice(0, 6).forEach(function (child) { %>
-                      <a href="/categories/<%= child.slug %>" class="category-chip"><%= child.name %></a>
+                    <% cat.children.slice(0, 6).forEach(function(child){ %>
+                      <a href="<%= child.url %>"><%= child.name %></a>
                     <% }) %>
                   </div>
                 <% } %>
