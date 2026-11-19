@@ -6,7 +6,12 @@ const {
   validateCreateProduct,
   validateUpdateProduct,
 } = require('../validators/productValidator');
-const { buildFilter, isObjectId } = require('../utils/productFilter');
+const {
+  buildFilter,
+  buildPagination,
+  buildSort,
+  isObjectId,
+} = require('../utils/productFilter');
 
 const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id);
 
@@ -70,19 +75,54 @@ const ensureCategoryValid = async (categoryId) => {
 
 module.exports = {
   async list(filters = {}, options = {}) {
+    // Validate toàn bộ tham số trước, kể cả khi slug danh mục không tồn tại.
+    const { page, limit, skip } = buildPagination(filters);
+    const sort = buildSort(filters.sort);
     const { categoryId, found } = await resolveCategoryFilter(
       filters.category,
     );
 
-    // Slug không tồn tại: trả danh sách rỗng thay vì 404 vì đây là endpoint list.
-    if (!found) return [];
-
+    // Slug không tồn tại: vẫn validate các tham số còn lại, rồi trả rỗng
+    // thay vì 404 vì đây là endpoint list.
+    const filterSource = found
+      ? filters
+      : Object.fromEntries(
+          Object.entries(filters).filter(([key]) => key !== 'category'),
+        );
     const filter = {
       ...buildVisibilityFilter(options),
-      ...buildFilter(filters, { categoryId }),
+      ...buildFilter(filterSource, { categoryId }),
     };
-    const query = Product.find(filter).sort({ createdAt: -1 });
-    return applyDeletedOption(query, options);
+
+    if (!found) {
+      return {
+        items: [],
+        pagination: { page, limit, total: 0, totalPages: 0, itemCount: 0 },
+      };
+    }
+
+    const countQuery = Product.countDocuments(filter);
+    if (options.includeDeleted) {
+      countQuery.setOptions({ includeDeleted: true });
+    }
+
+    const findQuery = applyDeletedOption(
+      Product.find(filter).sort(sort).skip(skip).limit(limit),
+      options,
+    );
+
+    const [total, items] = await Promise.all([countQuery, findQuery]);
+
+    return {
+      items,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+        itemCount: items.length,
+      },
+    };
   },
 
   async getById(id, options = {}) {
