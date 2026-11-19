@@ -171,8 +171,13 @@ npm run test:jest:watch
 | PATCH | `/api/profile/me/password` | access token | Có | Đổi mật khẩu (xác minh mật khẩu hiện tại, hash bcrypt, tăng `tokenVersion`, xoá auth cookies) |
 | GET | `/api/profile/:userId` | access token | - | Xem profile (chính chủ hoặc admin) |
 | GET | `/api/admin/access-check` | access token + `admin` | - | Endpoint kiểm tra quyền admin tối thiểu (RBAC trên route thật) |
+| GET | `/api/products` | - | - | Danh sách sản phẩm đang bán (admin có thể `includeInactive`/`includeDeleted`) |
+| GET | `/api/products/:id` | - | - | Chi tiết sản phẩm đang bán (admin dùng cờ tương tự) |
+| POST | `/api/products` | access token + `admin` | Có | Tạo sản phẩm (validate thuần, chặn trùng Size–Màu, tồn kho ≥ 0, ảnh là URL) |
+| PUT / PATCH | `/api/products/:id` | access token + `admin` | Có | Cập nhật sản phẩm |
+| DELETE | `/api/products/:id` | access token + `admin` | Có | Xóa mềm sản phẩm |
 
-Các API nghiệp vụ khác (Cart/Order/Product CRUD/Admin CRUD đầy đủ, Audit log, Cron, v.v.) **chưa** thuộc phạm vi đã hoàn thành trong tài liệu này.
+Các API nghiệp vụ khác (Cart/Order, Admin CRUD đầy đủ, bộ lọc nâng cao, Audit log, Cron, v.v.) **chưa** thuộc phạm vi đã hoàn thành trong tài liệu này.
 
 ## 14. Quy tắc Git branch của team
 
@@ -189,5 +194,5 @@ Các API nghiệp vụ khác (Cart/Order/Product CRUD/Admin CRUD đầy đủ, A
 - **Trust proxy:** phải cấu hình `TRUST_PROXY` đúng với hạ tầng thực tế khi đứng sau proxy; cấu hình sai có thể ảnh hưởng xác định IP/secure cookie. Mặc định không bật để tránh tin `X-Forwarded-For` giả mạo.
 - **CSRF/Origin:** phụ thuộc cấu hình `APP_ORIGIN` và client gửi token đúng; cần kiểm tra lại khi đổi domain/deploy.
 - **JWT secret & env:** `JWT_SECRET`, `MONGODB_URI` và các secret khác phải quản lý an toàn (env/secret manager), không đưa vào Git/báo cáo.
-- **Category/Product dependency:** `src/model/Products.js` tham chiếu `Category` nhưng `Category` model chưa có (thuộc Dev 2/T2-2-1) — xem báo cáo dependency liên quan.
+- **Category/Product dependency:** `Category` model và API Category đã có (T2-2-1); Product API (T3-2-2) đã có CRUD cơ bản. Bộ lọc nâng cao (`buildFilter`, `$elemMatch`) vẫn thuộc T4-2-1.
 - **Jest/toolchain:** bộ Jest có thể yêu cầu môi trường tương thích; không thay thế bằng mock cho integration MongoDB thật.
