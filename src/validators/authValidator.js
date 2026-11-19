@@ -37,6 +37,26 @@ const loginSchema = z.object({
     .min(1, 'Mat khau khong duoc de trong'),
 });
 
+const forgotPasswordSchema = z
+  .object({
+    email: z
+      .string({ error: 'Email khong duoc de trong' })
+      .trim()
+      .toLowerCase()
+      .pipe(z.email({ error: 'Email khong hop le' }))
+      .pipe(z.string().max(254, 'Email toi da 254 ky tu')),
+  })
+  .strict('Chi duoc gui email');
+
+const resetPasswordSchema = z
+  .object({
+    token: z
+      .string({ error: 'Token dat lai mat khau khong duoc de trong' })
+      .regex(/^[a-f0-9]{64}$/, 'Token dat lai mat khau khong hop le'),
+    newPassword: passwordSchema,
+  })
+  .strict('Chi duoc gui token va mat khau moi');
+
 const updateProfileSchema = z
   .object({
     name: z
@@ -79,6 +99,8 @@ const changePasswordSchema = z
 module.exports = {
   registerSchema,
   loginSchema,
+  forgotPasswordSchema,
+  resetPasswordSchema,
   updateProfileSchema,
   changePasswordSchema,
   passwordSchema,

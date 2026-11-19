@@ -21,7 +21,7 @@ Cập nhật: 2026-11-19 · Target: `f6fbc23`
 
 | # | Việc | Owner | Ghi chú |
 |---|---|---|---|
-| P1-1 | Triển khai "quên mật khẩu" (request + reset token, hết hạn, một lần) để đóng vế còn thiếu của T4-1-2 | Dev 1 | Cần email provider; hiện không có endpoint nào |
+| P1-1 | Triển khai "quên mật khẩu" (request + reset token, hết hạn, một lần) để đóng vế còn thiếu của T4-1-2 | Dev 1 | **DONE trên PR #41** — token + log, không gửi email thật. Xem `PHASE2_DEV1_FORGOT_PASSWORD_REPORT.md` |
 | P1-2 | Dựng CI (GitHub Actions): `npm test`, `npm run test:integration` (service MongoDB), `npm run test:jest`, lint | Dev lead | **DONE trên PR #39** — workflow `api-test-gates.yml`, check-run SUCCESS (run `44432177347`). Xem `PHASE2_DEV1_CI_SETUP_REPORT.md` |
 | P1-3 | Dựng staging + thực hiện checklist V3 (proxy, cookie Secure, rate limit theo IP thật, /health) | Dev lead/Ops | Xem `PHASE2_DEV1_VERIFICATION_GAPS_V2_V3.md` |
 | P1-4 | Chuyển `catalog.integration.test.js` / `checkout.integration.test.js` sang `MONGODB_URI_TEST` (bỏ default localhost) | Dev 2 | Đồng bộ V4 |
