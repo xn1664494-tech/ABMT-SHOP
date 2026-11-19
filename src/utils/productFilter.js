@@ -3,6 +3,16 @@ const ErrorResponse = require('./appError');
 
 const OBJECT_ID_REGEX = /^[0-9a-fA-F]{24}$/;
 const MAX_KEYWORD_LENGTH = 100;
+const DEFAULT_PAGE_SIZE = 20;
+const MAX_PAGE_SIZE = 100;
+
+// Tie-breaker _id giữ thứ tự ổn định khi createdAt/giá bằng nhau, tránh
+// bản ghi bị lặp hoặc thiếu giữa các trang.
+const SORT_OPTIONS = {
+  newest: { createdAt: -1, _id: -1 },
+  price_asc: { basePrice: 1, _id: 1 },
+  price_desc: { basePrice: -1, _id: -1 },
+};
 
 const hasOwn = (object, key) =>
   Boolean(object) && Object.prototype.hasOwnProperty.call(object, key);
@@ -136,9 +146,80 @@ const buildFilter = (query = {}, { categoryId } = {}) => {
   return filter;
 };
 
+const readPositiveInt = (value, field, errors) => {
+  if (value === undefined || value === null || value === '') return undefined;
+
+  const raw = Array.isArray(value) ? value[0] : value;
+  const text = String(raw).trim();
+
+  if (!/^\d+$/.test(text) || Number(text) < 1) {
+    errors.push({
+      field,
+      message: `${field} phải là số nguyên dương`,
+    });
+    return undefined;
+  }
+
+  return Number(text);
+};
+
+/**
+ * Đọc page/limit. `limit` vượt MAX_PAGE_SIZE bị ép về mức tối đa; page/limit
+ * không phải số nguyên dương trả 400 kèm details.
+ */
+const buildPagination = (query = {}) => {
+  const errors = [];
+  const source = query || {};
+
+  const page = readPositiveInt(source.page, 'page', errors) || 1;
+  const requestedLimit = readPositiveInt(source.limit, 'limit', errors);
+  const limit = Math.min(requestedLimit || DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE);
+
+  if (errors.length) {
+    const error = new ErrorResponse('Tham số phân trang không hợp lệ', 400);
+    error.details = errors;
+    throw error;
+  }
+
+  return {
+    page,
+    limit,
+    skip: (page - 1) * limit,
+  };
+};
+
+/**
+ * Map `sort` sang object sắp xếp Mongo:
+ * - newest (mặc định): mới nhất trước
+ * - price_asc / price_desc: giá cơ bản tăng/giảm
+ */
+const buildSort = (value) => {
+  const raw = Array.isArray(value) ? value[0] : value;
+  const key = raw === undefined || raw === null ? '' : String(raw).trim().toLowerCase();
+  const sortKey = key || 'newest';
+
+  if (!hasOwn(SORT_OPTIONS, sortKey)) {
+    const error = new ErrorResponse('Tham số sắp xếp không hợp lệ', 400);
+    error.details = [
+      {
+        field: 'sort',
+        message: 'sort phải là newest, price_asc hoặc price_desc',
+      },
+    ];
+    throw error;
+  }
+
+  return { ...SORT_OPTIONS[sortKey] };
+};
+
 module.exports = {
+  DEFAULT_PAGE_SIZE,
   MAX_KEYWORD_LENGTH,
+  MAX_PAGE_SIZE,
+  SORT_OPTIONS,
   buildFilter,
+  buildPagination,
+  buildSort,
   escapeRegex,
   isObjectId,
 };
