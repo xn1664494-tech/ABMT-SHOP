@@ -12,6 +12,24 @@ const AUDIENCE = 'abmt-shop-client';
 const signToken = (sub, role, ver = 0) =>
   jwt.sign({ sub, role, ver }, JWT_SECRET, { issuer: ISSUER, audience: AUDIENCE });
 
+const COLLECTIONS = [
+  {
+    name: 'Category',
+    collection: require('../postman/Category.postman_collection.json'),
+  },
+  {
+    name: 'Product',
+    collection: require('../postman/Product.postman_collection.json'),
+  },
+];
+
+const runCollection = (collection, environment) =>
+  new Promise((resolve) => {
+    newman.run({ collection, environment, iterationCount: 1 }, (err, summary) => {
+      resolve({ err, summary });
+    });
+  });
+
 (async () => {
   const mongod = await MongoMemoryServer.create();
   const uri = mongod.getUri();
@@ -19,8 +37,10 @@ const signToken = (sub, role, ver = 0) =>
 
   await mongoose.connect(uri);
   const Category = require('../src/model/Category');
+  const Product = require('../src/model/Products');
   const User = require('../src/model/User');
   await Category.init();
+  await Product.init();
   await User.init();
 
   // Tao thuc te admin va customer user trong DB de authenticate (main) lay duoc
@@ -44,10 +64,9 @@ const signToken = (sub, role, ver = 0) =>
   const adminToken = signToken(adminUser._id.toString(), 'admin');
   const customerToken = signToken(customerUser._id.toString(), 'customer');
 
-  const collection = require('../postman/Category.postman_collection.json');
   const environment = {
-    id: 'env-category-test',
-    name: 'Category Test Env',
+    id: 'env-product-test',
+    name: 'Category + Product Test Env',
     values: [
       { key: 'baseUrl', value: 'http://localhost:3099', enabled: true },
       { key: 'adminToken', value: adminToken, enabled: true },
@@ -55,37 +74,54 @@ const signToken = (sub, role, ver = 0) =>
     ],
   };
 
-  console.log('[postman-test] Chay newman...');
-  newman.run(
-    { collection, environment, iterationCount: 1 },
-    (err, summary) => {
-      let failed = false;
-      if (err) {
-        console.error('[postman-test] Newman loi:', err.message);
-        failed = true;
-      } else {
-        const run = summary.run || {};
-        const stats = run.stats || {};
-        const totalAssertions = (stats.assertions && stats.assertions.total) || 0;
-        const failedAssertions = (stats.assertions && stats.assertions.failed) || 0;
-        const passedAssertions = totalAssertions - failedAssertions;
-        const failedRequests = (stats.requests && stats.requests.failed) || 0;
+  let failed = false;
+  let totalAssertionsAll = 0;
+  let failedAssertionsAll = 0;
+  let failedRequestsAll = 0;
+
+  for (const { name, collection } of COLLECTIONS) {
+    console.log(`[postman-test][${name}] Chay newman...`);
+    const { err, summary } = await runCollection(collection, environment);
+
+    if (err) {
+      console.error(`[postman-test][${name}] Newman loi:`, err.message);
+      failed = true;
+      continue;
+    }
+
+    const run = summary.run || {};
+    const stats = run.stats || {};
+    const totalAssertions = (stats.assertions && stats.assertions.total) || 0;
+    const failedAssertions = (stats.assertions && stats.assertions.failed) || 0;
+    const failedRequests = (stats.requests && stats.requests.failed) || 0;
+
+    totalAssertionsAll += totalAssertions;
+    failedAssertionsAll += failedAssertions;
+    failedRequestsAll += failedRequests;
+
+    console.log(
+      `[postman-test][${name}] Ket qua: ${totalAssertions - failedAssertions}/${totalAssertions} assertions, ${failedRequests} yeu cau that bai`,
+    );
+
+    if (run.failures && run.failures.length > 0) {
+      run.failures.forEach((failure) => {
         console.log(
-          `[postman-test] Ket qua: ${passedAssertions}/${totalAssertions} assertions, ${failedRequests} yeu cau that bai, ${failedAssertions} yeu cau kiem tra that bai`,
+          `[postman-test][${name}] THAT BAI: ${
+            failure.source && failure.source.name ? failure.source.name : 'request'
+          } | ${failure.error && failure.error.message ? failure.error.message : failure.error}`,
         );
-        if (run.failures && run.failures.length > 0) {
-          run.failures.forEach((f) => {
-            console.log(
-              `[postman-test] THAT BAI: ${f.test && f.test.name ? f.test.name : f.test} | ${f.error && f.error.message ? f.error.message : f.error}`,
-            );
-          });
-        }
-        if (failedAssertions > 0 || failedRequests > 0) failed = true;
-      }
-      server.close();
-      mongoose.disconnect();
-      mongod.stop();
-      process.exit(failed ? 1 : 0);
-    },
+      });
+    }
+
+    if (failedAssertions > 0 || failedRequests > 0) failed = true;
+  }
+
+  console.log(
+    `[postman-test] TONG: ${totalAssertionsAll - failedAssertionsAll}/${totalAssertionsAll} assertions, ${failedRequestsAll} yeu cau that bai`,
   );
+
+  server.close();
+  mongoose.disconnect();
+  mongod.stop();
+  process.exit(failed ? 1 : 0);
 })();
