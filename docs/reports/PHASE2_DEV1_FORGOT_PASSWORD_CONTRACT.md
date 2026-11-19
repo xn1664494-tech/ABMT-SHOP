@@ -1,6 +1,6 @@
 # Contract — Quên / đặt lại mật khẩu (T4-1-2)
 
-- **Trạng thái:** intended contract, implemented in branch `feat/forgot-password`.
+- **Trạng thái:** đã triển khai trong PR #41 (`feat/forgot-password`), verify tại `PHASE2_DEV1_FORGOT_PASSWORD_REPORT.md`.
 - **Auth:** không cần đăng nhập. Rate limit dùng chung `authLimiter`.
 - **CSRF:** không áp dụng (không dùng cookie auth để xác thực request). token đặt lại nằm trong body.
 - **DB:** `users`, các field mới `resetPasswordTokenHash`, `resetPasswordExpires` (đều `select: false`, không bao giờ trả ra JSON).

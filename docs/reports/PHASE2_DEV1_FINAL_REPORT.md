@@ -5,7 +5,7 @@
 - **Đã gồm:** `origin/main` @ `66f3224` + PR #15, #19, #20, #22, #23, #24, #25, #26, #27, #28, #29
 - **Chưa merge vào `main`.**
 
-> **CẬP NHẬT 2026-11-19:** target hiện tại là `2131f56` (đã gồm PR #35, #37 đóng 2 lỗi P0). Số liệu và checklist bên dưới là **ảnh chụp tại `f6fbc23`**; trạng thái mới xem `PHASE2_DEV1_P0_FIX_REPORT.md`. Workflow CI đã được thêm (`.github/workflows/api-test-gates.yml`), chi tiết tại `PHASE2_DEV1_CI_SETUP_REPORT.md`; check-run GitHub trên PR #39 (`c0e9c10`, run `44432177347`) đã **SUCCESS**.
+> **CẬP NHẬT 2026-11-19:** target hiện tại là `2131f56` (đã gồm PR #35, #37 đóng 2 lỗi P0). Số liệu và checklist bên dưới là **ảnh chụp tại `f6fbc23`**; trạng thái mới xem `PHASE2_DEV1_P0_FIX_REPORT.md`. Workflow CI đã được thêm (`.github/workflows/api-test-gates.yml`), chi tiết tại `PHASE2_DEV1_CI_SETUP_REPORT.md`; check-run GitHub trên PR #39 (`c0e9c10`, run `44432177347`) đã **SUCCESS**. T4-1-2 đã đủ 3 vế qua PR #41 (`fccf1fc`, run CI `44434686829` SUCCESS) — chi tiết `PHASE2_DEV1_FORGOT_PASSWORD_REPORT.md`.
 
 ---
 
@@ -48,7 +48,7 @@ Số test theo bộ: unit 181 · integration 32 · jest 8 · seed-verify 4 → *
 | T3-1-2 JWT cookie login | **PASS** | test/auth.login.test.js |
 | T3-1-3 Logout/Refresh | **PASS** | test/auth.refresh-logout.test.js |
 | T4-1-1 RBAC/IDOR | **PASS** | PR #15, 14 test |
-| T4-1-2 Rate limit + CSRF | **PARTIAL** | rate limit + CSRF PASS; **thiếu "quên mật khẩu"** |
+| T4-1-2 Rate limit + CSRF | **PARTIAL** (tại `f6fbc23`) → **PASS** (PR #41) | rate limit + CSRF PASS; vế "quên mật khẩu" đã xong — xem `PHASE2_DEV1_FORGOT_PASSWORD_REPORT.md` |
 | T4-1-3 Profile + đổi mật khẩu | **PASS** | PR #20 + V2 (12 integration) |
 
 **Hoàn thành: 5/6 = 83.3%** (nghiêm ngặt 4/6 = 66.7%). **Không tuyên bố 100%.**

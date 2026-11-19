@@ -7,6 +7,8 @@
 
 > Báo cáo KHÔNG tuyên bố Phase 2 hoàn thành 100%: còn 1 task **PARTIAL** (T4-1-2 thiếu vế "quên mật khẩu"), 1 hạng mục **BLOCKED** thuộc Dev 2 (Category CSRF + test `category.api`), và **V3 (staging) NOT VERIFIED**.
 >
+> **CẬP NHẬT 2026-11-19:** P0 Dev 2 đã đóng (PR #35/#37), CI đã có check-run (PR #39), và vế "quên mật khẩu" của T4-1-2 đã triển khai ở PR #41 → T4-1-2 chuyển **PASS**.các số liệu/tỷ lệ bên dưới là ảnh chụp thời điểm `f6fbc23`; trạng thái hiện tại xem `PHASE2_DEV1_P0_FIX_REPORT.md`, `PHASE2_DEV1_CI_SETUP_REPORT.md`, `PHASE2_DEV1_FORGOT_PASSWORD_REPORT.md`.
+>
 > **Quy ước trạng thái:** `PASS` = đã là ancestor của `feature/post-phase2-hardening` và test trên target xanh; `PASS ON BRANCH` = đã chạy xanh trên branch nhưng **chưa** tích hợp; `NOT VERIFIED` = chưa có môi trường/bằng chứng.
 >
 > **Phạm vi WBS:** `T2-1-1`, `T2-1-2`, `T2-1-3` là **Phase 1**, không tính vào % hoàn thành Phase 2. Phase 2 của Dev 1 gồm 6 task: `T3-1-1`, `T3-1-2`, `T3-1-3`, `T4-1-1`, `T4-1-2`, `T4-1-3`. T5/trust proxy/README là **hardening ngoài WBS**.
@@ -37,7 +39,7 @@
 | T3-1-2 JWT Cookie Login | PASS (giữ nguyên) | Đã PASS; cookie `HttpOnly` được kiểm thử. |
 | T3-1-3 Logout/Refresh | PASS (giữ nguyên) | Đã PASS; rotation/replay được kiểm thử. |
 | T4-1-1 RBAC/IDOR | **PASS** | Task 1 — `authorize('admin')` gắn route thật + IDOR. |
-| T4-1-2 Rate Limit/CSRF | **PARTIAL** (rate limit + CSRF PASS trên target) | Task 6 bổ sung trust proxy; memory store vẫn là nợ kỹ thuật; **vế "quên mật khẩu" chưa có endpoint** → chưa đạt đủ DoD WBS. |
+| T4-1-2 Rate Limit/CSRF | **PARTIAL** (tại `f6fbc23`) → **PASS** (PR #41) | Task 6 bổ sung trust proxy; memory store vẫn là nợ kỹ thuật; vế "quên mật khẩu" đã có endpoint + 13 test integration. Xem `PHASE2_DEV1_FORGOT_PASSWORD_REPORT.md`. |
 | T4-1-3 Profile API | **PASS** (merge `b4be920`, PR #20) | Task 2 — xem/cập nhật hồ sơ + đổi mật khẩu; 10 test change-password + 12 integration MongoDB thật (V2) + regression xanh trên target. |
 
 ### 3 công việc nền tảng
@@ -186,7 +188,7 @@
 |---|---|
 | Nghiêm ngặt (PARTIAL = không đạt) | **4/6 = 66.7%** |
 | Chấp nhận vế "quên mật khẩu" của T4-1-2 là N/A | **5/6 = 83.3%** |
-| 100% | **Chưa đạt** — cần triển khai endpoint quên mật khẩu + có staging để đóng V3 |
+| 100% | **Chưa đạt ở thời điểm báo cáo** — cần endpoint quên mật khẩu (đã xong PR #41) + staging để đóng V3. Với PR #41: **6/6 WBS = 100%**, nhưng R7/R9 vẫn mở nên không tuyên bố release sẵn sàng. |
 
 ---
 
@@ -305,8 +307,8 @@
 ## 10. Kết luận
 
 - **PASS:** T3-1-1, T3-1-2, T3-1-3 (giữ nguyên), T4-1-1, T4-1-3; hardening T5, trust proxy, README.
-- **PARTIAL:** T4-1-2 (rate limit + CSRF PASS; thiếu endpoint "quên mật khẩu").
-- **Đã đóng:** V1 (Jest), V2 (integration đổi mật khẩu), V4 (env var).
-- **BLOCKED (Dev 2):** Category CSRF, test `category.api`, `catalog/checkout` env var.
+- **PARTIAL (tại `f6fbc23`) → PASS (PR #41):** T4-1-2 (rate limit + CSRF + quên/đặt lại mật khẩu).
+- **Đã đóng:** V1 (Jest), V2 (integration đổi mật khẩu), V4 (env var), P0-1/P0-2 (PR #35/#37), CI (PR #39).
+- **BLOCKED (Dev 2) — đã đóng:** Category CSRF, test `category.api` (PR #35/#37); `catalog/checkout` env var vẫn dùng legacy.
 - **NOT VERIFIED:** V3 (staging).
 - Không có thay đổi ngoài scope (không Cart/Order/Audit/Cron/Product CRUD/Admin CRUD/UI), không chạm 2 file báo cáo được bảo vệ, không commit secret/`.env.test`.
