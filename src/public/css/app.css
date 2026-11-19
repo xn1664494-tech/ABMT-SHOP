@@ -190,21 +190,7 @@ body.no-scroll { overflow: hidden; }
   .voucher-grid { grid-auto-flow: row; grid-template-columns: repeat(3, 1fr); grid-auto-columns: unset; overflow: visible; }
 }
 
-/* category */
-.categories-section {}
-.category-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 16px; }
-.category-card { display: block; text-align: center; }
-.category-thumb { aspect-ratio: 1 / 1; border-radius: var(--r-md); overflow: hidden; }
-.category-card:nth-child(4n+1) .category-thumb { background: var(--sky); }
-.category-card:nth-child(4n+2) .category-thumb { background: var(--mint); }
-.category-card:nth-child(4n+3) .category-thumb { background: var(--peach); }
-.category-card:nth-child(4n+4) .category-thumb { background: var(--lilac); }
-.category-thumb img { width: 100%; height: 100%; object-fit: cover; }
-.category-name { margin-top: 8px; font-size: 13px; font-weight: 500; color: var(--ink-strong); }
-.category-card:hover .category-name { text-decoration: underline; }
-
 /* product */
-.products-section {}
 .product-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 22px 16px; }
 @media (min-width: 768px) {
   .product-grid { grid-template-columns: repeat(4, 1fr); }
@@ -583,3 +569,108 @@ body.no-scroll { overflow: hidden; }
 @media (min-width: 768px) {
   #section-bestseller .carousel-arrow { display: block; }
 }
+
+/* ===== COMPONENTS: TOAST ===== */
+#toast-region {
+  position: fixed;
+  z-index: 100;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+@media (max-width: 767px) {
+  #toast-region {
+    position: fixed;
+    left: 16px;
+    right: 16px;
+    bottom: 16px;
+    width: auto;
+  }
+}
+@media (min-width: 768px) {
+  #toast-region {
+    position: fixed;
+    top: 16px;
+    right: 16px;
+    bottom: auto;
+    left: auto;
+    width: 360px;
+  }
+}
+.toast {
+  pointer-events: auto;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  background: var(--surface);
+  border: 1px var(--line) solid;
+  border-radius: var(--r-md);
+  box-shadow: 0 8px 24px rgba(42,47,54,.12);
+  color: var(--ink-strong);
+  font-size: 13px;
+  line-height: 1.45;
+  transition: opacity .2s, transform .2s;
+}
+.toast.toast-success {
+  border-left: 4px solid var(--accent-deep);
+  background: var(--mint);
+}
+.toast.toast-error {
+  border-left: 4px solid var(--danger);
+  background: var(--peach);
+  color: var(--danger);
+}
+.toast.toast-info {
+  border-left: 4px solid var(--accent);
+  background: var(--sky);
+}
+.toast.toast .toast-text { flex: 1; line-height: 1.45; }
+.toast .toast-text { line-height: 1.45; }
+.toast-close {
+  width: 24px;
+  height: 24px;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background .2s;
+}
+.toast-close:hover { background: var(--line); }
+.toast-close:focus-visible { outline: 2px var(--accent-deep); outline-offset: 0; }
+.toast-close:focus-visible { outline: 2px var(--accent-deep); }
+.prefer-reduced-motion .toast,
+.prefer-reduced-motion .toast-close { transition: none; }
+
+/* Flash from [data-flash] is handled by JS; CSS just ensures the element can be styled */
+
+/* Ensure .btn.is-loading with [aria-busy="true"] works */
+.is-loading[aria-busy="true"] { opacity: 0.8; pointer-events: none; }
+
+/* ===== CATEGORIES: #section-categories ===== */
+.category-grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
+@media (min-width: 768px) {
+  .category-grid { grid-template-columns: repeat(2, minmax(0,1fr)); gap: 16px; }
+}
+.category-card { position: relative; overflow: hidden; display: flex; flex-direction: column; justify-content: flex-end; min-height: 150px; padding: 20px 24px; border-radius: var(--r-md); text-align: left; background: var(--sand); }
+.category-card:nth-child(1) { background: var(--sky); }
+.category-card:nth-child(2) { background: var(--lilac); }
+.category-card:nth-child(3) { background: var(--mint); }
+.category-card:nth-child(4) { background: var(--peach); }
+.category-card:nth-child(5) { background: var(--sand); }
+.category-card:nth-child(6) { background: var(--sky); }
+.category-link { display: block; color: inherit; text-decoration: none; }
+.category-link b, .category-link span { display: block; }
+.category-name { font-size: 22px; font-weight: 600; line-height: 1.25; color: var(--ink-strong); }
+.category-note { font-size: 13px; color: var(--ink-soft); margin-top: 2px; }
+.category-link:hover .category-name { text-decoration: underline; }
+.category-link:focus-visible, .category-chips a:focus-visible { outline: 2px var(--accent-deep); outline-offset: 2px; }
+.category-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.category-chips a { display: inline-flex; align-items: center; height: 32px; padding: 0 14px; border-radius: var(--r-pill); background: var(--surface); border: 1px solid var(--line); font-size: 13px; color: var(--ink-strong); }
+.category-chips a:hover { border-color: var(--ink); }
+.category-thumb { aspect-ratio: 1 / 1; border-radius: var(--r-md); overflow: hidden; }
+.category-thumb img { width: 100%; height: 100%; object-fit: cover; }

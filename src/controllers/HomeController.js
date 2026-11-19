@@ -7,13 +7,21 @@ const HomeController = {
     ]
 
     const categories = [
-      { slug: 'ao-thun', name: 'Áo thun', image: '/images/placeholder/category.svg' },
-      { slug: 'ao-so-mi', name: 'Áo sơ mi', image: '/images/placeholder/category.svg' },
-      { slug: 'ao-khoac', name: 'Áo khoác', image: '/images/placeholder/category.svg' },
-      { slug: 'quan-dai', name: 'Quần dài', image: '/images/placeholder/category.svg' },
-      { slug: 'quan-short', name: 'Quần short', image: '/images/placeholder/category.svg' },
-      { slug: 'vay-dam', name: 'Váy đầm', image: '/images/placeholder/category.svg' }
-    ]
+  { slug: 'nam', name: 'Nam', note: 'Xem tất cả đồ nam', url: '#', children: [
+    { name: 'Áo thun', url: '#' },
+    { name: 'Áo sơ mi', url: '#' },
+    { name: 'Áo khoác', url: '#' },
+    { name: 'Quần dài', url: '#' },
+    { name: 'Quần short', url: '#' }
+  ] },
+  { slug: 'nu', name: 'Nữ', note: 'Xem tất cả đồ nữ', url: '#', children: [
+    { name: 'Áo thun', url: '#' },
+    { name: 'Áo sơ mi', url: '#' },
+    { name: 'Quần dài', url: '#' },
+    { name: 'Váy đầm', url: '#' },
+    { name: 'Chân váy', url: '#' }
+  ] }
+]
 
     const productsNewMen = [
       { slug: 'ao-thun-cotton-co-tron', name: 'Áo thun cotton cổ tròn', image: '/images/placeholder/product.svg', price: 299000 },
