@@ -171,11 +171,27 @@ npm run test:jest:watch
 | PATCH | `/api/profile/me/password` | access token | Có | Đổi mật khẩu (xác minh mật khẩu hiện tại, hash bcrypt, tăng `tokenVersion`, xoá auth cookies) |
 | GET | `/api/profile/:userId` | access token | - | Xem profile (chính chủ hoặc admin) |
 | GET | `/api/admin/access-check` | access token + `admin` | - | Endpoint kiểm tra quyền admin tối thiểu (RBAC trên route thật) |
-| GET | `/api/products` | - | - | Danh sách sản phẩm đang bán (admin có thể `includeInactive`/`includeDeleted`) |
+| GET | `/api/products` | - | - | Danh sách sản phẩm đang bán + bộ lọc (admin có thể `includeInactive`/`includeDeleted`) |
 | GET | `/api/products/:id` | - | - | Chi tiết sản phẩm đang bán (admin dùng cờ tương tự) |
 | POST | `/api/products` | access token + `admin` | Có | Tạo sản phẩm (validate thuần, chặn trùng Size–Màu, tồn kho ≥ 0, ảnh là URL) |
 | PUT / PATCH | `/api/products/:id` | access token + `admin` | Có | Cập nhật sản phẩm |
 | DELETE | `/api/products/:id` | access token + `admin` | Có | Xóa mềm sản phẩm |
+
+### Bộ lọc sản phẩm (T4-2-1)
+
+`GET /api/products` nhận các query sau (ghép được với nhau):
+
+| Query | Kiểu | Mô tả |
+|---|---|---|
+| `category` | ObjectId hoặc slug | Lọc đúng danh mục; slug được tra sang `_id`; slug không tồn tại trả danh sách rỗng |
+| `minPrice` / `maxPrice` | số nguyên ≥ 0 | Khoảng giá trên `basePrice`; `minPrice > maxPrice` → 400 |
+| `keyword` | chuỗi ≤ 100 | Tìm gần đúng trên `name`/`description`; ký tự regex được escape nên `a.*b` là chuỗi thường |
+| `size` / `color` | chuỗi (hoặc lặp nhiều giá trị) | Không phân biệt hoa/thường |
+| `inStock` | `true`/`1` | Chỉ sản phẩm có biến thể tồn kho > 0 |
+
+`size` + `color` dùng **một `$elemMatch`** kèm `stock > 0`, nên `?size=M&color=Đỏ` chỉ khớp sản phẩm có **cùng một biến thể** vừa M vừa Đỏ và còn hàng — không ghép chéo M của biến thể này với Đỏ của biến thể khác. Tham số sai định dạng trả 400 kèm `details: [{ field, message }]`.
+
+Mã nguồn: `src/utils/productFilter.js` (`buildFilter`, `escapeRegex`). Minh chứng: `test/product.filter.test.js`, `test/product.api.test.js`, `postman/ProductFilter.postman_collection.json`.
 
 ### Query helper loại bản ghi đã xóa
 
@@ -185,7 +201,7 @@ npm run test:jest:watch
 - Muốn đọc cả bản ghi đã xóa, dùng `.setOptions({ includeDeleted: true })`; Product admin dùng query flag `?includeDeleted=true`.
 - Kiểm thử: `test/soft-delete.plugin.test.js` và collection `postman/QueryHelper.postman_collection.json` (chạy qua `npm run test:postman`).
 
-Các API nghiệp vụ khác (Cart/Order, Admin CRUD đầy đủ, bộ lọc nâng cao, Audit log, Cron, v.v.) **chưa** thuộc phạm vi đã hoàn thành trong tài liệu này.
+Các API nghiệp vụ khác (Cart/Order, Admin CRUD đầy đủ, phân trang/sắp xếp nâng cao, Audit log, Cron, v.v.) **chưa** thuộc phạm vi đã hoàn thành trong tài liệu này.
 
 ## 14. Quy tắc Git branch của team
 
@@ -202,5 +218,5 @@ Các API nghiệp vụ khác (Cart/Order, Admin CRUD đầy đủ, bộ lọc n�
 - **Trust proxy:** phải cấu hình `TRUST_PROXY` đúng với hạ tầng thực tế khi đứng sau proxy; cấu hình sai có thể ảnh hưởng xác định IP/secure cookie. Mặc định không bật để tránh tin `X-Forwarded-For` giả mạo.
 - **CSRF/Origin:** phụ thuộc cấu hình `APP_ORIGIN` và client gửi token đúng; cần kiểm tra lại khi đổi domain/deploy.
 - **JWT secret & env:** `JWT_SECRET`, `MONGODB_URI` và các secret khác phải quản lý an toàn (env/secret manager), không đưa vào Git/báo cáo.
-- **Category/Product dependency:** `Category` model và API Category đã có (T2-2-1); Product API (T3-2-2) đã có CRUD cơ bản. Bộ lọc nâng cao (`buildFilter`, `$elemMatch`) vẫn thuộc T4-2-1.
+- **Category/Product dependency:** `Category` model và API Category đã có (T2-2-1); Product API (T3-2-2) đã có CRUD cơ bản. Bộ lọc (`buildFilter`, `$elemMatch`) đã có ở T4-2-1; phân trang/sắp xếp là task kế tiếp.
 - **Jest/toolchain:** bộ Jest có thể yêu cầu môi trường tương thích; không thay thế bằng mock cho integration MongoDB thật.

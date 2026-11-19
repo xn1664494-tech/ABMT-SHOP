@@ -6,8 +6,26 @@ const {
   validateCreateProduct,
   validateUpdateProduct,
 } = require('../validators/productValidator');
+const { buildFilter, isObjectId } = require('../utils/productFilter');
 
 const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id);
+
+// category có thể là ObjectId hoặc slug; slug được tra sang _id trước khi build.
+const resolveCategoryFilter = async (category) => {
+  const raw = Array.isArray(category) ? category[0] : category;
+  const value = raw === undefined || raw === null ? '' : String(raw).trim();
+
+  if (!value) return { categoryId: undefined, found: true };
+  if (isObjectId(value)) return { categoryId: value, found: true };
+
+  const found = await Category.findOne({
+    slug: value.toLowerCase(),
+    isDeleted: false,
+  }).select('_id');
+
+  if (!found) return { categoryId: undefined, found: false };
+  return { categoryId: found._id, found: true };
+};
 
 const buildVisibilityFilter = ({
   includeInactive = false,
@@ -51,10 +69,19 @@ const ensureCategoryValid = async (categoryId) => {
 };
 
 module.exports = {
-  async list(options = {}) {
-    const query = Product.find(buildVisibilityFilter(options)).sort({
-      createdAt: -1,
-    });
+  async list(filters = {}, options = {}) {
+    const { categoryId, found } = await resolveCategoryFilter(
+      filters.category,
+    );
+
+    // Slug không tồn tại: trả danh sách rỗng thay vì 404 vì đây là endpoint list.
+    if (!found) return [];
+
+    const filter = {
+      ...buildVisibilityFilter(options),
+      ...buildFilter(filters, { categoryId }),
+    };
+    const query = Product.find(filter).sort({ createdAt: -1 });
     return applyDeletedOption(query, options);
   },
 

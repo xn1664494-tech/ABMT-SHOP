@@ -25,6 +25,10 @@ const COLLECTIONS = [
     name: 'QueryHelper',
     collection: require('../postman/QueryHelper.postman_collection.json'),
   },
+  {
+    name: 'ProductFilter',
+    collection: require('../postman/ProductFilter.postman_collection.json'),
+  },
 ];
 
 const runCollection = (collection, environment) =>

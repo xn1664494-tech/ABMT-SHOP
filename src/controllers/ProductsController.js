@@ -13,9 +13,22 @@ const visibilityOptions = (req) => {
   };
 };
 
+const filterOptions = (req) => ({
+  category: req.query.category,
+  minPrice: req.query.minPrice,
+  maxPrice: req.query.maxPrice,
+  keyword: req.query.keyword,
+  size: req.query.size,
+  color: req.query.color,
+  inStock: req.query.inStock,
+});
+
 const ProductsController = {
   list: asyncHandler(async (req, res) => {
-    const data = await productService.list(visibilityOptions(req));
+    const data = await productService.list(
+      filterOptions(req),
+      visibilityOptions(req),
+    );
     return sendResponse(
       res,
       200,
