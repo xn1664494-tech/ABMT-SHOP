@@ -1,0 +1,582 @@
+{
+  "info": {
+    "name": "T3-2-2 Product API",
+    "description": "Collection kiem thu API Product: CRUD, validate thuan (required, kieu du lieu), chan trung cap Size-Mau, ton kho >= 0, anh chi luu URL, SKU bat buoc va duy nhat, xoa mem. GET cong khai; POST/PUT/PATCH/DELETE chi admin + CSRF.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_postman_id": "t3-2-2-product-api"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3099", "type": "string" },
+    { "key": "adminToken", "value": "", "type": "string" },
+    { "key": "customerToken", "value": "", "type": "string" },
+    { "key": "csrfToken", "value": "", "type": "string" },
+    { "key": "runId", "value": "", "type": "string" },
+    { "key": "productCategoryId", "value": "", "type": "string" },
+    { "key": "productId", "value": "", "type": "string" },
+    { "key": "inactiveProductId", "value": "", "type": "string" },
+    { "key": "productSlug", "value": "", "type": "string" }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "if (!['GET', 'HEAD', 'OPTIONS'].includes(pm.request.method)) {",
+          "  var token = pm.collectionVariables.get('csrfToken');",
+          "  if (token && !pm.request.headers.get('X-CSRF-Token')) {",
+          "    pm.request.headers.add({ key: 'X-CSRF-Token', value: token });",
+          "  }",
+          "}"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "Product - Lay CSRF token",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/auth/csrf"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status la 200', function () { pm.response.to.have.status(200); });",
+              "pm.test('Luu csrf token va runId', function () {",
+              "  pm.collectionVariables.set('csrfToken', pm.response.json().data.csrfToken);",
+              "  pm.collectionVariables.set('runId', String(Date.now()));",
+              "  pm.expect(pm.collectionVariables.get('csrfToken')).to.not.be.empty;",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Product - Tao danh muc cho san pham (admin)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+        ],
+        "body": { "mode": "raw", "raw": "{\"name\": \"Danh muc Product {{runId}}\"}" },
+        "url": "{{baseUrl}}/api/categories"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status la 201', function () { pm.response.to.have.status(201); });",
+              "pm.test('Luu category id', function () {",
+              "  pm.expect(pm.response.json().data.id).to.not.be.empty;",
+              "  pm.collectionVariables.set('productCategoryId', pm.response.json().data.id);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Product - Tao chua dang nhap (nho 401)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\"name\": \"Product No Auth\"}" },
+        "url": "{{baseUrl}}/api/products"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status la 401', function () { pm.response.to.have.status(401); });",
+              "pm.test('Khong thanh cong', function () { pm.expect(pm.response.json().success).to.equal(false); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Product - Tao vai khach (nho 403)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{customerToken}}" }
+        ],
+        "body": { "mode": "raw", "raw": "{\"name\": \"Product Customer\"}" },
+        "url": "{{baseUrl}}/api/products"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status la 403', function () { pm.response.to.have.status(403); });",
+              "pm.test('Khong thanh cong', function () { pm.expect(pm.response.json().success).to.equal(false); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Product - Tao thieu CSRF (nho 403)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{adminToken}}" },
+          { "key": "X-CSRF-Token", "value": "sai-token" }
+        ],
+        "body": { "mode": "raw", "raw": "{\"name\": \"Product Bad Csrf\"}" },
+        "url": "{{baseUrl}}/api/products"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status la 403', function () { pm.response.to.have.status(403); });",
+              "pm.test('Khong thanh cong', function () { pm.expect(pm.response.json().success).to.equal(false); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Product - Tao thieu truong bat buoc (nho 400)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+        ],
+        "body": { "mode": "raw", "raw": "{\"name\": \"Product Missing Fields\"}" },
+        "url": "{{baseUrl}}/api/products"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status la 400', function () { pm.response.to.have.status(400); });",
+              "pm.test('Co danh sach loi', function () { pm.expect(pm.response.json().details).to.be.an('array'); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Product - Tao trung cap Size-Mau (nho 400)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"name\": \"Product Dup Variant {{runId}}\", \"category\": \"{{productCategoryId}}\", \"basePrice\": 100000, \"variants\": [{\"size\": \"M\", \"color\": \"Den\", \"sku\": \"SP-AO-911-M-DEN\", \"stock\": 1}, {\"size\": \"m\", \"color\": \"den\", \"sku\": \"SP-AO-912-M-DEN\", \"stock\": 2}]}"
+        },
+        "url": "{{baseUrl}}/api/products"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status la 400', function () { pm.response.to.have.status(400); });",
+              "pm.test('Loi o variants', function () { var fields = pm.response.json().details.map(function (d) { return d.field; }); pm.expect(fields).to.include('variants'); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Product - Tao ton kho am (nho 400)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"name\": \"Product Negative Stock {{runId}}\", \"category\": \"{{productCategoryId}}\", \"basePrice\": 100000, \"variants\": [{\"size\": \"M\", \"color\": \"Den\", \"sku\": \"SP-AO-913-M-DEN\", \"stock\": -1}]}"
+        },
+        "url": "{{baseUrl}}/api/products"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status la 400', function () { pm.response.to.have.status(400); });",
+              "pm.test('Loi o stock', function () { var fields = pm.response.json().details.map(function (d) { return d.field; }); pm.expect(fields).to.include('variants.0.stock'); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Product - Anh khong phai URL (nho 400)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"name\": \"Product Bad Image {{runId}}\", \"category\": \"{{productCategoryId}}\", \"basePrice\": 100000, \"images\": [\"anh-nhi-phan\"], \"variants\": [{\"size\": \"M\", \"color\": \"Den\", \"sku\": \"SP-AO-914-M-DEN\", \"stock\": 1}]}"
+        },
+        "url": "{{baseUrl}}/api/products"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status la 400', function () { pm.response.to.have.status(400); });",
+              "pm.test('Loi o images', function () { var fields = pm.response.json().details.map(function (d) { return d.field; }); pm.expect(fields).to.include('images'); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Product - Tao thanh cong (admin)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"name\": \"Product Test {{runId}}\", \"description\": \"San pham kiem thu API Product\", \"category\": \"{{productCategoryId}}\", \"images\": [\"https://cdn.example.com/product.jpg\"], \"basePrice\": 199000, \"variants\": [{\"size\": \"M\", \"color\": \"Den\", \"colorCode\": \"#111111\", \"sku\": \"SP-AO-901-M-DEN\", \"stock\": 10, \"price\": 199000}, {\"size\": \"L\", \"color\": \"Trang\", \"colorCode\": \"#FFFFFF\", \"sku\": \"SP-AO-901-L-TRANG\", \"stock\": 5}]}"
+        },
+        "url": "{{baseUrl}}/api/products"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status la 201', function () { pm.response.to.have.status(201); });",
+              "pm.test('Tra thanh cong va co id/slug', function () {",
+              "  var body = pm.response.json();",
+              "  pm.expect(body.success).to.equal(true);",
+              "  pm.expect(body.data.id).to.not.be.empty;",
+              "  pm.expect(body.data.slug).to.not.be.empty;",
+              "  pm.collectionVariables.set('productId', body.data.id);",
+              "  pm.collectionVariables.set('productSlug', body.data.slug);",
+              "});",
+              "pm.test('Bien the va ton kho dung', function () {",
+              "  var data = pm.response.json().data;",
+              "  pm.expect(data.variants).to.have.length(2);",
+              "  pm.expect(data.totalStock).to.equal(15);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Product - SKU trung toan cuc (nho 409)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"name\": \"Product Dup Sku {{runId}}\", \"category\": \"{{productCategoryId}}\", \"basePrice\": 100000, \"variants\": [{\"size\": \"M\", \"color\": \"Den\", \"sku\": \"SP-AO-901-M-DEN\", \"stock\": 1}]}"
+        },
+        "url": "{{baseUrl}}/api/products"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status la 409', function () { pm.response.to.have.status(409); });",
+              "pm.test('Khong thanh cong', function () { pm.expect(pm.response.json().success).to.equal(false); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Product - Tao san pham an (admin)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"name\": \"Product Inactive {{runId}}\", \"category\": \"{{productCategoryId}}\", \"basePrice\": 100000, \"isActive\": false, \"variants\": [{\"size\": \"F\", \"color\": \"Den\", \"sku\": \"SP-AO-902-F-DEN\", \"stock\": 3}]}"
+        },
+        "url": "{{baseUrl}}/api/products"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status la 201', function () { pm.response.to.have.status(201); });",
+              "pm.test('Luu id san pham an', function () { pm.collectionVariables.set('inactiveProductId', pm.response.json().data.id); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Product - Lay danh sach (cong khai)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/products"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status la 200', function () { pm.response.to.have.status(200); });",
+              "pm.test('Danh sach la mang va co san pham active', function () {",
+              "  var data = pm.response.json().data;",
+              "  pm.expect(data).to.be.an('array');",
+              "  var ids = data.map(function (item) { return item.id; });",
+              "  pm.expect(ids).to.include(pm.collectionVariables.get('productId'));",
+              "});",
+              "pm.test('Khong lo san pham inactive', function () {",
+              "  var ids = pm.response.json().data.map(function (item) { return item.id; });",
+              "  pm.expect(ids).to.not.include(pm.collectionVariables.get('inactiveProductId'));",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Product - Lay chi tiet (cong khai)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/products/{{productId}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status la 200', function () { pm.response.to.have.status(200); });",
+              "pm.test('Id trung khop', function () { pm.expect(pm.response.json().data.id).to.equal(pm.collectionVariables.get('productId')); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Product - Admin xem danh sach kem inactive",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+        "url": "{{baseUrl}}/api/products?includeInactive=true"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status la 200', function () { pm.response.to.have.status(200); });",
+              "pm.test('Co san pham inactive', function () {",
+              "  var ids = pm.response.json().data.map(function (item) { return item.id; });",
+              "  pm.expect(ids).to.include(pm.collectionVariables.get('inactiveProductId'));",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Product - Cap nhat ten va gia (admin)",
+      "request": {
+        "method": "PUT",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+        ],
+        "body": { "mode": "raw", "raw": "{\"name\": \"Product Test {{runId}} Updated\", \"basePrice\": 250000}" },
+        "url": "{{baseUrl}}/api/products/{{productId}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status la 200', function () { pm.response.to.have.status(200); });",
+              "pm.test('Ten va gia duoc cap nhat', function () {",
+              "  var data = pm.response.json().data;",
+              "  pm.expect(data.name).to.contain('Updated');",
+              "  pm.expect(data.basePrice).to.equal(250000);",
+              "  pm.expect(data.slug).to.not.equal(pm.collectionVariables.get('productSlug'));",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Product - Cap nhat ton kho (admin)",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"variants\": [{\"size\": \"M\", \"color\": \"Den\", \"sku\": \"SP-AO-901-M-DEN\", \"stock\": 7, \"price\": 250000}, {\"size\": \"L\", \"color\": \"Trang\", \"sku\": \"SP-AO-901-L-TRANG\", \"stock\": 5}]}"
+        },
+        "url": "{{baseUrl}}/api/products/{{productId}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status la 200', function () { pm.response.to.have.status(200); });",
+              "pm.test('Ton kho tong duoc cap nhat', function () { pm.expect(pm.response.json().data.totalStock).to.equal(12); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Product - Id sai dinh dang (nho 400)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/products/not-a-valid-id"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status la 400', function () { pm.response.to.have.status(400); });",
+              "pm.test('Khong thanh cong', function () { pm.expect(pm.response.json().success).to.equal(false); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Product - Xoa mem (admin)",
+      "request": {
+        "method": "DELETE",
+        "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+        "url": "{{baseUrl}}/api/products/{{productId}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status la 200', function () { pm.response.to.have.status(200); });",
+              "pm.test('Tra thanh cong', function () { pm.expect(pm.response.json().success).to.equal(true); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Product - Khong con thay sau xoa (cong khai)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/products/{{productId}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status la 404', function () { pm.response.to.have.status(404); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Product - Admin xem san pham da xoa (includeDeleted)",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+        "url": "{{baseUrl}}/api/products/{{productId}}?includeDeleted=true"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status la 200', function () { pm.response.to.have.status(200); });",
+              "pm.test('Id trung khop', function () { pm.expect(pm.response.json().data.id).to.equal(pm.collectionVariables.get('productId')); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Product - Xoa lan hai (nho 404)",
+      "request": {
+        "method": "DELETE",
+        "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+        "url": "{{baseUrl}}/api/products/{{productId}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status la 404', function () { pm.response.to.have.status(404); });"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

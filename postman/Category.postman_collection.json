@@ -10,9 +10,49 @@
     { "key": "adminToken", "value": "", "type": "string" },
     { "key": "customerToken", "value": "", "type": "string" },
     { "key": "categoryId", "value": "", "type": "string" },
-    { "key": "childId", "value": "", "type": "string" }
+    { "key": "childId", "value": "", "type": "string" },
+    { "key": "csrfToken", "value": "", "type": "string" }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "if (!['GET', 'HEAD', 'OPTIONS'].includes(pm.request.method)) {",
+          "  var token = pm.collectionVariables.get('csrfToken');",
+          "  if (token && !pm.request.headers.get('X-CSRF-Token')) {",
+          "    pm.request.headers.add({ key: 'X-CSRF-Token', value: token });",
+          "  }",
+          "}"
+        ]
+      }
+    }
   ],
   "item": [
+    {
+      "name": "Danh muc - Lay CSRF token",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/auth/csrf"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status la 200', function () { pm.response.to.have.status(200); });",
+              "pm.test('Luu csrf token', function () {",
+              "  pm.collectionVariables.set('csrfToken', pm.response.json().data.csrfToken);",
+              "  pm.expect(pm.collectionVariables.get('csrfToken')).to.not.be.empty;",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
     {
       "name": "Danh muc - Lay danh sach (cong khai)",
       "request": {
