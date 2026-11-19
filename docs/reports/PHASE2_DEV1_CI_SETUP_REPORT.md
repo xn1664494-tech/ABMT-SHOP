@@ -3,7 +3,8 @@
 - **Ngày:** 2026-11-19
 - **Branch:** `ci/github-actions-test-gates`
 - **File thêm:** `.github/workflows/api-test-gates.yml`
-- **Trạng thái:** workflow đã định nghĩa và kiểm tra cục bộ; **chưa có check-run thật trên GitHub** cho đến khi PR được merge vào `feature/post-phase2-hardening`.
+- **Trạng thái:** workflow đã chạy thật trên PR #39 tại commit `c0e9c10` → **check-run SUCCESS**.
+- **Run ID:** `44432177347` · [Job log](https://github.com/xn1664494-tech/ABMT-SHOP/actions/runs/44432177347/job/135252043131)
 
 ---
 
@@ -63,7 +64,22 @@ MongoDB được cung cấp bởi service container `mongo:7` với health check
 
 Tổng mô phỏng: **230/230 pass**.
 
-> Đây là bằng chứng **local**, không phải kết quả GitHub Actions. Phần "check-run thật" chỉ được xác nhận sau khi workflow chạy trên PR/push tới `feature/post-phase2-hardening`.
+### Check-run GitHub thật (PR #39, commit `c0e9c10`)
+
+| Step | Kết quả |
+|---|---|
+| Initialize containers (`mongo:7`) | ✅ success |
+| Install dependencies (`npm ci`) | ✅ success |
+| Guard - only a test database | ✅ success |
+| Seed test database | ✅ success |
+| Seed + index verification | ✅ success |
+| Unit tests | ✅ success |
+| Integration tests (real MongoDB) | ✅ success |
+| Jest tests | ✅ success |
+
+**Kết luận check-run:** `success` — xem run `44432177347`.
+
+> Bảng "Verification đã chạy (cục bộ)" ở trên là bằng chứng local; bảng check-run này là bằng chứng GitHub Actions thật.
 
 ---
 
