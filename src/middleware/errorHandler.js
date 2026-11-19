@@ -1,9 +1,16 @@
 const ErrorResponse = require('../utils/appError');
 
+const GENERIC_SERVER_ERROR = 'Lỗi máy chủ nội bộ';
+
 /**
  * Middleware xử lý lỗi tập trung.
  * Phải được đăng ký SAU tất cả routes: app.use(errorHandler)
  * (không gọi errorHandler()).
+ *
+ * - Request API (/api/*): luôn trả JSON thống nhất.
+ * - Request HTML (non-/api, Accept: text/html): render trang lỗi EJS.
+ * - 500 ở production: trả thông báo chung, không lộ message/stack nội bộ.
+ * - Không ghi log password, token, cookie, MONGODB_URI hoặc secret.
  */
 const errorHandler = (err, req, res, next) => {
   // Nếu response đã bắt đầu gửi thì phải nhường cho Express xử lý.
@@ -53,20 +60,41 @@ const errorHandler = (err, req, res, next) => {
   const statusCode = error.statusCode || 500;
   const message = error.message || 'Server error';
 
-  // Chỉ log chi tiết ở môi trường development.
+  const isServerError = statusCode >= 500;
+  const clientMessage =
+    process.env.NODE_ENV === 'production' && isServerError
+      ? GENERIC_SERVER_ERROR
+      : message;
+
+  // Ghi log server: development có chi tiết debug; production chỉ ghi tối thiểu,
+  // không log message/stack có thể chứa thông tin nhạy cảm.
   if (process.env.NODE_ENV !== 'production') {
     console.error(`[ERROR ${statusCode}] ${req.method} ${req.originalUrl} - ${message}`);
-    if (statusCode >= 500) {
+    if (isServerError) {
       console.error(err.stack);
     }
+  } else {
+    console.error(`[ERROR ${statusCode}] ${req.method} ${req.originalUrl}`);
+  }
+
+  const isApi = req.originalUrl.startsWith('/api');
+  const wantsHtml = !isApi && Boolean(req.accepts('html'));
+
+  if (wantsHtml) {
+    return res.status(statusCode).render('error', {
+      title: `Lỗi ${statusCode}`,
+      statusCode,
+      message: clientMessage,
+    });
   }
 
   const body = {
     success: false,
-    error: message,
+    error: clientMessage,
   };
 
-  if (error.details) {
+  // Chỉ đính kèm details cho lỗi không phải 5xx để tránh rò rỉ thông tin nội bộ.
+  if (!isServerError && error.details) {
     body.details = error.details;
   }
 

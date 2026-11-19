@@ -9,6 +9,7 @@ router.get('/', HomeController.index);
 // API
 router.use('/auth', require('./auth.route'));
 router.use('/profile', require('./profile.route'));
+router.use('/admin', require('./admin.route'));
 router.use('/categories', require('./category.route'));
 
 module.exports = router;

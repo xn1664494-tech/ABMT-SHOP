@@ -2,6 +2,7 @@ const express = require('express');
 const CategoryController = require('../controllers/CategoryController');
 const { authenticate } = require('../middleware/authenticate');
 const requireAdmin = require('../middleware/requireAdmin');
+const { csrfProtection } = require('../middleware/csrf');
 
 const router = express.Router();
 
@@ -10,10 +11,10 @@ router.get('/tree', CategoryController.tree);
 router.get('/', CategoryController.list);
 router.get('/:id', CategoryController.getById);
 
-// Admin only — POST/PUT/PATCH/DELETE
-router.post('/', authenticate, requireAdmin, CategoryController.create);
-router.put('/:id', authenticate, requireAdmin, CategoryController.update);
-router.patch('/:id', authenticate, requireAdmin, CategoryController.update);
-router.delete('/:id', authenticate, requireAdmin, CategoryController.softDelete);
+// Admin only — POST/PUT/PATCH/DELETE (cookie auth nên bắt buộc CSRF)
+router.post('/', authenticate, requireAdmin, csrfProtection, CategoryController.create);
+router.put('/:id', authenticate, requireAdmin, csrfProtection, CategoryController.update);
+router.patch('/:id', authenticate, requireAdmin, csrfProtection, CategoryController.update);
+router.delete('/:id', authenticate, requireAdmin, csrfProtection, CategoryController.softDelete);
 
 module.exports = router;

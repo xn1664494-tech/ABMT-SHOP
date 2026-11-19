@@ -1,0 +1,79 @@
+name: API test gates
+
+on:
+  pull_request:
+    branches:
+      - feature/post-phase2-hardening
+  push:
+    branches:
+      - feature/post-phase2-hardening
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Seed + unit + integration + jest
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    services:
+      mongodb:
+        image: mongo:7
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --quiet --eval 'db.adminCommand({ping: 1}).ok'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      NODE_ENV: test
+      MONGODB_URI: mongodb://127.0.0.1:27017/abmt_shop_ci_test
+      MONGODB_URI_TEST: mongodb://127.0.0.1:27017/abmt_shop_ci_test
+      TEST_MONGODB_URI: mongodb://127.0.0.1:27017/abmt_shop_ci_test
+      JWT_SECRET: ci-only-jwt-secret-at-least-32-characters
+      APP_ORIGIN: http://localhost:3000
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Guard - only a test database
+        run: |
+          case "$MONGODB_URI_TEST" in
+            *test*) echo "MongoDB target is a test database" ;;
+            *) echo "Refusing to run against a non-test database" >&2; exit 1 ;;
+          esac
+
+      - name: Seed test database
+        run: npm run seed
+        env:
+          SEED_CONFIRM: '1'
+
+      - name: Seed + index verification
+        run: npm run test:seed-verify
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Integration tests (real MongoDB)
+        run: npm run test:integration
+
+      - name: Jest tests
+        run: npm run test:jest
+        # Jest setup refuses MONGODB_URI === MONGODB_URI_TEST; it reassigns
+        # MONGODB_URI to the test URI itself, so clear the seed-only value here.
+        env:
+          MONGODB_URI: ''
