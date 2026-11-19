@@ -12,6 +12,8 @@
   ready(function () {
     initMenu();
     initBanner();
+    initCarouselArrows();
+    initVoucherCopy();
   });
 
   function initMenu() {
@@ -110,6 +112,149 @@
     syncInert();
   }
 
+  function initCarouselArrows() {
+    const sections = ['#section-sale', '#section-bestseller'];
+    const reducedMq = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const useSmooth = !reducedMq.matches;
+
+    function scrollBy(delta) {
+      track.scrollBy({ left: delta, behavior: useSmooth ? 'smooth' : 'auto' });
+    }
+
+    sections.forEach(function (sectionId) {
+      const section = document.querySelector(sectionId);
+      if (!section) return;
+
+      const carousel = section.querySelector('.carousel');
+      if (!carousel) return;
+
+      const track = carousel.querySelector('.carousel-track');
+      if (!track) return;
+
+      const prevArrow = carousel.querySelector('.carousel-arrow--prev');
+      const nextArrow = carousel.querySelector('.carousel-arrow--next');
+      if (!prevArrow || !nextArrow) return;
+
+      function updateArrows() {
+        if (track.scrollWidth <= track.clientWidth) {
+          prevArrow.hidden = true;
+          nextArrow.hidden = true;
+          prevArrow.disabled = true;
+          nextArrow.disabled = true;
+          prevArrow.setAttribute('aria-disabled', 'true');
+          nextArrow.setAttribute('aria-disabled', 'true');
+          return;
+        }
+        prevArrow.hidden = false;
+        nextArrow.hidden = false;
+
+        if (track.scrollLeft <= 2) {
+          prevArrow.disabled = true;
+          prevArrow.setAttribute('aria-disabled', 'true');
+        } else {
+          prevArrow.disabled = false;
+          prevArrow.removeAttribute('aria-disabled');
+        }
+
+        if (track.scrollLeft + track.clientWidth >= track.scrollWidth - 2) {
+          nextArrow.disabled = true;
+          nextArrow.setAttribute('aria-disabled', 'true');
+        } else {
+          nextArrow.disabled = false;
+          nextArrow.removeAttribute('aria-disabled');
+        }
+      }
+
+      updateArrows();
+
+      const onScroll = function () {
+        requestAnimationFrame(updateArrows);
+      };
+      track.addEventListener('scroll', onScroll);
+
+      prevArrow.addEventListener('click', function (e) {
+        e.preventDefault();
+        scrollBy(-track.clientWidth * 0.85);
+      });
+
+      nextArrow.addEventListener('click', function (e) {
+        e.preventDefault();
+        scrollBy(track.clientWidth * 0.85);
+      });
+
+      function onResize() {
+        updateArrows();
+      }
+      window.addEventListener('resize', onResize);
+    });
+  }
+
+  function initVoucherCopy() {
+    const vouchersSection = document.getElementById('section-vouchers');
+    if (!vouchersSection) return;
+
+    const originalTexts = new WeakMap();
+
+    function tryCopyText(text) {
+      text = text.trim();
+      if (!navigator.clipboard) {
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        textarea.style.position = 'fixed';
+        textarea.style.opacity = '0';
+        document.body.appendChild(textarea);
+        textarea.select();
+        try {
+          document.execCommand('copy');
+        } catch (e) {
+          document.body.removeChild(textarea);
+          return false;
+        }
+        document.body.removeChild(textarea);
+        return true;
+      }
+      return navigator.clipboard.writeText(text);
+    }
+
+    function showToast(message) {
+      if (window.ABMT && window.ABMT.toast) {
+        window.ABMT.toast.success(message);
+      }
+    }
+
+    function handleCopyClick(event) {
+      const button = event.target.closest('.voucher-copy');
+      if (!button) return;
+
+      const code = button.getAttribute('data-code');
+      if (!code) {
+        const codeEl = button.closest('.voucher-card').querySelector('.voucher-code');
+        if (codeEl) {
+          code = codeEl.textContent;
+        }
+      }
+      if (!code) return;
+
+      const alreadyCopied = originalTexts.get(button);
+      if (alreadyCopied) return;
+
+      const success = tryCopyText(code);
+      if (success) {
+        originalTexts.set(button, true);
+        const original = button.textContent;
+        button.textContent = 'Đã sao chép';
+        setTimeout(function () {
+          button.textContent = original;
+        }, 1800);
+        showToast('Đã sao chép mã ' + code);
+      } else {
+        showToast('Không sao chép được, hãy chép mã thủ công.');
+      }
+    }
+
+    vouchersSection.addEventListener('click', handleCopyClick);
+  }
+
   function initBanner() {
     var slider = document.getElementById('banner-slider');
     var dotsWrap = document.getElementById('banner-dots');
@@ -190,6 +335,17 @@
           }
         });
       })(dots[d]);
+    }
+
+    var prevArrow = document.getElementById('banner-prev');
+    var nextArrow = document.getElementById('banner-next');
+    if (prevArrow && nextArrow) {
+      prevArrow.addEventListener('click', function () {
+        go(current - 1);
+      });
+      nextArrow.addEventListener('click', function () {
+        go(current + 1);
+      });
     }
 
     slider.addEventListener('mouseenter', function () {

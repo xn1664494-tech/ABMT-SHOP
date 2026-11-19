@@ -1,9 +1,9 @@
 const HomeController = {
   index(req, res) {
     const vouchers = [
-      { code: 'GIAM30K', desc: 'Giảm 30.000₫', note: 'HSD 30/11/2026' },
-      { code: 'GIAM10', desc: 'Giảm 10%', note: 'HSD 31/12/2026' },
-      { code: 'KHACHMOI', desc: 'Giảm 50.000₫', note: 'HSD 31/12/2026' }
+      { code: 'GIAM30K', desc: 'Giảm 30.000₫', note: 'Cho đơn từ 300.000₫ · HSD 30/11/2026' },
+      { code: 'GIAM10', desc: 'Giảm 10%', note: 'Cho đơn từ 400.000₫ · HSD 31/12/2026' },
+      { code: 'KHACHMOI', desc: 'Giảm 50.000₫', note: 'Đơn đầu tiên từ 250.000₫ · HSD 31/12/2026' }
     ]
 
     const categories = [
