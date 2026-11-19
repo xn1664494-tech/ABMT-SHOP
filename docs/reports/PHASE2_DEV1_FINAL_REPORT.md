@@ -5,6 +5,8 @@
 - **Đã gồm:** `origin/main` @ `66f3224` + PR #15, #19, #20, #22, #23, #24, #25, #26, #27, #28, #29
 - **Chưa merge vào `main`.**
 
+> **CẬP NHẬT 2026-11-19:** target hiện tại là `2131f56` (đã gồm PR #35, #37 đóng 2 lỗi P0). Số liệu và checklist bên dưới là **ảnh chụp tại `f6fbc23`**; trạng thái mới xem `PHASE2_DEV1_P0_FIX_REPORT.md`.
+
 ---
 
 ## 1. Trạng thái tổng thể

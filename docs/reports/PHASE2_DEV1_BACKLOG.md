@@ -6,12 +6,14 @@ Cập nhật: 2026-11-19 · Target: `f6fbc23`
 
 ---
 
+> **CẬP NHẬT 2026-11-19:** P0-1 và P0-2 đã **CLOSED** qua PR #35 / #37 trên `feature/post-phase2-hardening` @ `2131f56`. Chi tiết: `PHASE2_DEV1_P0_FIX_REPORT.md`. Bảng dưới là trạng thái gốc trước khi sửa.
+
 ## P0 — Chặn CI/release
 
 | # | Việc | Owner | Bằng chứng | Ghi chú |
 |---|---|---|---|---|
-| P0-1 | Sửa `test/category.api.test.js`: `const request = require('supertest')` (bỏ `{ default }`) và thay `t.context.parentId/childId` bằng biến module-level | Dev 2 | 16 test fail, fail y hệt trên `origin/main` | Xem `PHASE2_DEV1_MAIN_SYNC_REPORT.md` §4.1 |
-| P0-2 | Thêm `csrfProtection` cho `POST/PUT/PATCH/DELETE /api/categories` | Dev 2 | POST không CSRF token → 201 | Xem `PHASE2_DEV1_CATEGORY_VERIFICATION.md` §2 |
+| ~~P0-1~~ **CLOSED** | Sửa `test/category.api.test.js`: `const request = require('supertest')` (bỏ `{ default }`) và thay `t.context.parentId/childId` bằng biến module-level | Dev 2 | 16 test fail, fail y hệt trên `origin/main` | PR #35 → `npm test` 181/181 |
+| ~~P0-2~~ **CLOSED** | Thêm `csrfProtection` cho `POST/PUT/PATCH/DELETE /api/categories` | Dev 2 | POST không CSRF token → 201 | PR #37 → thiếu/sai CSRF 403; `npm test` 186/186 |
 
 ---
 
