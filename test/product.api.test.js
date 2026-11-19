@@ -37,6 +37,7 @@ let adminToken = null;
 let customerToken = null;
 let csrfToken = null;
 let categoryId = null;
+let categorySlug = null;
 let productId = null;
 let inactiveProductId = null;
 
@@ -149,6 +150,7 @@ test.before(async () => {
 
     const category = await Category.create({ name: `${MARKER} Ao` });
     categoryId = category._id.toString();
+    categorySlug = category.slug;
 
     const csrfRes = await agent.get('/api/auth/csrf');
     csrfToken = csrfRes.body.data.csrfToken;
@@ -532,6 +534,123 @@ test('GET /api/products/:id sai dinh dang tra 400 va khong ton tai tra 404', asy
     `/api/products/${new mongoose.Types.ObjectId()}`,
   );
   assert.equal(missing.statusCode, 404);
+});
+
+test('GET /api/products loc size+color chi khop cung mot bien the', async (t) => {
+  if (skipIfUnavailable(t)) return;
+
+  const makeProduct = (name, basePrice, variants) =>
+    Product.create({
+      name: `${MARKER} ${name}`,
+      description: 'San pham kiem thu bo loc',
+      category: categoryId,
+      basePrice,
+      variants,
+    });
+
+  // P1: co bien the M - Do con hang -> phai khop.
+  const match = await makeProduct('Filter Match M Do', 300000, [
+    { size: 'M', color: 'Đỏ', sku: SKU(970, 'M', 'DO'), stock: 5 },
+    { size: 'L', color: 'Xanh', sku: SKU(970, 'L', 'XANH'), stock: 5 },
+  ]);
+
+  // P2: chi co M-Xanh va S-Do (khong cung bien the) -> khong duoc khop.
+  const split = await makeProduct('Filter Split M Xanh S Do', 310000, [
+    { size: 'M', color: 'Xanh', sku: SKU(971, 'M', 'XANH'), stock: 5 },
+    { size: 'S', color: 'Đỏ', sku: SKU(971, 'S', 'DO'), stock: 5 },
+  ]);
+
+  // P3: co M-Do nhung het hang -> khong duoc khop.
+  const outOfStock = await makeProduct('Filter Out Of Stock', 320000, [
+    { size: 'M', color: 'Đỏ', sku: SKU(972, 'M', 'DO'), stock: 0 },
+    { size: 'L', color: 'Xanh', sku: SKU(972, 'L', 'XANH'), stock: 0 },
+  ]);
+
+  const res = await agent
+    .get('/api/products')
+    .query({ size: 'M', color: 'Đỏ' });
+
+  assert.equal(res.statusCode, 200);
+  const ids = res.body.data.map((item) => item.id);
+  assert.ok(ids.includes(match.id));
+  assert.ok(!ids.includes(split.id), 'khong duoc ghep M cua bien the nay voi Do cua bien the khac');
+  assert.ok(!ids.includes(outOfStock.id), 'bien the M-Do het hang khong duoc khop');
+
+  const lowerCase = await agent
+    .get('/api/products')
+    .query({ size: 'm', color: 'đỏ' });
+  assert.equal(lowerCase.statusCode, 200);
+  assert.ok(lowerCase.body.data.some((item) => item.id === match.id));
+});
+
+test('GET /api/products loc theo category, khoang gia, keyword, inStock', async (t) => {
+  if (skipIfUnavailable(t)) return;
+
+  const otherCategory = await Category.create({
+    name: `${MARKER} Filter Other`,
+  });
+  await Product.create({
+    name: `${MARKER} Filter Other Category`,
+    category: otherCategory._id,
+    basePrice: 200000,
+    variants: [
+      { size: 'M', color: 'Đỏ', sku: SKU(973, 'M', 'DO'), stock: 5 },
+    ],
+  });
+
+  const byCategoryId = await agent
+    .get('/api/products')
+    .query({ category: categoryId, keyword: MARKER });
+  assert.equal(byCategoryId.statusCode, 200);
+  assert.ok(byCategoryId.body.data.length > 0);
+  assert.ok(
+    byCategoryId.body.data.every(
+      (item) => String(item.category) === String(categoryId),
+    ),
+  );
+
+  const byCategorySlug = await agent
+    .get('/api/products')
+    .query({ category: categorySlug });
+  assert.equal(byCategorySlug.statusCode, 200);
+  assert.ok(byCategorySlug.body.data.some((item) => item.slug.startsWith(MARKER)));
+
+  const byPrice = await agent
+    .get('/api/products')
+    .query({ category: categoryId, minPrice: 305000, maxPrice: 315000 });
+  assert.deepEqual(
+    byPrice.body.data.map((item) => item.basePrice),
+    [310000],
+  );
+
+  const byKeyword = await agent
+    .get('/api/products')
+    .query({ category: categoryId, keyword: `${MARKER} Filter Split` });
+  assert.equal(byKeyword.body.data.length, 1);
+  assert.equal(byKeyword.body.data[0].basePrice, 310000);
+
+  const escapedKeyword = await agent
+    .get('/api/products')
+    .query({ keyword: `${MARKER} Filter Match M.*Do` });
+  assert.equal(escapedKeyword.body.data.length, 0);
+
+  const inStock = await agent
+    .get('/api/products')
+    .query({ category: categoryId, inStock: 'true' });
+  assert.ok(inStock.body.data.length > 0);
+  assert.ok(
+    inStock.body.data.every((item) =>
+      item.variants.some((variant) => variant.stock > 0),
+    ),
+  );
+
+  const invalid = await agent
+    .get('/api/products')
+    .query({ minPrice: 500000, maxPrice: 100000 });
+  assert.equal(invalid.statusCode, 400);
+  assert.equal(invalid.body.success, false);
+
+  await otherCategory.deleteOne();
 });
 
 test('DELETE /api/products/:id xoa mem thanh cong', async (t) => {
