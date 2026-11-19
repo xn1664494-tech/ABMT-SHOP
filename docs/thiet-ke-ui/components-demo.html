@@ -12,8 +12,6 @@
 </head>
 <body>
 
-<noscript>Trang web cần JavaScript bật. Vì đây là trang demo tĩnh CSS, các hiệu ứng :focus-visible và trạng thái disabled vẫn hoạt động ở trình duyệt.</noscript>
-
 <div class="container">
 
   <!-- ===== SECTION: BUTTON ===== -->
@@ -155,9 +153,60 @@
     </div>
   </section>
 
+  <!-- ===== SECTION: TOAST AND LOADING ===== -->
+  <section class="section" id="section-toast">
+    <h2 class="section-title">Toast và Loading</h2>
+    <div style="display:gap:16px;flex-wrap:wrap">
+      <!-- Toast thành công -->
+      <button class="btn btn-success" id="toast-success">Toast thành công</button>
+      <!-- Toast lỗi -->
+      <button class="btn btn-error" id="toast-error">Toast lỗi</button>
+      <!-- Toast thông tin -->
+      <button class="btn btn-info" id="toast-info">Toast thông tin</button>
+      <!-- Nút loading 1.5 giây -->
+      <button class="btn" id="btn-loading">Nút loading 1.5 giây</button>
+      <!-- Gọi thử API lỗi -->
+      <button class="btn" id="btn-api-error">Gọi API lỗi</button>
+    </div>
+    <p style="color:var(--muted); margin-top:12px; font-size:13px;">Bấm vào nút loading liên tục sẽ bị bỏ qua (chống bấm đúp).</p>
+  </section>
+
 </div>
 
-<p class="text-center text-muted">Trang minh họa component, dùng để kiểm tra giao diện và làm style guide; không phải trang của website.</p>
+<!-- Sample flash element (máy chủ render kèm data-flash) -->
+<div hidden data-flash data-type="success" data-message="Đã lưu thay đổi thành công"></div>
+
+<!-- Script nạp file JS -->
+<script src="../../src/public/js/api.js"></script>
+<script src="../../src/public/js/ui.js"></script>
+<script>
+  // Demo: gắn sự kiện cho các nút Toast
+  document.getElementById('toast-success').addEventListener('click', () => {
+    ABMT.toast.success('Thành công!');
+  });
+  document.getElementById('toast-error').addEventListener('click', () => {
+    ABMT.toast.error('Có lỗi xảy ra!');
+  });
+  document.getElementById('toast-info').addEventListener('click', () => {
+    ABMT.toast.info('Thông tin bổ ích');
+  });
+  // Nút loading 1.5 giây (dùng ABMT.loading.wrap)
+  document.getElementById('btn-loading').addEventListener('click', async () => {
+    const result = await ABMT.loading.wrap(this, async () => {
+      // Giả lập tác vụ 1.5 giây
+      return new Promise(resolve => setTimeout(() => resolve('Hoàn thành'), 1500));
+    });
+    ABMT.toast.success(result);
+  });
+  // Gọi thử API lỗi
+  document.getElementById('btn-api-error').addEventListener('click', () => {
+    try {
+      const result = await ABMT.api.get('/api/khong-ton-tai');
+    } catch (e) {
+      ABMT.toast.fromError(e);
+    }
+  });
+</script>
 
 </body>
 </html>

@@ -583,3 +583,84 @@ body.no-scroll { overflow: hidden; }
 @media (min-width: 768px) {
   #section-bestseller .carousel-arrow { display: block; }
 }
+
+/* ===== COMPONENTS: TOAST ===== */
+#toast-region {
+  position: fixed;
+  z-index: 100;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+@media (max-width: 767px) {
+  #toast-region {
+    position: fixed;
+    left: 16px;
+    right: 16px;
+    bottom: 16px;
+    width: auto;
+  }
+}
+@media (min-width: 768px) {
+  #toast-region {
+    position: fixed;
+    top: 16px;
+    right: 16px;
+    bottom: auto;
+    left: auto;
+    width: 360px;
+  }
+}
+.toast {
+  pointer-events: auto;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  background: var(--surface);
+  border: 1px var(--line) solid;
+  border-radius: var(--r-md);
+  box-shadow: 0 8px 24px rgba(42,47,54,.12);
+  color: var(--ink-strong);
+  font-size: 13px;
+  line-height: 1.45;
+  transition: opacity .2s, transform .2s;
+}
+.toast.toast-success {
+  border-left: 4px solid var(--accent-deep);
+  background: var(--mint);
+}
+.toast.toast-error {
+  border-left: 4px solid var(--danger);
+  background: var(--peach);
+  color: var(--danger);
+}
+.toast.toast-info {
+  border-left: 4px solid var(--accent);
+  background: var(--sky);
+}
+.toast.toast .toast-text { flex: 1; line-height: 1.45; }
+.toast .toast-text { line-height: 1.45; }
+.toast-close {
+  width: 24px;
+  height: 24px;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background .2s;
+}
+.toast-close:hover { background: var(--line); }
+.toast-close:focus-visible { outline: 2px var(--accent-deep); outline-offset: 0; }
+.toast-close:focus-visible { outline: 2px var(--accent-deep); }
+.prefer-reduced-motion .toast,
+.prefer-reduced-motion .toast-close { transition: none; }
+
+/* Flash from [data-flash] is handled by JS; CSS just ensures the element can be styled */
+
+/* Ensure .btn.is-loading with [aria-busy="true"] works */
+.is-loading[aria-busy="true"] { opacity: 0.8; pointer-events: none; }
