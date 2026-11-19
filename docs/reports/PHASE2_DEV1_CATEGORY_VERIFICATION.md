@@ -6,6 +6,8 @@
 - **Ngày:** 2026-11-19
 - **Cách chạy:** script verify tạm (không commit) gọi HTTP thật qua `supertest` + truy vấn Mongoose thật; seed chạy bằng `SEED_CONFIRM=1 MONGODB_URI=<test>`.
 
+> **CẬP NHẬT 2026-11-19:** phát hiện CSRF ở §2 đã được đóng qua PR #37 (`2131f56`); route ghi Category hiện trả 403 khi thiếu/sai CSRF. Báo cáo này giữ nguyên làm bằng chứng thời điểm phát hiện. Chi tiết fix + verification: `PHASE2_DEV1_P0_FIX_REPORT.md`.
+
 ---
 
 ## 1. Kết quả 16 điểm kiểm tra
