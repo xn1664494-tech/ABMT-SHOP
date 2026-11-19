@@ -1,0 +1,448 @@
+{
+  "info": {
+    "name": "T3-2-3 Query Helper",
+    "description": "Kiem thu query helper loai ban ghi isDeleted mac dinh: tao cay danh muc va san pham, xoa mem, xac nhan endpoint cong khai khong lo du lieu da xoa; admin van xem duoc Product da xoa bang includeDeleted.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_postman_id": "t3-2-3-query-helper"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3099", "type": "string" },
+    { "key": "adminToken", "value": "", "type": "string" },
+    { "key": "csrfToken", "value": "", "type": "string" },
+    { "key": "runId", "value": "", "type": "string" },
+    { "key": "qhRootCategoryId", "value": "", "type": "string" },
+    { "key": "qhChildCategoryId", "value": "", "type": "string" },
+    { "key": "qhProductId", "value": "", "type": "string" }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "if (!['GET', 'HEAD', 'OPTIONS'].includes(pm.request.method)) {",
+          "  var token = pm.collectionVariables.get('csrfToken');",
+          "  if (token && !pm.request.headers.get('X-CSRF-Token')) {",
+          "    pm.request.headers.add({ key: 'X-CSRF-Token', value: token });",
+          "  }",
+          "}"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "QueryHelper - Lay CSRF token",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/auth/csrf"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status la 200', function () { pm.response.to.have.status(200); });",
+              "pm.test('Luu csrf token va runId', function () {",
+              "  pm.collectionVariables.set('csrfToken', pm.response.json().data.csrfToken);",
+              "  pm.collectionVariables.set('runId', String(Date.now()));",
+              "  pm.expect(pm.collectionVariables.get('csrfToken')).to.not.be.empty;",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "QueryHelper - Tao danh muc cha (admin)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+        ],
+        "body": { "mode": "raw", "raw": "{\"name\": \"QH Root {{runId}}\"}" },
+        "url": "{{baseUrl}}/api/categories"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status la 201', function () { pm.response.to.have.status(201); });",
+              "pm.test('Luu danh muc cha', function () {",
+              "  pm.collectionVariables.set('qhRootCategoryId', pm.response.json().data.id);",
+              "  pm.expect(pm.collectionVariables.get('qhRootCategoryId')).to.not.be.empty;",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "QueryHelper - Tao danh muc con (admin)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"name\": \"QH Child {{runId}}\", \"parentId\": \"{{qhRootCategoryId}}\"}"
+        },
+        "url": "{{baseUrl}}/api/categories"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status la 201', function () { pm.response.to.have.status(201); });",
+              "pm.test('Luu danh muc con', function () {",
+              "  pm.collectionVariables.set('qhChildCategoryId', pm.response.json().data.id);",
+              "  pm.expect(pm.collectionVariables.get('qhChildCategoryId')).to.not.be.empty;",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "QueryHelper - Tao san pham (admin)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"name\": \"QH Product {{runId}}\", \"category\": \"{{qhChildCategoryId}}\", \"basePrice\": 150000, \"variants\": [{\"size\": \"M\", \"color\": \"Den\", \"sku\": \"SP-PK-950-M-DEN\", \"stock\": 5}]}"
+        },
+        "url": "{{baseUrl}}/api/products"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status la 201', function () { pm.response.to.have.status(201); });",
+              "pm.test('Luu san pham', function () {",
+              "  pm.collectionVariables.set('qhProductId', pm.response.json().data.id);",
+              "  pm.expect(pm.collectionVariables.get('qhProductId')).to.not.be.empty;",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "QueryHelper - Xac nhan danh muc truoc khi xoa",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/categories"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status la 200', function () { pm.response.to.have.status(200); });",
+              "pm.test('Danh sach co cha va con', function () {",
+              "  var ids = pm.response.json().data.map(function (item) { return item._id || item.id; });",
+              "  pm.expect(ids).to.include(pm.collectionVariables.get('qhRootCategoryId'));",
+              "  pm.expect(ids).to.include(pm.collectionVariables.get('qhChildCategoryId'));",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "QueryHelper - Xac nhan san pham truoc khi xoa",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/products"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status la 200', function () { pm.response.to.have.status(200); });",
+              "pm.test('Danh sach co san pham', function () {",
+              "  var ids = pm.response.json().data.map(function (item) { return item._id || item.id; });",
+              "  pm.expect(ids).to.include(pm.collectionVariables.get('qhProductId'));",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "QueryHelper - Xoa mem san pham (admin)",
+      "request": {
+        "method": "DELETE",
+        "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+        "url": "{{baseUrl}}/api/products/{{qhProductId}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status la 200', function () { pm.response.to.have.status(200); });",
+              "pm.test('San pham da bi xoa mem', function () { pm.expect(pm.response.json().success).to.equal(true); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "QueryHelper - San pham khong lo trong danh sach (cong khai)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/products"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status la 200', function () { pm.response.to.have.status(200); });",
+              "pm.test('Khong lo san pham da xoa', function () {",
+              "  var ids = pm.response.json().data.map(function (item) { return item._id || item.id; });",
+              "  pm.expect(ids).to.not.include(pm.collectionVariables.get('qhProductId'));",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "QueryHelper - San pham khong lo trong chi tiet (cong khai)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/products/{{qhProductId}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status la 404', function () { pm.response.to.have.status(404); });",
+              "pm.test('Khong thanh cong', function () { pm.expect(pm.response.json().success).to.equal(false); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "QueryHelper - Admin van thay san pham da xoa (includeDeleted)",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+        "url": "{{baseUrl}}/api/products/{{qhProductId}}?includeDeleted=true"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status la 200', function () { pm.response.to.have.status(200); });",
+              "pm.test('Tra dung san pham da xoa', function () {",
+              "  pm.expect(pm.response.json().data.id).to.equal(pm.collectionVariables.get('qhProductId'));",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "QueryHelper - Xoa mem danh muc con (admin)",
+      "request": {
+        "method": "DELETE",
+        "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+        "url": "{{baseUrl}}/api/categories/{{qhChildCategoryId}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status la 200', function () { pm.response.to.have.status(200); });",
+              "pm.test('Danh muc con da bi xoa mem', function () { pm.expect(pm.response.json().success).to.equal(true); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "QueryHelper - Danh muc con khong lo trong list (cong khai)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/categories"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status la 200', function () { pm.response.to.have.status(200); });",
+              "pm.test('Khong lo danh muc con da xoa', function () {",
+              "  var ids = pm.response.json().data.map(function (item) { return item._id || item.id; });",
+              "  pm.expect(ids).to.not.include(pm.collectionVariables.get('qhChildCategoryId'));",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "QueryHelper - Danh muc con khong lo trong tree (cong khai)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/categories/tree"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status la 200', function () { pm.response.to.have.status(200); });",
+              "pm.test('Cay khong chua danh muc con da xoa', function () {",
+              "  pm.expect(JSON.stringify(pm.response.json().data)).to.not.include(pm.collectionVariables.get('qhChildCategoryId'));",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "QueryHelper - Danh muc con khong lo trong chi tiet (cong khai)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/categories/{{qhChildCategoryId}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status la 404', function () { pm.response.to.have.status(404); });",
+              "pm.test('Khong thanh cong', function () { pm.expect(pm.response.json().success).to.equal(false); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "QueryHelper - Xoa mem danh muc cha (admin)",
+      "request": {
+        "method": "DELETE",
+        "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+        "url": "{{baseUrl}}/api/categories/{{qhRootCategoryId}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status la 200', function () { pm.response.to.have.status(200); });",
+              "pm.test('Danh muc cha da bi xoa mem', function () { pm.expect(pm.response.json().success).to.equal(true); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "QueryHelper - Danh muc cha khong lo trong list (cong khai)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/categories"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status la 200', function () { pm.response.to.have.status(200); });",
+              "pm.test('Khong lo danh muc cha da xoa', function () {",
+              "  var ids = pm.response.json().data.map(function (item) { return item._id || item.id; });",
+              "  pm.expect(ids).to.not.include(pm.collectionVariables.get('qhRootCategoryId'));",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "QueryHelper - Danh muc cha khong lo trong tree (cong khai)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/categories/tree"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status la 200', function () { pm.response.to.have.status(200); });",
+              "pm.test('Cay khong chua danh muc cha da xoa', function () {",
+              "  pm.expect(JSON.stringify(pm.response.json().data)).to.not.include(pm.collectionVariables.get('qhRootCategoryId'));",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "QueryHelper - Danh muc cha khong lo trong chi tiet (cong khai)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/categories/{{qhRootCategoryId}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status la 404', function () { pm.response.to.have.status(404); });",
+              "pm.test('Khong thanh cong', function () { pm.expect(pm.response.json().success).to.equal(false); });"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
