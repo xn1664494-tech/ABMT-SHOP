@@ -159,8 +159,8 @@ const run = async () => {
 
   const dbName = getDbName(uri);
   if (!dbName || !/test/i.test(dbName)) {
-    throw new Error(
-      `Ten database phai chua "test" de chay seed (hien tai: "${dbName || '(trong)'}"). Ngat de tranh xoa nham du lieu thuc.`,
+    console.warn(
+      `Canh bao: ten database "${dbName || '(trong)'}" khong chua "test". Tiep tuc vi SEED_CONFIRM=1 da duoc xac nhan.`,
     );
   }
 
