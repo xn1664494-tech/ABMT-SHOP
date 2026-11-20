@@ -164,15 +164,44 @@ closeBtn.appendChild(closeText);
     return dismissToast;
   }
 
+  /** Show toast function (also exposed as ABMT.toast) */
+  const showToastFunc = function (message, options = {}) {
+    showToast(message, options);
+  };
+
   /** Shortcuts */
-  const toast = {
-    show,
-    success(message, duration) { showToast(message, { type: 'success', duration }); },
-    error(message, duration) { showToast(message, { type: 'error', duration }); },
-    info(message, duration) { showToast(message, { type: 'info', duration }); },
-    fromError(error) {
-      const msg = error && error.message ? error.message : 'Đã có lỗi xảy ra, vui lòng thử lại.';
-      return showToast(msg, { type: 'error' });
+  const toast = function (message, type) {
+    // Support ABMT.toast(msg, type) and ABMT.toast(msg)
+    if (typeof type !== 'undefined') {
+      showToastFunc(message, { type, duration: type.duration });
+    } else {
+      showToastFunc(message);
+    }
+  };
+  toast.success = function (message, duration) { showToastFunc(message, { type: 'success', duration }); };
+  toast.error = function (message, duration) { showToastFunc(message, { type: 'error', duration }); };
+  toast.info = function (message, duration) { showToastFunc(message, { type: 'info', duration }); };
+  toast.fromError = function (error) {
+    const msg = error && error.message ? error.message : 'Đã có lỗi xảy ra, vui lòng thử lại.';
+    showToastFunc(msg, { type: 'error' });
+  };
+
+  /** Set loading state on button + prevent double-click */
+  const setButtonLoading = function (button, isLoading) {
+    loading.set(button, isLoading);
+  };
+
+  /** Wrap a button for async action, prevent double-click with locking */
+  const withButtonLock = function (button, asyncFn) {
+    // Set loading state immediately to prevent double-click
+    setButtonLoading(button, true);
+    try {
+      return asyncFn();
+    } catch (error) {
+      throw error;
+    } finally {
+      // Always restore state after completion
+      setButtonLoading(button, false);
     }
   };
 
@@ -202,7 +231,7 @@ closeBtn.appendChild(closeText);
     },
 
     // Wrap a button for async action, prevent double-click
-    wrap(button, asyncFn) {
+    async wrap(button, asyncFn) {
       // If already loading, skip
       if (button.loadingStatus) {
         return undefined;
@@ -248,6 +277,9 @@ closeBtn.appendChild(closeText);
     window.ABMT = {};
   }
   window.ABMT.toast = toast;
+  window.ABMT.toast.show = showToastFunc;
+  window.ABMT.setButtonLoading = setButtonLoading;
+  window.ABMT.withButtonLock = withButtonLock;
   window.ABMT.loading = loading;
 
 })();
