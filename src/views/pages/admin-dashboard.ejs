@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title %></title>
+  <link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+  <%- include('../partials/header') %>
+  <div class="container">
+    <!-- Sidebar Mobile -->
+    <div class="sb-overlay" id="sb-overlay"></div>
+    <aside class="admin-sidebar" id="admin-sidebar" style="width: 260px; left: -260px;">
+      <div class="sb-header">
+        <h3 style="margin: 0; font-size: 18px; font-weight: 600; color: var(--ink-strong);">ABMT SHOP</h3>
+        <button type="button" class="btn-close" id="sb-close" aria-label="Đóng sidebar">×</button>
+      </div>
+      <nav class="sb-nav" style="padding: 20px 0;">
+        <ul style="list-style: none; padding: 0;">
+          <li><a href="/admin" style="display: block; padding: 10px 16px; color: var(--ink); font-size: 14px; text-decoration: none; border-radius: var(--r-md); margin-bottom: 4px;">Trang chủ</a></li>
+          <li><a href="/admin/products" style="display: block; padding: 10px 16px; color: var(--ink); font-size: 14px; text-decoration: none; border-radius: var(--r-md); margin-bottom: 4px;">Sản phẩm</a></li>
+          <li><a href="/admin/orders" style="display: block; padding: 10px 16px; color: var(--ink); font-size: 14px; text-decoration: none; border-radius: var(--r-md); margin-bottom: 4px;">Đơn hàng</a></li>
+        </ul>
+      </nav>
+    </aside>
+    <div class="sb-toggle" id="sb-toggle" style="display: none; padding: 8px 12px; cursor: pointer; color: var(--ink);">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </div>
+
+    <main id="admin-main" style="margin-left: 0; transition: margin-left .3s;">
+      <% if (locals && locals.stats) { %>
+      <!-- Stats Cards -->
+      <div class="stats-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 32px;">
+        <div class="stat-card" style="background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); padding: 24px; text-align: center;">
+          <div style="font-size: 32px; font-weight: 700; color: var(--accent);"><%= locals.stats.totalProducts %></div>
+          <div style="font-size: 12px; color: var(--muted); margin-top: 4px;">Sản phẩm</div>
+        </div>
+        <div class="stat-card" style="background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); padding: 24px; text-align: center;">
+          <div style="font-size: 32px; font-weight: 700; color: var(--accent);"><%= locals.stats.totalOrders %></div>
+          <div style="font-size: 12px; color: var(--muted); margin-top: 4px;">Đơn hàng</div>
+        </div>
+        <div class="stat-card" style="background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); padding: 24px; text-align: center;">
+          <div style="font-size: 32px; font-weight: 700; color: var(--accent);"><%= locals.stats.totalRevenue %></div>
+          <div style="font-size: 12px; color: var(--muted); margin-top: 4px;">Doanh thu</div>
+        </div>
+        <div class="stat-card" style="background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); padding: 24px; text-align: center;">
+          <div style="font-size: 32px; font-weight: 700; color: var(--accent);"><%= locals.stats.activeUsers %></div>
+          <div style="font-size: 12px; color: var(--muted); margin-top: 4px;">Khách hoạt động</div>
+        </div>
+      </div>
+      <% } %>
+
+      <!-- Chart Section -->
+      <div class="chart-section" style="background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); padding: 24px; margin-bottom: 32px;">
+        <div class="section-head" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+          <h2 class="section-title">Thống kê</h2>
+          <small style="color: var(--muted);">30 ngày qua</small>
+        </div>
+        <div class="chart-wrapper" style="height: 300px; position: relative;">
+          <!-- Doanh thu chart -->
+          <canvas id="chart-doanh-thu" width="100%" height="200" style="display: block;"></canvas>
+          <canvas id="chart-doanh-thu-legacy" width="100%" height="200" style="display: none;"></canvas>
+          <!-- Cấu trúc chart -->
+          <canvas id="chart-cou-structure" width="100%" height="150" style="display: block;"></canvas>
+        </div>
+      </div>
+
+      <!-- Recent Orders -->
+      <% if (locals && locals.recentOrders && locals.recentOrders.length > 0) { %>
+      <div class="section" style="background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); padding: 24px; margin-bottom: 32px;">
+        <div class="section-head" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+          <h2 class="section-title">Đơn hàng gần đây</h2>
+          <a href="/admin/orders" style="font-size: 12px; color: var(--accent); text-decoration: none;">Xem tất cả</a>
+        </div>
+        <div style="max-height: 400px; overflow-y: auto;">
+          <% locals.recentOrders.forEach(function(order) { %>
+          <div style="padding: 12px 0; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <div style="font-size: 13px; color: var(--ink-strong);"><%= order.code %> - <%= order.customerName %></div>
+              <div style="font-size: 12px; color: var(--muted);"><%= order.createdAt || '' %></div>
+            </div>
+            <div style="font-size: 13px; color: var(--acct);"><%= order.total || '0' %>₫</div>
+          </div>
+          <% }) %>
+        </div>
+      </div>
+      <% } %>
+
+      <!-- Products Low Stock -->
+      <% if (locals && locals.lowStockProducts && locals.lowStockProducts.length > 0) { %>
+      <div class="section" style="background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); padding: 24px; margin-bottom: 32px;">
+        <div class="section-head" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+          <h2 class="section-title">Sản phẩm sắp hết hàng</h2>
+          <span style="font-size: 12px; color: var(--danger);"><%= locals.lowStockProducts.length %> sản phẩm</span>
+        </div>
+        <div style="max-height: 300px; overflow-y: auto;">
+          <% locals.lowStockProducts.forEach(function(prod) { %>
+          <div style="padding: 8px 0; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-size: 13px; color: var(--ink-strong);"><%= prod.name %></span>
+            <span style="font-size: 12px; color: var(--danger);"><%= prod.stock || 0 %> còn</span>
+          </div>
+          <% }) %>
+        </div>
+      </div>
+      <%} %>
+    </main>
+  </div>
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+  <script>
+    // Init sidebar mobile
+    (function() {
+      var sb = document.getElementById('admin-sidebar');
+      var togg = document.getElementById('sb-toggle');
+      var main = document.getElementById('admin-main');
+      var overlay = document.getElementById('sb-overlay');
+      var closeBtn = document.getElementById('sb-close');
+      var body = document.body;
+      var mq = window.matchMedia('(min-width: 768px)');
+
+      function openSb() {
+        if (mq.matches) return;
+        sb.style.left = '0';
+        overlay.classList.add('is-open');
+        body.classList.add('no-scroll');
+        togg.setAttribute('aria-expanded', 'true');
+      }
+
+      function closeSb() {
+        if (mq.matches) return;
+        sb.style.left = '-260px';
+        overlay.classList.remove('is-open');
+        body.classList.remove('no-scroll');
+        togg.setAttribute('aria-expanded', 'false');
+      }
+
+      if (togg) togg.addEventListener('click', openSb);
+      if (closeBtn) closeBtn.addEventListener('click', closeSb);
+      if (overlay) overlay.addEventListener('click', closeSb);
+      document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' || e.key === 'Esc') { if (!mq.matches) closeSb(); }
+      });
+      if (mq.addEventListener) mq.addEventListener('change', function() { if (mq.matches && sb.style.left !== '-260px') closeSb(); });
+    })();
+
+    // Init Charts
+    (function() {
+      var chartDataEl = document.getElementById('admin-chart-data');
+      var ctx1 = document.getElementById('chart-doanh-thu').getContext('2d');
+      var ctx2 = document.getElementById('chart-cou-structure').getContext('2d');
+
+      if (!chartDataEl) { document.getElementById('chart-section').innerHTML = '<p style="color: var(--muted);">Không có dữ liệu biểu đồ</p>'; return; }
+
+      var chartData;
+      try { chartData = JSON.parse(chartDataEl.textContent); }
+      catch(e) { document.getElementById('chart-section').innerHTML = '<p style="color: var(--muted);">Dữ liệu biểu đồ lỗi</p>'; return; }
+
+      // Chart doanh thu ( đường )
+      var chart1 = new Chart(ctx1, {
+        type: 'line',
+        data: chartData.revenue || { labels: [], datasets: [] },
+        options: {
+          animation: { duration: 0 },
+          scales: { y: { beginAtZero: true, ticks: { color: var(--muted) } } },
+          plugins: { legend: { labels: { color: var(--ink) } } }
+        }
+      });
+
+      // Chart cấu trúc ( doughnut )
+      var chart2 = new Chart(ctx2, {
+        type: 'doughnut',
+        data: chartData.structure || { labels: [], datasets: [{ data: [], backgroundColor: [] }] },
+        options: {
+          animation: { duration: 0 },
+          plugins: { legend: { labels: { color: var(--ink), font: { size: 12 } } } }
+        }
+      });
+    })();
+  </script>
+</body>
+</html>

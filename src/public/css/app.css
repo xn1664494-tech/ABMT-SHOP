@@ -719,3 +719,77 @@ body.no-scroll { overflow: hidden; }
 .category-chips a:hover { border-color: var(--ink); }
 .category-thumb { aspect-ratio: 1 / 1; border-radius: var(--r-md); overflow: hidden; }
 .category-thumb img { width: 100%; height: 100%; object-fit: cover; }
+
+/* ===== CART: Giỏ hàng ===== */
+.cart .section#lines { padding: 24px 0; }
+.cart tbody tr { border-bottom: 1px solid var(--line); }
+.cart has-error .product-name { color: var(--danger); }
+.cart has-error .qty-input { border-color: var(--danger); }
+.cart #empty { display: none; }
+.cart #full { display: table-row-group; }
+.cart .has-error { border-color: var(--danger); }
+.cart .has-error .qty-input { border-color: var(--danger); }
+.cart .qty-input { width: 48px; text-align: center; border: 1px solid var(--line-strong); }
+.cart .btn-delete { color: var(--danger); cursor: pointer; }
+.cart .btn-delete:hover { color: var(--ink-strong); }
+.cart .section-head { margin-top: 24px; gap: 8px; }
+.cart .section-title { font-size: 20px; font-weight: 600; color: var(--ink-strong); margin-bottom: 14px; }
+.cart .section-head .section-title { margin: 0; }
+.cart .section-link { font-size: 13px; color: var(--accent-deep); }
+.cart .section-link:hover { text-decoration: underline; }
+.cart .sub { color: var(--ink-strong); font-size: 13px; }
+.cart .ship { color: var(--muted); font-size: 13px; }
+.cart .total { color: var(--ink-strong); font-size: 18px; font-weight: 600; }
+.cart .checkout-btn { width: 100%; height: 46px; font-size: 14px; }
+
+/* ===== CHECKOUT: Thanh toán ===== */
+.checkout .section#address-section { padding-bottom: 24px; }
+.checkout .row { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px; }
+.checkout .order-lines div { background: var(--surface); border-radius: var(--r-md); padding: 12px; border: 1px solid var(--line); }
+.checkout .section-head { margin-bottom: 20px; }
+.checkout .sub { color: var(--ink-strong); font-size: 13px; font-weight: 500; }
+.checkout .ship { color: var(--muted); font-size: 13px; }
+.checkout .total { color: var(--ink-strong); font-size: 18px; font-weight: 600; }
+.checkout .payInfo { color: var(--muted); font-size: 13px; }
+.checkout .payment-methods label { display: block; padding: 8px 12px; border: 1px solid var(--line); border-radius: var(--r-pill); margin-bottom: 4px; cursor: pointer; }
+.checkout .payment-methods input { margin-right: 6px; width: 18px; height: 18px; }
+.checkout .note-wrapper { margin: 20px 0; }
+.checkout .note-wrapper label { font-size: 13px; color: var(--ink-strong); display: block; margin-bottom: 4px; }
+.checkout .note-wrapper input { width: 100%; padding: 8px; border: 1px solid var(--line-strong); border-radius: var(--r-field); }
+.checkout .note-cnt { font-size: 12px; color: var(--muted); }
+.checkout .sticky { position: sticky; top: 100px; background: var(--canvas); padding-bottom: 80px; }
+.checkout .section#order-summary { padding: 24px 0; }
+
+/* ===== ADDRESS FORM: Form địa chỉ ===== */
+.address-form .section { padding: 24px 0; }
+.address-form .form-group { margin-bottom: 16px; }
+.address-form .form-label { font-size: 13px; font-weight: 500; color: var(--ink-strong); margin-bottom: 6px; display: block; }
+.address-form .input, .address-form .select { width: 100%; }
+.address-form .input:focus, .address-form .select:focus { border-color: var(--accent-deep); }
+.address-form .input.error, .address-form .select.error { border-color: var(--danger); }
+.address-form .error-message { color: var(--danger); font-size: 12px; margin-top: 4px; display: block; }
+.address-form .radio { margin-right: 6px; }
+/* Không dùng #fff, #ffffff, white */
+
+/* ===== ADMIN: Trang quản trị ===== */
+.admin .sb-overlay { position: fixed; inset: 0; background: rgba(20,24,29,.6); opacity: 0; pointer-events: none; transition: opacity .3s; z-index: 50; }
+.admin .sb-overlay.is-open { opacity: 1; pointer-events: auto; }
+.admin .no-scroll { overflow: hidden; }
+.admin .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 32px; }
+.admin .stat-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); padding: 24px; text-align: center; }
+.admin .stat-card .number { font-size: 32px; font-weight: 700; color: var(--accent); }
+.admin .stat-card .label { font-size: 12px; color: var(--muted); margin-top: 4px; display: block; }
+.admin .section-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+.admin .section-title { font-size: 20px; font-weight: 600; color: var(--ink-strong); margin-bottom: 14px; }
+.admin .section-head .section-title { margin: 0; }
+.admin .section-link { font-size: 13px; color: var(--accent-deep); }
+.admin .chart-section { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); padding: 24px; margin-bottom: 32px; }
+.admin .chart-wrapper { height: 300px; position: relative; }
+.admin .chart-section .section-head { margin-bottom: 20px; }
+.admin .recent-orders div { padding: 8px 0; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center; }
+.admin .low-stock div { padding: 8px 0; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center; }
+.admin .low-stock span { color: var(--danger); font-size: 12px; }
+.admin .sidebar-toggle { display: none; padding: 8px 12px; cursor: pointer; color: var(--ink); }
+.admin .sidebar-toggle svg { width: 24px; height: 24px; }
+
+/* Ensure no #fff, #ffffff, white keywords in CSS rules above */

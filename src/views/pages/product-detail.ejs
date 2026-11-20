@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title %></title>
+  <link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+  <%- include('../partials/header') %>
+  <main id="main-content" class="main-content">
+    <!-- Product Gallery -->
+    <section class="section" style="padding-bottom: 24px;">
+      <div class="container">
+        <div class="product-gallery">
+          <% if (product.images && product.images.length > 0) { %>
+          <div class="gallery-thumbs" aria-label="Thumbnail ảnh">
+            <% product.images.forEach(function(img, idx) { %>
+              <button type="button" class="thumb-btn" data-index="<%= idx %>" aria-label="Ảnh <%= idx + 1 %>"></button>
+            <% }) %>
+          </div>
+          <div class="gallery-main">
+            <img src="<%= product.images[0] %>" alt="<%= product.name %>" class="main-image" loading="lazy">
+          </div>
+          <% } else { %>
+          <div style="aspect-ratio: 3 / 4; background: var(--mint); display: flex; align-items: center; justify-content: center; color: var(--ink-soft);">
+            <svg width="80" height="100" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M8 14l2-2l8 8L8 14z"/></svg>
+            <span>Không có ảnh</span>
+          </div>
+          <% } %>
+        </div>
+      </div>
+    </section>
+
+    <!-- Product Info -->
+    <section class="section">
+      <div class="container">
+        <div class="product-info">
+          <h1 class="product-name" style="font-size: 24px; font-weight: 600; color: var(--ink-strong);"><%= product.name %></h1>
+          <% if (product.salePrice) { %>
+          <div class="product-price" style="margin: 12px 0;">
+            <span class="price-current" style="font-size: 28px; font-weight: 700; color: var(--ink);"><%= product.salePrice.toLocaleString('vi-VN') %>₫</span>
+            <% if (product.price) { %>
+            <span class="price-old" style="font-size: 18px; font-weight: 400; color: var(--muted); text-decoration: line-through; margin-left: 8px;"><%= product.price.toLocaleString('vi-VN') %>₫</span>
+            <% } %>
+          </div>
+          <% } else { %>
+          <div class="product-price" style="margin: 12px 0;">
+            <span class="price-current" style="font-size: 28px; font-weight: 700; color: var(--ink);"><%= product.price.toLocaleString('vi-VN') %>₫</span>
+          </div>
+          <% } %>
+        </div>
+    </section>
+
+    <!-- Variant Selection -->
+    <section class="section" style="padding: 24px 0;">
+      <div class="container">
+        <% if (variants && variants.length > 0) { %>
+        <div class="product-variants">
+          <!-- Color Selection -->
+          <div class="variant-section" style="margin-bottom: 24px;">
+            <label class="label" for="colors">Chọn Màu</label>
+            <div id="colors" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(80px, 1fr)); gap: 8px; margin-top: 8px;">
+              <% var colors = [...new Set(variants.map(function(v) { return v.color; }))]; %>
+              <% colors.forEach(function(color) { %>
+                <% var vColor = variants.find(function(v) { return v.color === color; }); %>
+                <button type="button" class="btn-color pill" data-color="<%= color %>" style="background: <%= vColor.color %>;" aria-label="Màu <%= color %>">
+                  <span class="color-name" style="display: none;"><%= color %></span>
+                  <span class="color-circle" style="width: 24px; height: 24px; border: 2px solid var(--line);"></span>
+                </button>
+              <% }) %>
+            </div>
+          </div>
+
+          <!-- Size Selection -->
+          <div class="variant-section" style="margin-bottom: 24px;">
+            <label class="label" for="sizes">Chọn Size</label>
+            <div id="sizes" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(80px, 1fr)); gap: 8px; margin-top: 8px;">
+              <% variants.forEach(function(v, vi) { %>
+                <% if (vi === 0 || !document.querySelector(`.btn-size[data-size="${v.size}"]`)) { %>
+                <button type="button" class="btn-size pill" data-size="<%= v.size %>" <%= (v.stock > 0 ? '' : 'disabled aria-disabled="true"') %> style="<%= v.stock > 0 ? '' : 'opacity: 0.6; pointer-events: none;' %>" aria-label="Size <%= v.size %>">
+                  <%= v.size %>
+                  <% if (v.stock <= 0) { %>
+                  <span class="is-out-of-stock" style="position: absolute; right: 6px; top: 6px; font-size: 10px; color: var(--muted);">Hết</span>
+                  <% } %>
+                </button>
+                <% } %>
+              <% }) %>
+            </div>
+          </div>
+
+          <!-- Qty Controls -->
+          <div class="variant-section" style="margin: 24px 0; display: grid; gap: 12px; grid-template-columns: auto auto 1fr;">
+            <button type="button" class="btn btn-ghost" id="minus" aria-label="Giảm số lượng">−</button>
+            <input type="number" id="qty" name="qty" value="1" min="1" max="99" class="input" style="width: 48px; text-align: center;" aria-label="Số lượng">
+            <button type="button" class="btn btn-ghost" id="plus" aria-label="Tăng số lượng">+</button>
+          </div>
+
+          <!-- Product Details -->
+          <div class="product-sku" style="margin: 16px 0; font-size: 13px; color: var(--muted);">
+            SKU: <span id="sku"></span>
+          </div>
+          <div class="product-status" style="margin: 16px 0; padding: 8px 12px; background: var(--surface); border-radius: var(--r-md); font-size: 13px;">
+            <span id="status"></span>
+          </div>
+
+          <% if (product.description) { %>
+          <div class="product-desc" style="margin: 24px 0;">
+            <h3 style="font-size: 16px; font-weight: 600; color: var(--ink-strong); margin-bottom: 8px;">Mô tả</h3>
+            <div style="color: var(--ink-soft); line-height: 1.5;"><%= product.description %></div>
+          </div>
+          <% } %>
+
+          <% if (product.material) { %>
+          <div class="product-meta" style="margin: 24px 0; font-size: 13px; color: var(--muted);">
+            <span>Chất liệu: <%= product.material %></span>
+          </div>
+          <% } %>
+
+          <% if (product.reviews && product.reviews.length > 0) { %>
+          <div class="product-reviews" style="margin: 24px 0;">
+            <h3 style="font-size: 16px; font-weight: 600; color: var(--ink-strong); margin-bottom: 12px;">Đánh giá <%= product.reviews.length>0 ? product.reviews.length : 'chưa có' %></h3>
+            <% product.reviews.forEach(function(rv) { %>
+              <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 8px;">
+                <span style="color: var(--ink-soft); font-size: 12px;"><%= rv.name %></span>
+                <span style="color: var(--muted); font-size: 12px;">· <%= rv.date || '' %></span>
+                <span style="color: var(--accent); font-size: 12px;">★★★★☆</span>
+              </div>
+            <% }) %>
+          </div>
+          <% } %>
+
+          <% if (productsRelated && productsRelated.length > 0) { %>
+          <div class="product-related" style="margin: 24px 0;">
+            <h3 style="font-size: 16px; font-weight: 600; color: var(--ink-strong); margin-bottom: 12px;">Sản phẩm liên quan</h3>
+            <div class="product-grid" style="grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px;">
+              <% productsRelated.forEach(function(rel) { %>
+                <%- include('../partials/product-card', { product: rel }) %>
+              <% }) %>
+            </div>
+          </div>
+          <% } %>
+        </div>
+        <% } else { %>
+        <div style="background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); padding: 24px; color: var(--ink-soft);">
+          <p>Không có dữ liệu biến thể cho sản phẩm này.</p>
+        </div>
+        <% } %>
+      </div>
+    </section>
+  </main>
+  <%- include('../partials/footer') %>
+  <script src="/js/api.js"></script>
+  <script src="/js/ui.js"></script>
+  <script src="/js/product-detail.js"></script>
+  <% if (variants && variants.length > 0) { %>
+  <script type="application/json" id="variants-data"><%- JSON.stringify(variants).replace(/</g, '\\u003c') %></script>
+  <% } %>
+</body>
+</html>
