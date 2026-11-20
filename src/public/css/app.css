@@ -1,5 +1,4 @@
-﻿/* tạm thời, sẽ chuyển sang thẻ link trong layout ở task Lighthouse */
-@import url("https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap");
+﻿
 
 /* tokens */
 :root {
@@ -756,7 +755,69 @@ body.no-scroll { overflow: hidden; }
 .category-thumb { aspect-ratio: 1 / 1; border-radius: var(--r-md); overflow: hidden; }
 .category-thumb img { width: 100%; height: 100%; object-fit: cover; }
 
+
+/* ===== FOCUS VISIBLE: Trạng thái focus rõ ràng ===== */
+a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+/* ===== MINIMUM BLOCK SIZE: Kích thước bấm tối thiểu 44x44px ===== */
+@media (max-width: 767.98px) {
+  .btn, .input, .select, .textarea, .product-thumb, .product-name, .category-link {
+    min-height: 44px;
+  }
+}
+
+/* ===== REDUCED MOTION: Tắt animation/transition cho người dùng đòi giảm movimento ===== */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+  .btn.is-loading::after, .toast, .carousel-arrow {
+    display: none !important;
+  }
+}
+
+/* ===== NO WRAP: Ngăn tràng ngang ===== */
+.product-name {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.product-thumb, .product-grid > *,
+.category-grid > *, .nav-list > * {
+  min-width: 0;
+}
+
+/* ===== OUT-OF-STOCK & ERROR STATE: Phản chiếu đủ tương phản ===== */
+.is-out-of-stock {
+  opacity: 0.6;
+  pointer-events: none;
+  text-decoration: line-through;
+  color: var(--muted) !important;
+}
+.is-out-of-stock .color-circle {
+  filter: grayscale(100%);
+  border: 2px solid var(--muted);
+}
+.is-out-of-stock-btn {
+  opacity: 0.6;
+  pointer-events: none;
+  cursor: not-allowed;
+  color: var(--muted) !important;
+}
+.has-error .input, .has-error .select, .has-error .textarea {
+  border-color: var(--danger);
+}
+.is-invalid .input, .is-invalid .select, .is-invalid .textarea {
+  border-color: var(--danger);
+  box-shadow: 0 0 0 3px var(--ring-danger);
+}
+
 /* ===== CART: Giỏ hàng ===== */
+/* [origin/main] */
 .cart .section#lines { padding: 24px 0; }
 .cart tbody tr { border-bottom: 1px solid var(--line); }
 .cart has-error .product-name { color: var(--danger); }
@@ -779,6 +840,7 @@ body.no-scroll { overflow: hidden; }
 .cart .checkout-btn { width: 100%; height: 46px; font-size: 14px; }
 
 /* ===== CHECKOUT: Thanh toán ===== */
+/* [origin/main] */
 .checkout .section#address-section { padding-bottom: 24px; }
 .checkout .row { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px; }
 .checkout .order-lines div { background: var(--surface); border-radius: var(--r-md); padding: 12px; border: 1px solid var(--line); }
@@ -791,12 +853,12 @@ body.no-scroll { overflow: hidden; }
 .checkout .payment-methods input { margin-right: 6px; width: 18px; height: 18px; }
 .checkout .note-wrapper { margin: 20px 0; }
 .checkout .note-wrapper label { font-size: 13px; color: var(--ink-strong); display: block; margin-bottom: 4px; }
-.checkout .note-wrapper input { width: 100%; padding: 8px; border: 1px solid var(--line-strong); border-radius: var(--r-field); }
 .checkout .note-cnt { font-size: 12px; color: var(--muted); }
 .checkout .sticky { position: sticky; top: 100px; background: var(--canvas); padding-bottom: 80px; }
 .checkout .section#order-summary { padding: 24px 0; }
 
 /* ===== ADDRESS FORM: Form địa chỉ ===== */
+/* [origin/main] */
 .address-form .section { padding: 24px 0; }
 .address-form .form-group { margin-bottom: 16px; }
 .address-form .form-label { font-size: 13px; font-weight: 500; color: var(--ink-strong); margin-bottom: 6px; display: block; }
@@ -808,6 +870,7 @@ body.no-scroll { overflow: hidden; }
 /* Không dùng #fff, #ffffff, white */
 
 /* ===== ADMIN: Trang quản trị ===== */
+/* [origin/main] */
 .admin .sb-overlay { position: fixed; inset: 0; background: rgba(20,24,29,.6); opacity: 0; pointer-events: none; transition: opacity .3s; z-index: 50; }
 .admin .sb-overlay.is-open { opacity: 1; pointer-events: auto; }
 .admin .no-scroll { overflow: hidden; }
@@ -829,3 +892,4 @@ body.no-scroll { overflow: hidden; }
 .admin .sidebar-toggle svg { width: 24px; height: 24px; }
 
 /* Ensure no #fff, #ffffff, white keywords in CSS rules above */
+
