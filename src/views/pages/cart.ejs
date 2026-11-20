@@ -59,8 +59,8 @@
               <td style="padding: 12px 8px; text-align: center; font-size: 12px; color: var(--ink);"><%= (item.unitPrice || 0).toLocaleString('vi-VN') %>₫</td>
               <td style="padding: 12px 8px; text-align: center;">
                 <div style="display: flex; align-items: center; gap: 4px;">
-                  <button type="button" class="btn-minus" data-item-id="<%= item.itemId %}" style="width: 28px; height: 28px; font-size: 12px; padding: 0;" aria-label="Giảm số lượng">−</button>
-                  <input type="number" class="input qty-input" data-item-id="<%= item.itemId %>" value="<%= item.quantity || 1 %>" min="1" max="99" style="width: 40px; text-align: center; font-size: 12px;" aria-label="Số lượng">
+                  <button type="button" class="btn-minus" data-item-id="<%= item.itemId %>" style="width: 28px; height: 28px; font-size: 12px; padding: 0;" aria-label="Giảm số lượng">−</button>
+                  <input type="number" class="qty-input" data-item-id="<%= item.itemId %>" value="<%= item.quantity || 1 %>" min="1" max="99" style="width: 40px; text-align: center; font-size: 12px;" aria-label="Số lượng">
                   <button type="button" class="btn-plus" data-item-id="<%= item.itemId %>" style="width: 28px; height: 28px; font-size: 12px; padding: 0;" aria-label="Tăng số lượng">+</button>
                 </div>
               </td>
