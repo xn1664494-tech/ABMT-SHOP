@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title %></title>
+  <link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+  <%- include('../partials/header') %>
+  <main id="main-content" class="main-content">
+    <div class="container">
+      <!-- Address Form -->
+      <section id="address-section" class="section" style="padding-bottom: 24px;">
+        <div class="container">
+          <div class="row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px;">
+            <!-- Địa chỉ đã lưu -->
+            <% if (locals && locals.savedAddresses && locals.savedAddresses.length > 0) { %>
+            <div style="margin-bottom: 24px;">
+              <h3 style="font-size: 16px; font-weight: 600; color: var(--ink-strong); margin-bottom: 12px;">Địa chỉ đã lưu</h3>
+              <% locals.savedAddresses.forEach(function(addr, i) { %>
+              <div style="background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); padding: 16px; margin-bottom: 12px;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <span style="font-size: 14px; color: var(--ink-strong);"><%= addr.name %> - <%= addr.phone %></span>
+                  <input type="radio" name="address-radio" value="<%= addr._id || i %>"
+                    <% if (i === 0) { %>checked<% } %>
+                    style="margin: 0; width: 18px; height: 18px;">
+                </div>
+                <p style="font-size: 13px; color: var(--muted); margin: 4px 0 0;"><%= addr.province %><%= addr.district ? ', ' + addr.district : '' %><%= addr.ward ? ', ' + addr.ward : '' %>, <%= addr.street || 'Địa chỉ chi tiết chưa có' %></p>
+              </div>
+              <% }) %>
+            </div>
+            <% } else { %>
+            <div style="background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); padding: 16px; color: var(--muted);">
+              <p>Chưa có địa chỉ đã lưu</p>
+            </div>
+            <% } %>
+
+            <!-- Thêm địa chỉ mới -->
+            <div id="add-new-address" style="background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); padding: 16px;">
+              <h3 style="font-size: 16px; font-weight: 600; color: var(--ink-strong); margin-bottom: 16px;">Thêm địa chỉ mới</h3>
+              <form id="aForm" style="display: grid; gap: 12px;">
+                <input type="text" name="name" class="input" placeholder="Họ và tên" required
+                  style="<%= locals && locals.nameError ? 'border-color: var(--danger);' : '' %>"
+                  aria-invalid="<%= !!locals && locals.nameError %>" aria-describedby="name-help">
+                <small id="name-help" style="color: var(--muted); font-size: 12%;">Họ và tên không rỗng</small>
+
+                <select name="province" class="select" required
+                  style="<%= locals && locals.provinceError ? 'border-color: var(--danger);' : '' %>"
+                  aria-invalid="<%= !!locals && locals.provinceError %>">
+                  <option value="">-- Chọn Tỉnh/Thành --</option>
+                  <% if (locals && locals && provinces) { %>
+                  <% provinces.forEach(function(prov) { %>
+                    <option value="<%= prov.code %>" <%= (locals.selectedProvince === prov.code ? 'selected' : '') %>><%= prov.name %></option>
+                  <% }) %>
+                  <% } %>
+                </select>
+
+                <select name="district" class="select" aria-label="Quận/Huyện"
+                  style="<%= locals && locals.districtError ? 'border-color: var(--danger);' : '' %>"
+                  aria-invalid="<%= !!locals && locals.districtError %>">
+                  <option value="">-- Chọn Quận/Huyện --</option>
+                </select>
+
+                <select name="ward" class="select" aria-label="Phường/Xã"
+                  style="<%= locals && locals.wardError ? 'border-color: var(--danger);' : '' %>"
+                  aria-invalid="<%= !!locals && locals.wardError %>">
+                  <option value="">-- Chọn Phường/Xã --</option>
+                </select>
+
+                <input type="text" name="street" class="input" placeholder="Địa chỉ cụ thể" required
+                  style="<%= locals && locals.streetError ? 'border-color: var(--danger);' : '' %>"
+                  aria-invalid="<%= !!locals && locals.streetError %>" aria-describedby="street-help">
+                <small id="street-help" style="color: var(--muted); font-size: 12%;">Địa chỉ cụ thể không rỗng</small>
+
+                <% if (locals && locals.maxed) { %>
+                <div style="color: var(--danger); font-size: 12px; margin-top: -12px;">Bạn đã đạt giới hạn số địa chỉ có thể lưu</div>
+                <% } %>
+              </form>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Order Summary -->
+      <section id="order-summary" class="section" style="position: -webkit-sticky; position: sticky; top: 100px; background: var(--canvas); padding-bottom: 80px;">
+        <div class="container">
+          <div class="section-head" style="margin-bottom: 20px;">
+            <h2 class="section-title">Tóm tắt đơn hàng</h2>
+          </div>
+          <div class="order-lines" style="display: grid; grid-template-rows: auto auto auto; gap: 16px; margin-bottom: 24px;">
+            <% if (locals && locals.lines && locals.lines.length > 0) { %>
+            <% locals.lines.forEach(function(line) { %>
+              <div style="background: var(--surface); border-radius: var(--r-md); padding: 12px; border: 1px solid var(--line);">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <span style="font-size: 13px; color: var(--ink-strong);"><%= line.productName %></span>
+                  <span style="font-size: 13px; color: var(--muted);"><%= line.quantity || 1 %> × <%= (line.unitPrice || 0).toLocaleString('vi-VN') %>₫</span>
+                </div>
+                <% if (line.note) { %>
+                <div style="font-size: 12px; color: var(--muted); margin-top: 4px;">Ghi chú: <%= line.note %></div>
+                <% } %>
+              </div>
+            <% }) %>
+            <% } else { %>
+            <div style="color: var(--muted); font-size: 13px;">Không có sản phẩm</div>
+            <% } %>
+          </div>
+
+          <div style="display: grid; grid-template-areas: "sub" "ship" "tot" "pay"; gap: 8px; font-size: 13px;">
+            <div id="sSub" style="grid-area: sub; color: var(--ink-strong); font-weight: 500;">Tạm tính: <%= locals && locals.subtotal ? locals.subtotal.toLocaleString('vi-VN') : '0' %>₫</div>
+            <div id="sShip" style="grid-area: ship; color: var(--muted);">Phí ship: <%= locals && locals.shippingFee ? locals.shippingFee.toLocaleString('vi-VN') : '0' %>₫</div>
+            <div id="sTot" style="grid-area: tot; color: var(--ink-strong); font-weight: 600; font-size: 18px;">Tổng: <%= locals && locals.total ? locals.total.toLocaleString('vi-VN') : '0' %>₫</div>
+            <% if (locals && locals.paymentMethod) { %>
+            <div id="payInfo" style="grid-area: pay; color: var(--muted);">Phương thức: <%= locals.paymentMethod %></div>
+            <% } %>
+          </div>
+
+          <% if (locals && locals.paymentMethods) { %>
+          <div style="margin: 20px 0; font-size: 13px; color: var(--ink-soft);">
+            <% locals.paymentMethods.forEach(function(pm) { %>
+              <label style="display: block; padding: 8px 12px; border: 1px solid var(--line); border-radius: var(--r-pill); margin-bottom: 4px; cursor: pointer;">
+                <input type="radio" name="paymentMethod" value="<%= pm %>" style="margin-right: 6px; width: 18px; height: 18px;">
+                <%= pm %>
+              </label>
+            <% }) %>
+          </div>
+          <% } %>
+        </div>
+      </section>
+
+      <!-- Placeholder for sticky footer -->
+      <div style="height: 80px;"></div>
+    </div>
+  </main>
+  <%- include('../partials/footer') %>
+  <script src="/js/api.js"></script>
+  <script src="/js/ui.js"></script>
+  <script src="/js/address.js"></script>
+  <script src="/js/checkout.js"></script>
+</body>
+</html>
