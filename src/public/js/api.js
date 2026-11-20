@@ -62,11 +62,18 @@
 
     // Add CSRF header if not GET/HEAD
     if (!/^(GET|HEAD)$/i.test(method)) {
-      const metaTag = document.querySelector(`meta[name="${CSRF_META}"]`);
-      if (metaTag) {
-        fetchOptions.headers['X-CSRF-Token'] = metaTag.getAttribute('content') || '';
+      // 1. Check cookie first (server uses csrfToken cookie)
+      const cookieToken = document.cookie.match(/ csrfToken=([^;]+)/);
+      if (cookieToken) {
+        fetchOptions.headers['X-CSRF-Token'] = cookieToken[1];
+      } else {
+        // 2. Fall back to meta tag
+        const metaTag = document.querySelector(`meta[name="${CSRF_META}"]`);
+        if (metaTag) {
+          fetchOptions.headers['X-CSRF-Token'] = metaTag.getAttribute('content') || '';
+        }
+        // If no meta tag, do NOT send header and do NOT error
       }
-      // If no meta tag, do NOT send header and do NOT error
     }
 
     // Add body if provided
@@ -93,19 +100,8 @@
           data = response.text();
         }
 
-        // Wrap in Promise to await both
-        return Promise.all([response, data]).then(([response, parsed]) => {
-          // If JSON parse failed, try text
-          if (typeof parsed === 'object' && parsed.then) {
-            // It's a promise from response.json()
-            return response.text().then(text => ({
-              response,
-              data: text,
-              isJson: false
-            }));
-          }
-          return { response, data, isJson: true };
-        });
+        // Success: return parsed data (or text if not JSON)
+        return { response, data, isJson: contentType && contentType.includes('application/json') };
       })
       .then(({ response, data, isJson }) => {
         if (!response.ok) {
@@ -192,12 +188,16 @@
     patch(url, body, options = {}) {
       return request('PATCH', url, { ...options, body });
     },
+    delete(url, options = {}) {
+      return request('DELETE', url, options);
+    },
+    /** Alias */
     del(url, options = {}) {
       return request('DELETE', url, options);
     },
 
     /** Optional callback on 401 */
-    onUnauthorized = function (error) {
+    onUnauthorized(error) {
       // Default: do nothing; override if needed
     },
     ApiError

@@ -25,6 +25,11 @@
   --r-pill: 999px;
   --r-lg: 24px;
   --r-md: 20px;
+  --r-field: 12px;
+  --r-sm: 10px;
+  --ring: rgba(143, 185, 168, 0.3);
+  --ring-danger: rgba(192, 86, 75, 0.3);
+  --shadow-toast: 0 8px 24px rgba(42,47,54,.12);
   --container: 1280px;
 }
 
@@ -374,6 +379,7 @@ body.no-scroll { overflow: hidden; }
 
 /* ===== SALE SECTION: HORIZONTAL CAROUSEL ===== */
 #section-sale .carousel {
+  position: relative;
   display: flex;
   overflow-x: auto;
   gap: 16px;
@@ -409,7 +415,41 @@ body.no-scroll { overflow: hidden; }
 #section-sale .product-thumb { aspect-ratio: 3 / 4; border-radius: 0; overflow: hidden; }
 #section-sale .product-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
 
-/* ===== SALE SECTION: SECTION HEAD LAYOUT ===== */
+/* ===== SALE SECTION: CAROUSEL ARROWS ===== */
+#section-sale .carousel-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 38px;
+  height: 38px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-pill);
+  background: var(--surface);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+  font-size: 20px;
+  color: var(--ink);
+  cursor: pointer;
+  transition: background 0.2s;
+  [disabled], [hidden] { display: none !important; }
+}
+#section-sale .carousel-arrow:hover {
+  background: var(--surface);
+  color: var(--ink-strong);
+}
+#section-sale .carousel-arrow.prev { left: 10px; }
+#section-sale .carousel-arrow.next { right: 10px; }
+
+@media (min-width: 768px) {
+  #section-sale .carousel-arrow { display: block; }
+}
+@media (max-width: 767.98px) {
+  #section-sale .carousel-arrow { display: none; }
+}
+
+/* Bestseller section carousel */
 #section-sale .section-head {
   display: flex;
   flex-direction: column;
@@ -478,6 +518,7 @@ body.no-scroll { overflow: hidden; }
 
 /* Bestseller section carousel */
 #section-bestseller .carousel {
+  position: relative;
   display: flex;
   overflow-x: auto;
   gap: 16px;
@@ -558,7 +599,7 @@ body.no-scroll { overflow: hidden; }
   color: var(--ink);
   cursor: pointer;
   transition: background 0.2s;
-  display: none; /* Ẩn mặc định; bật lại khi home.js có xử lý cuộn băng */
+  [disabled], [hidden] { display: none !important; }
 }
 #section-bestseller .carousel-arrow:hover {
   background: var(--surface);
@@ -566,8 +607,12 @@ body.no-scroll { overflow: hidden; }
 }
 #section-bestseller .carousel-arrow.prev { left: 10px; }
 #section-bestseller .carousel-arrow.next { right: 10px; }
+
 @media (min-width: 768px) {
   #section-bestseller .carousel-arrow { display: block; }
+}
+@media (max-width: 767.98px) {
+  #section-bestseller .carousel-arrow { display: none; }
 }
 
 /* ===== COMPONENTS: TOAST ===== */

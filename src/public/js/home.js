@@ -12,6 +12,7 @@
   ready(function () {
     initMenu();
     initBanner();
+    initCarousels();
   });
 
   function initMenu() {
@@ -238,4 +239,99 @@
 
     startAuto();
   }
+
+  function initCarousels() {
+    // Find all elements with [data-carousel]
+    const carousels = document.querySelectorAll('[data-carousel]');
+    carousels.forEach(function (carouselContainer) {
+      // Find the actual scroll element (.carousel-track preferred, then .carousel)
+      const track = carouselContainer.querySelector('.carousel-track') || carouselContainer.querySelector('.carousel');
+      if (!track) return;
+
+      // Get visible width
+      function getVisibleWidth() {
+        return track.clientWidth;
+      }
+
+      // Scroll amount
+      function scrollBy(delta, useSmooth) {
+        const behavior = useSmooth ? 'smooth' : 'auto';
+        track.scrollBy({ left: delta, behavior: behavior });
+      }
+
+      // Check if content can be scrolled
+      const canScroll = track.scrollWidth > track.clientWidth;
+
+      // Prev button
+      const prevBtn = carouselContainer.querySelector('[data-carousel-prev]');
+      // Next button
+      const nextBtn = carouselContainer.querySelector('[data-carousel-next]');
+
+      // Update button states
+      function updateButtons() {
+        const scrollLeft = track.scrollLeft;
+        const width = track.clientWidth;
+        const scrollWidth = track.scrollWidth;
+
+        if (prevBtn) {
+          if (scrollLeft <= 2) {
+            prevBtn.disabled = true;
+            prevBtn.setAttribute('aria-disabled', 'true');
+          } else {
+            prevBtn.disabled = false;
+            prevBtn.removeAttribute('aria-disabled');
+          }
+        }
+
+        if (nextBtn) {
+          if (scrollLeft + width >= scrollWidth - 2) {
+            nextBtn.disabled = true;
+            nextBtn.setAttribute('aria-disabled', 'true');
+          } else {
+            nextBtn.disabled = false;
+            nextBtn.removeAttribute('aria-disabled');
+          }
+        }
+
+        // If content doesn't scroll, hide both buttons
+        if (!canScroll) {
+          if (prevBtn) { prevBtn.hidden = true; prevBtn.disabled = true; }
+          if (nextBtn) { nextBtn.hidden = true; nextBtn.disabled = true; }
+        } else {
+          if (prevBtn) { prevBtn.hidden = false; }
+          if (nextBtn) { nextBtn.hidden = false; }
+        }
+      }
+
+      // Click handler for prev
+      if (prevBtn) {
+        prevBtn.addEventListener('click', function (e) {
+          e.preventDefault();
+          scrollBy(-getVisibleWidth() * 0.85, true);
+        });
+      }
+
+      // Click handler for next
+      if (nextBtn) {
+        nextBtn.addEventListener('click', function (e) {
+          e.preventDefault();
+          scrollBy(getVisibleWidth() * 0.85, true);
+        });
+      }
+
+      // Update on scroll
+      track.addEventListener('scroll', updateButtons);
+
+      // Update on resize (debounced)
+      let resizeTimeout;
+      window.addEventListener('resize', function () {
+        clearTimeout(resizeTimeout);
+        resizeTimeout = setTimeout(updateButtons, 100);
+      });
+
+      // Initial update
+      updateButtons();
+    });
+  }
+
 })();
