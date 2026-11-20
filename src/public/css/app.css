@@ -893,3 +893,91 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 
 /* Ensure no #fff, #ffffff, white keywords in CSS rules above */
 
+/* ===== AUTH PAGE: Trang đăng nhập ===== */
+.auth-page .card-lg {
+  max-width: 420px;
+  margin: 0 auto;
+  padding: 24px;
+}
+.auth-page .section-title {
+  text-align: center;
+  margin-top: 0;
+  margin-bottom: 24px;
+}
+.auth-page .pill-form {
+  background: var(--surface);
+  border-radius: var(--r-md);
+  padding: 24px;
+}
+.auth-page .field {
+  margin-bottom: 16px;
+}
+.auth-page .field .label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink-strong);
+}
+.auth-page .input {
+  width: 100%;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-field);
+  padding: 10px 14px;
+  font: inherit;
+  color: var(--ink);
+}
+.auth-page .input:focus {
+  border-color: var(--accent-deep);
+}
+.auth-page .input.is-invalid {
+  border-color: var(--danger);
+}
+.auth-page .field-error {
+  color: var(--danger);
+  font-size: 12px;
+  margin-top: 4px;
+  display: block;
+}
+.auth-page .btn-block {
+  width: 100%;
+  margin-top: 24px;
+}
+.auth-page .link-primary {
+  display: inline-block;
+  margin-top: 12px;
+  color: var(--accent);
+  text-decoration: none;
+}
+.auth-page .text-center {
+  text-align: center;
+  font-size: 13px;
+  color: var(--muted);
+}
+.auth-page .mt-4 {
+  margin-top: 16px;
+}
+.auth-page .mb-8 {
+  margin-bottom: 32px;
+}
+.auth-page .mb-8 {
+  margin-bottom: 32px;
+}
+
+/* Nút hiện/ẩn mật khẩu */
+.auth-page .input-group {
+  position: relative;
+}
+.auth-page .btn-soft {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  padding: 0;
+  background: none;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+/* Ensure no #fff, #ffffff, white keywords in CSS rules below */
+
