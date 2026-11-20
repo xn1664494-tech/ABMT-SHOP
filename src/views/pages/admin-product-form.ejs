@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title %></title>
+  <link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+  <%- include('../partials/header') %>
+  <div class="container">
+    <h2 class="section-title" style="margin-bottom: 24px;">Thêm/Sửa sản phẩm</h2>
+    <form id="pForm" style="background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); padding: 24px;">
+      <div style="display: grid; gap: 16px 24px; margin-bottom: 24px;">
+        <div style="display: grid; gap: 8px;">
+          <label class="label" for="name">Tên sản phẩm</label>
+          <input type="text" name="name" class="input" value="<%= locals && locals.name || '' %>"
+            aria-label="Tên sản phẩm">
+        </div>
+        <div style="display: grid; gap: 8px;">
+          <label class="label" for="category">Danh mục</label>
+          <select name="category" class="select" aria-label="Danh mục">
+            <option value="">-- Chọn danh mục --</option>
+            <% if (locals && locals && locals.categories) { %>
+            <% locals.categories.forEach(function(cat) { %>
+              <option value="<%= cat.slug %>" <%= (locals.selectedCategory === cat.slug ? 'selected' : '') %>><%= cat.name %></option>
+            <% }) %>
+            <% } %>
+          </select>
+        </div>
+        <div style="display: grid; gap: 8px;">
+          <label class="label" for="material">Chất liệu</label>
+          <input type="text" name="material" class="input" value="<%= locals && locals.material || '' %>"
+            aria-label="Chất liệu">
+        </div>
+        <div style="display: grid; gap: 8px;">
+          <label class="label" for="price">Giá bán</label>
+          <input type="number" name="price" class="input" min="0" value="<%= locals && locals.price || 0 %>"
+            aria-label="Giá bán">
+        </div>
+        <div style="display: grid; gap: 8px;">
+          <label class="label" for="desc">Mô tả</label>
+          <textarea name="desc" class="textarea" rows="3" aria-label="Mô tả"><%= locals && locals.desc || '' %></textarea>
+        </div>
+      </div>
+
+      <!-- Biến thể -->
+      <div style="margin-top: 24px; padding-top: 24px; border-top: 1px solid var(--line);">
+        <h3 style="font-size: 14px; font-weight: 600; color: var(--ink-strong); margin-bottom: 12px;">Biến thể sản phẩm</h3>
+        <p style="font-size: 12px; color: var(--muted); margin-bottom: 12px;">Mỗi biến thể là một kết hợp duy nhất của Màu và Size.</p>
+        <div id="variant-rows" style="display: grid; grid-template-rows: auto auto; gap: 12px; min-height: 100px;">
+          <!-- Dòng biến thể đầu tiên (luôn có) -->
+          <template id="variant-row-tpl">
+            <div class="variant-row" style="display: grid; grid-template-columns: auto 1fr auto auto 60px; gap: 8px; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--line);">
+              <select class="variant-color" name="variants[0][color]" aria-label="Màu" style="min-width: 120px;">
+                <option value="">-- Màu --</option>
+                <% if (locals && locals && locals.colors) { %>
+                <% locals.colors.forEach(function(c) { %>
+                  <option value="<%= c %>" <%= (locals.defaultColor === c ? 'selected' : '') %>><%= c %></option>
+                <% }) %>
+                <% } %>
+              </select>
+              <input type="text" class="variant-size" name="variants[0][size]" placeholder="Size" style="min-width: 80px;"
+                value="<%= locals && locals.sizes && locals.sizes[0] ? locals.sizes[0] : '' %>"
+                aria-label="Size">
+              <input type="number" class="variant-stock" name="variants[0][stock]" min="0"
+                value="<%= locals && locals.stocks && locals.stocks[0] ? locals.stocks[0] : 0 %>"
+                aria-label="Tồn kho">
+              <input type="text" class="variant-sku" name="variants[0][sku]" placeholder="SKU"
+                value="<%= locals && locals.skus && locals.skus[0] ? locals.skus[0] : '' %>"
+                aria-label="SKU">
+              <button type="button" class="btn btn-danger btn-remove-variant" style="grid-column: auto; font-size: 12px; padding: 4px 8px;" aria-label="Xóa biến thể">Xóa</button>
+            </div>
+          </template>
+
+          <div class="variant-row" id="variant-0" style="display: grid; grid-template-columns: auto 1fr auto auto 60px; gap: 8px; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--line);">
+            <select class="variant-color" name="variants[0][color]" aria-label="Màu" style="min-width: 120px;">
+              <option value="">-- Màu --</option>
+              <% if (locals && locals && locals.colors) { %>
+              <% locals.colors.forEach(function(c) { %>
+                <option value="<%= c %>" <%= (locals.defaultColor === c ? 'selected' : '') %>><%= c %></option>
+              <% }) %>
+              <% } %>
+            </select>
+            <input type="text" class="variant-size" name="variants[0][size]" placeholder="Size" style="min-width: 80px;"
+              value="<%= locals && locals.sizes && locals.sizes[0] ? locals.sizes[0] : '' %>"
+              aria-label="Size">
+            <input type="number" class="variant-stock" name="variants[0][stock]" min="0"
+              value="<%= locals && locals.stocks && locals.stocks[0] ? locals.stocks[0] : 0 %>"
+              aria-label="Tồn kho">
+            <input type="text" class="variant-sku" name="variants[0][sku]" placeholder="SKU"
+              value="<%= locals && locals.skus && locals.skus[0] ? locals.skus[0] : '' %>"
+              aria-label="SKU">
+            <button type="button" class="btn btn-danger btn-remove-variant" style="grid-column: auto; font-size: 12px; padding: 4px 8px;" aria-label="Xóa biến thể">Xóa</button>
+          </div>
+        </div>
+
+        <button type="button" class="btn btn-soft" id="add-variant" style="width: fit-content; font-size: 13px; margin-top: 8px;" aria-label="Thêm biến thể">Thêm biến thể</button>
+      </form>
+    </div>
+
+    <script>
+      // Dynamic variant rows
+      (function() {
+        var tpl = document.getElementById('variant-row-tpl');
+        var rowsContainer = document.getElementById('variant-rows');
+        var addBtn = document.getElementById('add-variant');
+        var minRows = 1;
+
+        function updateVariantNames() {
+          var rows = rowsContainer.querySelectorAll('.variant-row');
+          rows.forEach(function(row, idx) {
+            var selects = row.querySelectorAll('select, input');
+            // Re-apply name attributes based on index
+            var nameIdx = idx;
+            // Names are already set in markup via [name="variants[0][color]"] etc.
+            // This is just to ensure consistency if needed
+          });
+        }
+
+        if (addBtn) {
+          addBtn.addEventListener('click', function() {
+            var newRow = tpl.content.cloneNode(true);
+            var index = rowsContainer.children.length;
+            // Update name attributes
+            var selects = newRow.querySelectorAll('select, input');
+            selects.forEach(function(el) {
+              var name = el.getAttribute('name');
+              if (name) {
+                el.setAttribute('name', name.replace('[0]', '['
+``` (caret) index + ']'))
+              }
+            });
+            // Set default disabled state for remove button on first row
+            var removeBtn = newRow.querySelector('.btn-remove-variant');
+            if (rowsContainer.children.length >= minRows) {
+              removeBtn.disabled = true;
+              removeBtn.style.opacity = '0.5';
+              removeBtn.style.pointerEvents = 'none';
+            }
+            rowsContainer.appendChild(newRow);
+            updateVariantNames();
+            // Enable remove on rows after first
+            var allRemoveBtns = rowsContainer.querySelectorAll('.btn-remove-variant');
+            allRemoveBtns.forEach(function(btn, i) {
+              if (i > 0) {
+                btn.disabled = false;
+                btn.style.opacity = '';
+                btn.style.pointerEvents = '';
+              }
+            });
+          });
+        }
+
+        // Remove variant row (cannot remove last one)
+        if (rowsContainer) {
+          rowsContainer.addEventListener('click', function(e) {
+            if (e.target.classList.contains('btn-remove-variant')) {
+              var row = e.target.closest('.variant-row');
+              if (rowsContainer.children.length <= minRows) {
+                // Just disable instead of removing
+                row.style.display = 'none';
+                e.target.disabled = true;
+                e.target.style.opacity = '0.5';
+                e.target.style.pointerEvents = 'none';
+                return;
+              }
+              rowsContainer.removeChild(row);
+              updateVariantNames();
+            }
+          });
+        }
+      })();
+    </script>
+  </div>
+  <%- include('../partials/footer') %>
+  <script src="/js/api.js"></script>
+  <script src="/js/ui.js"></script>
+</body>
+</html>

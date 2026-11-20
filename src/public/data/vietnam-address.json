@@ -1,0 +1,58 @@
+{
+  "provinces": [
+    {
+      "code": "P01",
+      "name": "Hà Nội",
+      "districts": [
+        {
+          "code": "D01",
+          "name": "Hoàn Kiếm"
+        },
+        {
+          "code": "D02",
+          "name": "Đống Đa"
+        },
+        {
+          "code": "D03",
+          "name": "Ba Đình"
+        }
+      ]
+    },
+    {
+      "code": "P02",
+      "name": "TP. Hồ Chí Minh",
+      "districts": [
+        {
+          "code": "D04",
+          "name": "Quận 1"
+        },
+        {
+          "code": "D05",
+          "name": "Quận Bình Thạnh"
+        },
+        {
+          "code": "D06",
+          "name": "Quận Phú Nhuận"
+        }
+      ]
+    },
+    {
+      "code": "P03",
+      "name": "Phú Thọ",
+      "districts": [
+        {
+          "code": "D07",
+          "name": "Thành phố Phú Thọ"
+        },
+        {
+          "code": "D08",
+          "name": "Huyện Đoan Hùng"
+        },
+        {
+          "code": "D09",
+          "name": "Huyện Yên Lạc"
+        }
+      ]
+    }
+  ]
+}

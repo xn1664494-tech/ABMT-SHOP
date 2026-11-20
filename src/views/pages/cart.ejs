@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title %></title>
+  <link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+  <%- include('../partials/header') %>
+  <main id="main-content" class="main-content">
+    <div class="container">
+      <!-- Cart Header -->
+      <% if (locals && locals.empty) { %>
+      <div id="empty" style="text-align: center; padding: 60px 20px; color: var(--muted);">
+        <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="margin: 0 auto 16px; opacity: 0.5;"><path d="M19 21V5a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v16"/><circle cx="3" cy="3" r="1"/><path d="M22 21V5a2 2 0 0 0-3-3.87"/><path d="M7 3a2 2 0 0 1 2 2h3"/></svg>
+        <h3 style="margin-bottom: 8px;">Giỏ hàng trống</h3>
+        <p style="margin-bottom: 16px;">Chưa có sản phẩm nào trong giỏ của bạn.</p>
+        <a href="/" class="btn btn-primary" style="font-size: 14px;">Tiếp tục mua sắm</a>
+      </div>
+      <% } else { %>
+      <% const items = locals && locals.items ? locals.items : (locals && locals.cart ? locals.cart.items : []) %>
+      <% const subtotal = locals && locals.subtotal ? locals.subtotal : (locals && locals.cart ? (locals.cart.subtotal || 0) : 0) %>
+      <% const shippingFee = locals && locals.shippingFee !== undefined ? locals.shippingFee : (locals && locals.cart ? (locals.cart.shippingFee || 0) : 0) %>
+      <% const total = locals && locals.total ? locals.total : (locals && locals.cart ? (locals.cart.total || subtotal + (shippingFee || 0)) : subtotal + (shippingFee || 0)) %>
+      <% const count = locals && locals.count ? locals.count : (locals && locals.cart ? (locals.cart.count || 0) : 0) %>
+
+      <!-- Cart Table -->
+      <div id="full" style="overflow-x: auto; margin-bottom: 24px;">
+        <table style="width: 100%; border-collapse: collapse; min-width: 400px;">
+          <thead>
+            <tr style="background: var(--surface);">
+              <th style="padding: 12px 8px; text-align: left; color: var(--ink-strong); font-size: 12px;">Sản phẩm</th>
+              <th style="padding: 12px 8px; text-align: center; color: var(--ink-strong); font-size: 12px;">Size</th>
+              <th style="padding: 12px 8px; text-align: center; color: var(--ink-strong); font-size: 12px;">Đơn giá</th>
+              <th style="padding: 12px 8px; text-align: center; color: var(--ink-strong); font-size: 12px;">Số lượng</th>
+              <th style="padding: 12px 8px; text-align: center; color: var(--ink-strong); font-size: 12px;">Thành tiền</th>
+              <th style="padding: 12px 8px; text-align: center; color: var(--ink-strong); font-size: 12px;">Hành động</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% if (items && items.length > 0) { %>
+            <% items.forEach(function(item, i) { %>
+            <tr style="border-bottom: 1px solid var(--line);">
+              <td style="padding: 12px 8px;">
+                <% var productName = item.productName || (item.product && item.product.name ? item.product.name : 'Sản phẩm') %>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <% var productImg = item.product && item.product.image ? item.product.image : '/images/placeholder/product.svg' %>
+                  <img src="<%= productImg %>" alt="<%= productName %>" style="width: 56px; height: 66px; object-fit: cover; border-radius: var(--r-md);">
+                  <div>
+                    <div style="font-size: 13px; font-weight: 500; color: var(--ink-strong);"><%= productName %></div>
+                    <% if (item.size) { %>
+                    <span style="font-size: 11px; color: var(--muted);">Size: <%= item.size %></span>
+                    <% } %>
+                  </div>
+                </div>
+              </td>
+              <td style="padding: 12px 8px; text-align: center; font-size: 12px; color: var(--muted);"><%= item.size || '-' %></td>
+              <td style="padding: 12px 8px; text-align: center; font-size: 12px; color: var(--ink);"><%= (item.unitPrice || 0).toLocaleString('vi-VN') %>₫</td>
+              <td style="padding: 12px 8px; text-align: center;">
+                <div style="display: flex; align-items: center; gap: 4px;">
+                  <button type="button" class="btn-minus" data-item-id="<%= item.itemId %}" style="width: 28px; height: 28px; font-size: 12px; padding: 0;" aria-label="Giảm số lượng">−</button>
+                  <input type="number" class="input qty-input" data-item-id="<%= item.itemId %>" value="<%= item.quantity || 1 %>" min="1" max="99" style="width: 40px; text-align: center; font-size: 12px;" aria-label="Số lượng">
+                  <button type="button" class="btn-plus" data-item-id="<%= item.itemId %>" style="width: 28px; height: 28px; font-size: 12px; padding: 0;" aria-label="Tăng số lượng">+</button>
+                </div>
+              </td>
+              <td style="padding: 12px 8px; text-align: center; font-size: 12px; color: var(--ink);"><%= (item.totalPrice || 0).toLocaleString('vi-VN') %>₫</td>
+              <td style="padding: 12px 8px; text-align: center;">
+                <button type="button" class="btn-delete" data-item-id="<%= item.itemId %>" style="color: var(--danger);" aria-label="Xóa sản phẩm">×</button>
+              </td>
+            </tr>
+            <% }) %>
+            <% } else { %>
+            <tr>
+              <td style="padding: 20px; text-align: center; color: var(--muted);" colspan="6">Không có sản phẩm</td>
+            </tr>
+            <% } %>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Cart Summary -->
+      <div style="display: grid; grid-template-areas: 
+        "sub" 
+        "ship" 
+        "tot" 
+        "btn"; 
+        gap: 12px; margin-top: 24px; padding: 20px; background: var(--surface); border-radius: var(--r-md);">
+        <div id="sub" style="grid-area: sub; font-size: 13px; color: var(--ink-strong);">Tạm tính: <%= subtotal.toLocaleString('vi-VN') %>₫</div>
+        <div id="ship" style="grid-area: ship; font-size: 13px; color: var(--muted);">Phí ship: <%= shippingFee.toLocaleString('vi-VN') %>₫</div>
+        <div id="total" style="grid-area: tot; font-size: 18px; font-weight: 600; color: var(--ink-strong);">Tổng: <%= total.toLocaleString('vi-VN') %>₫</div>
+        <% if (!locals || !locals.empty) { %>
+        <button type="submit" id="checkout-btn" class="btn btn-primary" style="grid-area: btn; width: 100%; height: 46px; font-size: 14px;">Đặt hàng</button>
+        <% } %>
+      </div>
+      <% } %>
+    </div>
+  </main>
+  <%- include('../partials/footer') %>
+  <script src="/js/api.js"></script>
+  <script src="/js/ui.js"></script>
+  <script src="/js/cart.js"></script>
+</body>
+</html>
