@@ -1,5 +1,4 @@
-﻿/* tạm thời, sẽ chuyển sang thẻ link trong layout ở task Lighthouse */
-@import url("https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap");
+﻿
 
 /* tokens */
 :root {
@@ -755,3 +754,65 @@ body.no-scroll { overflow: hidden; }
 .category-chips a:hover { border-color: var(--ink); }
 .category-thumb { aspect-ratio: 1 / 1; border-radius: var(--r-md); overflow: hidden; }
 .category-thumb img { width: 100%; height: 100%; object-fit: cover; }
+
+/* ===== FOCUS VISIBLE: Trạng thái focus rõ ràng ===== */
+a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+/* ===== MINIMUM BLOCK SIZE: Kích thước bấm tối thiểu 44x44px ===== */
+@media (max-width: 767.98px) {
+  .btn, .input, .select, .textarea, .product-thumb, .product-name, .category-link {
+    min-height: 44px;
+  }
+}
+
+/* ===== REDUCED MOTION: Tắt animation/transition cho người dùng đòi giảm movimiento ===== */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+  .btn.is-loading::after, .toast, .carousel-arrow {
+    display: none !important;
+  }
+}
+
+/* ===== NO WRAP: Ngăn tràng ngang ===== */
+.product-name {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.product-thumb, .product-grid > *,
+.category-grid > *, .nav-list > * {
+  min-width: 0;
+}
+
+/* ===== OUT-OF-STOCK & ERROR STATE: Phản chiếu đủ tương phản ===== */
+.is-out-of-stock {
+  opacity: 0.6;
+  pointer-events: none;
+  text-decoration: line-through;
+  color: var(--muted) !important;
+}
+.is-out-of-stock .color-circle {
+  filter: grayscale(100%);
+  border: 2px solid var(--muted);
+}
+.is-out-of-stock-btn {
+  opacity: 0.6;
+  pointer-events: none;
+  cursor: not-allowed;
+  color: var(--muted) !important;
+}
+.has-error .input, .has-error .select, .has-error .textarea {
+  border-color: var(--danger);
+}
+.is-invalid .input, .is-invalid .select, .is-invalid .textarea {
+  border-color: var(--danger);
+  box-shadow: 0 0 0 3px var(--ring-danger);
+}
+
+/* Ensure no #fff, #ffffff, white keywords in CSS rules below */
