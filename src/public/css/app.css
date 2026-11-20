@@ -696,6 +696,42 @@ body.no-scroll { overflow: hidden; }
 /* Ensure .btn.is-loading with [aria-busy="true"] works */
 .is-loading[aria-busy="true"] { opacity: 0.8; pointer-events: none; }
 
+/* ===== CATA LOG: GRID & FILTER DRAWER ===== */
+.catalog-grid {}
+
+/* 2 cột dưới 768px, 3 cột từ 768px, 4 cột từ 1280px */
+@media (max-width: 767.98px) {
+  .grid-2 { grid-template-columns: repeat(2, 1fr) !important; }
+}
+@media (min-width: 768px) {
+  .grid-2 { grid-template-columns: repeat(3, 1fr); }
+}
+@media (min-width: 1280px) {
+  .grid-2 { grid-template-columns: repeat(4, 1fr); }
+}
+
+/* Filter drawer mobile */
+.filter-drawer { position: fixed; top: 0; right: 0; bottom: 0; width: 320px; z-index: 60; background: var(--surface); transform: translateX(100%); transition: transform .3s; padding: 20px; }
+.filter-drawer.is-open { transform: translateX(0); }
+.filter-overlay { position: fixed; inset: 0; background: rgba(20,24,29,.6); opacity: 0; pointer-events: none; transition: opacity .3s; z-index: 50; }
+.filter-overlay.is-open { opacity: 1; pointer-events: auto; }
+.no-scroll { overflow: hidden; }
+
+/* Color/Size pill buttons */
+.btn-color, .btn-size {
+  height: 40px; padding: 0 14px; border-radius: var(--r-pill); border: 1px solid var(--line); font-size: 13px; font-weight: 500; color: var(--ink);
+  display: inline-flex; align-items: center; gap: 6px; background: var(--surface); min-width: 80px;
+}
+.btn-color.selected, .btn-size.selected { border-color: var(--accent); color: var(--accent-deep); background: var(--mint); }
+.btn-color:focus-visible, .btn-size:focus-visible { outline: 2px solid var(--accent-deep); outline-offset: 2px; }
+
+/* Out-of-stock style */
+.is-out-of-stock { opacity: 0.6; pointer-events: none; text-decoration: line-through; }
+.is-out-of-stock .color-circle { filter: grayscale(100%); }
+.is-out-of-stock::after { content: ''; position: absolute; right: 8px; top: 8px; bottom: 8px; width: 16px; border: 2px solid var(--muted); transform: rotate(45deg); pointer-events: none; }
+.is-out-of-stock-btn { opacity: 0.4; pointer-events: none; cursor: not-allowed; }
+.is-out-of-stock-btn::after { content: ''; position: absolute; right: 8px; top: 8px; bottom: 8px; width: 16px; border: 2px solid var(--muted); transform: rotate(45deg); pointer-events: none; }
+
 /* ===== CATEGORIES: #section-categories ===== */
 .category-grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
 @media (min-width: 768px) {
