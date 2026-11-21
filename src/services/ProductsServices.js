@@ -11,7 +11,9 @@ const {
   buildPagination,
   buildSort,
   isObjectId,
+  PRODUCT_LIST_FIELDS,
 } = require('../utils/productFilter');
+const { toPublicProductListItem } = require('../utils/productSerializer');
 
 const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id);
 
@@ -106,12 +108,20 @@ module.exports = {
       countQuery.setOptions({ includeDeleted: true });
     }
 
+    // Danh sách chỉ cần trường hiển thị card/catalog + biến thể để tính tồn.
+    // `.lean()` trả plain object nên serializer dựng lại `id`/virtual.
     const findQuery = applyDeletedOption(
-      Product.find(filter).sort(sort).skip(skip).limit(limit),
+      Product.find(filter)
+        .sort(sort)
+        .skip(skip)
+        .limit(limit)
+        .select(PRODUCT_LIST_FIELDS)
+        .lean(),
       options,
     );
 
-    const [total, items] = await Promise.all([countQuery, findQuery]);
+    const [total, docs] = await Promise.all([countQuery, findQuery]);
+    const items = docs.map(toPublicProductListItem);
 
     return {
       items,

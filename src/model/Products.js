@@ -214,6 +214,10 @@ productSchema.index({ 'variants.size': 1, 'variants.color': 1 });
 // Lọc sản phẩm đang hiển thị.
 productSchema.index({ isActive: 1, isDeleted: 1 });
 
+// Danh sách mặc định (visibility + sort newest kèm tie-breaker _id) dùng trọn
+// index này nên không cần SORT trong bộ nhớ.
+productSchema.index({ isActive: 1, isDeleted: 1, createdAt: -1, _id: -1 });
+
 productSchema.plugin(softDeletePlugin);
 
 module.exports =

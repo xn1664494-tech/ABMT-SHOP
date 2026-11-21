@@ -367,13 +367,13 @@
             "exec": [
               "pm.test('Status la 200', function () { pm.response.to.have.status(200); });",
               "pm.test('Danh sach la mang va co san pham active', function () {",
-              "  var data = pm.response.json().data;",
+              "  var data = pm.response.json().data.items;",
               "  pm.expect(data).to.be.an('array');",
               "  var ids = data.map(function (item) { return item.id; });",
               "  pm.expect(ids).to.include(pm.collectionVariables.get('productId'));",
               "});",
               "pm.test('Khong lo san pham inactive', function () {",
-              "  var ids = pm.response.json().data.map(function (item) { return item.id; });",
+              "  var ids = pm.response.json().data.items.map(function (item) { return item.id; });",
               "  pm.expect(ids).to.not.include(pm.collectionVariables.get('inactiveProductId'));",
               "});"
             ]
@@ -416,7 +416,7 @@
             "exec": [
               "pm.test('Status la 200', function () { pm.response.to.have.status(200); });",
               "pm.test('Co san pham inactive', function () {",
-              "  var ids = pm.response.json().data.map(function (item) { return item.id; });",
+              "  var ids = pm.response.json().data.items.map(function (item) { return item.id; });",
               "  pm.expect(ids).to.include(pm.collectionVariables.get('inactiveProductId'));",
               "});"
             ]

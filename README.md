@@ -193,6 +193,14 @@ npm run test:jest:watch
 
 Mã nguồn: `src/utils/productFilter.js` (`buildFilter`, `escapeRegex`). Minh chứng: `test/product.filter.test.js`, `test/product.api.test.js`, `postman/ProductFilter.postman_collection.json`.
 
+### Tối ưu truy vấn danh sách (T4-2-3)
+
+- `GET /api/products` trả `data = { items, pagination }`. Mỗi item chỉ gồm trường cần cho card/catalog (`name`, `slug`, `category`, `images`, `basePrice`, `variants`, `isActive`, `createdAt`, `updatedAt`, `id`, `totalStock`, `inStock`); `description` chỉ có ở endpoint chi tiết.
+- Service dùng `.select(PRODUCT_LIST_FIELDS).lean()` rồi serialize lại `id`/`totalStock`/`inStock` (`src/utils/productSerializer.js`).
+- Index `{ isActive: 1, isDeleted: 1, createdAt: -1, _id: -1 }` phục vụ danh sách mặc định (sort `newest`) mà không cần `SORT` trong bộ nhớ. Sau khi đổi schema phải chạy `Product.init()` (hoặc `npm run seed`) trên DB thật — MongoDB không tự tạo index từ thay đổi schema.
+- Index này **không** tối ưu các trường hợp lọc `category`/giá/keyword hoặc sort theo giá; các truy vấn đó có thể vẫn dùng index khác hoặc `SORT`.
+- Đo hiệu năng: `npm run benchmark:product-list` (mặc định 10.000 bản ghi, warm-up + nhiều vòng đo). Báo cáo: `docs/reports/T4-2-3_QUERY_OPTIMIZATION.md`.
+
 ### Query helper loại bản ghi đã xóa
 
 - `User`, `Category`, `Product` dùng plugin `src/plugins/softDelete.js`.
@@ -201,7 +209,7 @@ Mã nguồn: `src/utils/productFilter.js` (`buildFilter`, `escapeRegex`). Minh c
 - Muốn đọc cả bản ghi đã xóa, dùng `.setOptions({ includeDeleted: true })`; Product admin dùng query flag `?includeDeleted=true`.
 - Kiểm thử: `test/soft-delete.plugin.test.js` và collection `postman/QueryHelper.postman_collection.json` (chạy qua `npm run test:postman`).
 
-Các API nghiệp vụ khác (Cart/Order, Admin CRUD đầy đủ, phân trang/sắp xếp nâng cao, Audit log, Cron, v.v.) **chưa** thuộc phạm vi đã hoàn thành trong tài liệu này.
+Các API nghiệp vụ khác (Cart/Order, Admin CRUD đầy đủ, Audit log, Cron, v.v.) **chưa** thuộc phạm vi đã hoàn thành trong tài liệu này.
 
 ## 14. Quy tắc Git branch của team
 
