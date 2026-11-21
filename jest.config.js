@@ -7,4 +7,5 @@ module.exports = {
   maxWorkers: 1, // các file test dùng chung 1 CSDL test -> chạy tuần tự
   clearMocks: true,
   verbose: true,
+  forceExit: true,
 };
