@@ -962,6 +962,17 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
   color: var(--ink-strong); margin: 0 0 24px;
 }
 .auth-form { display: grid; gap: 16px; }
+.form-alert {
+  padding: 10px 12px; border-radius: var(--r-md);
+  background: var(--peach); color: var(--danger);
+  font-size: 13px; line-height: 1.45;
+}
+.flash-message {
+  margin-bottom: 16px; padding: 10px 14px; border-radius: var(--r-md);
+  background: var(--mint); color: var(--ink-strong);
+  font-size: 13px; line-height: 1.45;
+}
+.flash-message[data-type="error"] { background: var(--peach); color: var(--danger); }
 .auth-switch {
   text-align: center; font-size: 13px; color: var(--muted); margin: 20px 0 0;
 }

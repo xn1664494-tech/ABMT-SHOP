@@ -1,0 +1,13 @@
+<%
+  const flashMessages = locals.flash
+    ? (Array.isArray(locals.flash) ? locals.flash : [locals.flash])
+    : [];
+%>
+<% flashMessages.forEach(function (item) { %>
+  <% const message = typeof item === 'string' ? item : (item && item.message); %>
+  <% if (!message) { return; } %>
+  <% const type = (typeof item === 'object' && item && item.type) || 'info'; %>
+  <div class="flash-message" data-flash data-type="<%= type %>" data-message="<%= message %>" role="status">
+    <%= message %>
+  </div>
+<% }) %>
