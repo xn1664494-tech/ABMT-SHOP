@@ -3,6 +3,7 @@ const cookieParser = require('cookie-parser');
 const routes = require('./routes');
 const notFound = require('./middleware/404');
 const errorHandler = require('./middleware/errorHandler');
+const { currentUser } = require('./middleware/currentUser');
 const configViewEngine = require('./config/viewEngine');
 
 const app = express();
@@ -42,6 +43,8 @@ app.use(cookieParser());
 
 // Routes — API dưới /api, đồng thời mount gốc cho trang chủ (EJS)
 app.use('/api', routes);
+// Middleware nhận biết người dùng hiện tại chỉ cho route trang (EJS), không áp cho /api
+app.use(currentUser);
 app.use('/', routes);
 
 // Smoke check: server còn sống
