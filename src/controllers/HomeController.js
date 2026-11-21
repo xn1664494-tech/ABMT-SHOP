@@ -7,19 +7,19 @@ const HomeController = {
     ]
 
     const categories = [
-  { slug: 'nam', name: 'Nam', note: 'Xem tất cả đồ nam', url: '#', children: [
-    { name: 'Áo thun', url: '#' },
-    { name: 'Áo sơ mi', url: '#' },
-    { name: 'Áo khoác', url: '#' },
-    { name: 'Quần dài', url: '#' },
-    { name: 'Quần short', url: '#' }
+  { slug: 'nam', name: 'Nam', note: 'Xem tất cả đồ nam', url: '/catalog?category=nam', children: [
+    { name: 'Áo thun', url: '/catalog?category=nam' },
+    { name: 'Áo sơ mi', url: '/catalog?category=nam' },
+    { name: 'Áo khoác', url: '/catalog?category=nam' },
+    { name: 'Quần dài', url: '/catalog?category=nam' },
+    { name: 'Quần short', url: '/catalog?category=nam' }
   ] },
-  { slug: 'nu', name: 'Nữ', note: 'Xem tất cả đồ nữ', url: '#', children: [
-    { name: 'Áo thun', url: '#' },
-    { name: 'Áo sơ mi', url: '#' },
-    { name: 'Quần dài', url: '#' },
-    { name: 'Váy đầm', url: '#' },
-    { name: 'Chân váy', url: '#' }
+  { slug: 'nu', name: 'Nữ', note: 'Xem tất cả đồ nữ', url: '/catalog?category=nu', children: [
+    { name: 'Áo thun', url: '/catalog?category=nu' },
+    { name: 'Áo sơ mi', url: '/catalog?category=nu' },
+    { name: 'Quần dài', url: '/catalog?category=nu' },
+    { name: 'Váy đầm', url: '/catalog?category=nu' },
+    { name: 'Chân váy', url: '/catalog?category=nu' }
   ] }
 ]
 

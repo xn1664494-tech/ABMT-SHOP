@@ -1,7 +1,13 @@
 ﻿<article class="product-card" id="product-<%= product.slug %>">
-  <a href="#" class="product-link">
-    <div class="product-thumb">
+  <a href="/products/<%= product.slug %>" class="product-link">
+    <div class="product-thumb<%= locals.badge || locals.rank ? ' has-badge' : '' %>">
       <img src="<%= product.image %>" alt="<%= product.name %>" loading="lazy" decoding="async" width="300" height="400">
+      <% if (locals.badge) { %>
+        <span class="badge <%= locals.badge === 'Giảm giá' ? 'badge-sale' : 'badge-soft' %>"><%= locals.badge %></span>
+      <% } %>
+      <% if (locals.rank) { %>
+        <span class="badge badge-count"><%= locals.rank %></span>
+      <% } %>
     </div>
     <div class="product-info">
       <h3 class="product-name"><%= product.name %></h3>

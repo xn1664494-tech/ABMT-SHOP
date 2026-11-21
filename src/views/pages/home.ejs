@@ -8,6 +8,7 @@
 </head>
 <body>
   <%- include('../partials/header') %>
+  <%- include('../partials/flash') %>
   <main id="main-content" class="main-content">
     <!-- Banner -->
     <section id="home-banner" class="section banner-section">
@@ -135,7 +136,7 @@
         <div class="container">
           <div class="section-head">
             <h2 class="section-title">Sản phẩm mới cho nam</h2>
-            <a href="<%= menCategory ? '/categories/' + menCategory.slug : '#' %>" class="section-link">Xem tất cả</a>
+            <a href="<%= menCategory ? '/catalog?category=' + menCategory.slug : '/catalog' %>" class="section-link">Xem tất cả</a>
           </div>
           <div class="product-grid">
             <% productsNewMen.forEach(function (product) { %>
@@ -152,7 +153,7 @@
         <div class="container">
           <div class="section-head">
             <h2 class="section-title">Sản phẩm mới cho nữ</h2>
-            <a href="<%= womenCategory ? '/categories/' + womenCategory.slug : '#' %>" class="section-link">Xem tất cả</a>
+            <a href="<%= womenCategory ? '/catalog?category=' + womenCategory.slug : '/catalog' %>" class="section-link">Xem tất cả</a>
           </div>
           <div class="product-grid">
             <% productsNewWomen.forEach(function (product) { %>
@@ -171,7 +172,7 @@
             <div class="section-head">
               <h2 class="section-title">Đang giảm giá</h2>
               <p class="section-note">Những mẫu được yêu thích với mức giá tốt</p>
-              <a href="#" class="section-link">Xem tất cả</a>
+              <a href="/catalog" class="section-link">Xem tất cả</a>
             </div>
             <div class="carousel" data-carousel>
               <button type="button" class="carousel-arrow carousel-arrow--prev" aria-label="Xem trước" data-carousel-prev>
@@ -201,7 +202,7 @@
         <div class="container">
           <div class="section-head">
             <h2 class="section-title">Bán chạy</h2>
-            <a href="#" class="section-link">Xem tất cả</a>
+            <a href="/catalog" class="section-link">Xem tất cả</a>
           </div>
           <div class="carousel" data-carousel>
             <button type="button" class="carousel-arrow carousel-arrow--prev" aria-label="Xem trước" data-carousel-prev>
