@@ -6,6 +6,11 @@ const MAX_KEYWORD_LENGTH = 100;
 const DEFAULT_PAGE_SIZE = 20;
 const MAX_PAGE_SIZE = 100;
 
+// Danh sách chỉ trả trường cần cho card/catalog. `description` (tối đa 2000
+// ký tự) chỉ có ở endpoint chi tiết để giữ payload danh sách nhẹ.
+const PRODUCT_LIST_FIELDS =
+  'name slug category images basePrice variants isActive createdAt updatedAt';
+
 // Tie-breaker _id giữ thứ tự ổn định khi createdAt/giá bằng nhau, tránh
 // bản ghi bị lặp hoặc thiếu giữa các trang.
 const SORT_OPTIONS = {
@@ -216,6 +221,7 @@ module.exports = {
   DEFAULT_PAGE_SIZE,
   MAX_KEYWORD_LENGTH,
   MAX_PAGE_SIZE,
+  PRODUCT_LIST_FIELDS,
   SORT_OPTIONS,
   buildFilter,
   buildPagination,
