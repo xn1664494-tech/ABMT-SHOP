@@ -50,26 +50,15 @@
             <div class="filter-group" style="display: flex; flex-direction: column; gap: 6px; width: 100%;">
               <label class="label" for="price-min">Khoảng giá</label>
               <div style="display: grid; gap: 6px;">
-                <input type="number" name="price_min" id="price-min" class="input" placeholder="Từ" min="0" step="1000" value="<%= locals.price_min || '' %>" aria-label="Giá tối thiểu">
+                <input type="number" name="minPrice" id="price-min" class="input" placeholder="Từ" min="0" step="1000" value="<%= locals.minPrice || '' %>" aria-label="Giá tối thiểu">
                 <span style="color: var(--muted);">đến</span>
-                <input type="number" name="price_max" id="price-max" class="input" đến" min="0" step="1000" value="<%= locals.price_max || '' %>" aria-label="Giá tối đa">
+                <input type="number" name="maxPrice" id="price-max" class="input" min="0" step="1000" value="<%= locals.maxPrice || '' %>" aria-label="Giá tối đa">
               </div>
-            </div>
-            <div class="filter-group" style="display: flex; flex-direction: column; gap: 6px; width: 100%;">
-              <label class="label" for="material">Chất liệu</label>
-              <select name="material" id="material" class="select" aria-label="Chọn chất liệu">
-                <option value="">-- Chọn chất liệu --</option>
-                <% if (materials) { %>
-                <% materials.forEach(function(mat) { %>
-                  <option value="<%= mat %>" <%= (locals.material === mat ? 'selected' : '') %>><%= mat %></option>
-                <% }) %>
-                <% } %>
-              </select>
             </div>
           </div>
           <div style="margin-top: 14px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
             <button type="submit" class="btn btn-primary" style="height: auto; padding: 8px 20px; font-size: 13px;">Áp dụng bộ lọc</button>
-            <% if (locals.category || locals.size || locals.price_min || locals.price_max || locals.material) { %>
+            <% if (locals.category || locals.size || locals.minPrice || locals.maxPrice) { %>
             <a href="/catalog" class="btn btn-ghost" style="height: auto; padding: 8px 20px; font-size: 13px;">Xóa bộ lọc</a>
             <% } %>
           </div>

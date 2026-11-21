@@ -96,6 +96,9 @@
             <button type="button" class="btn btn-ghost" id="plus" aria-label="Tăng số lượng">+</button>
           </div>
 
+          <!-- Nút thêm vào giỏ -->
+          <button type="button" id="add-to-cart" class="btn btn-primary" style="width: 100%; height: 46px; font-size: 14px; margin-top: 8px;" data-product-id="<%= product._id || product.id %>">Thêm vào giỏ hàng</button>
+
           <!-- Product Details -->
           <div class="product-sku" style="margin: 16px 0; font-size: 13px; color: var(--muted);">
             SKU: <span id="sku"></span>

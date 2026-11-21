@@ -104,19 +104,36 @@
         })
           .then(function (response) {
             // Success
-            if (response && response.redirectUrl) {
+            const orderCode = (response && response.data && response.data.code) || '';
+            if (orderCode) {
+              ABMT.toast.success('Đặt hàng thành công. Mã đơn: ' + orderCode);
+              setTimeout(function () {
+                window.location.href = '/account#orders';
+              }, 1500);
+            } else if (response && response.redirectUrl) {
               window.location.href = response.redirectUrl;
             } else {
-              // Trang cảm ơn đơn hàng đơn giản
               ABMT.toast.success('Đặt hàng thành công');
               setTimeout(function () {
-                window.location.href = '/';
+                window.location.href = '/account#orders';
               }, 2000);
             }
           })
           .catch(function (error) {
+            // Lỗi 401 (chưa đăng nhập/phiên hết hạn) → về login
+            if (error && (error.status === 401 || error.code === 401)) {
+              window.location.replace('/login?next=/checkout');
+              return;
+            }
+            // Lỗi 409 (hết hàng) → toast với chi tiết
+            if (error && (error.status === 409 || error.code === 409)) {
+              ABMT.toast.fromError(error);
+              placeOrderBtn.disabled = false;
+              placeOrderBtn.classList.remove('is-loading');
+              placeOrderBtn.removeAttribute('aria-busy');
+              return;
+            }
             ABMT.toast.fromError(error);
-            // Mở khóa nút
             placeOrderBtn.disabled = false;
             placeOrderBtn.classList.remove('is-loading');
             placeOrderBtn.removeAttribute('aria-busy');

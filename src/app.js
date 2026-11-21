@@ -1,6 +1,7 @@
 const express = require('express');
 const cookieParser = require('cookie-parser');
 const routes = require('./routes');
+const apiRoutes = require('./routes/api');
 const notFound = require('./middleware/404');
 const errorHandler = require('./middleware/errorHandler');
 const { currentUser } = require('./middleware/currentUser');
@@ -41,8 +42,8 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-// Routes — API dưới /api, đồng thời mount gốc cho trang chủ (EJS)
-app.use('/api', routes);
+// Routes — API chỉ mount dưới /api, trang HTML mount dưới /
+app.use('/api', apiRoutes);
 // Middleware nhận biết người dùng hiện tại chỉ cho route trang (EJS), không áp cho /api
 app.use(currentUser);
 app.use('/', routes);

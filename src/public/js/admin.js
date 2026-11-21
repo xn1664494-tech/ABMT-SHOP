@@ -9,6 +9,19 @@
     }
   }
 
+  function getCssVar(name) {
+    return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || '#2A2F36';
+  }
+
+  const CSS = {
+    ink: getCssVar('--ink'),
+    inkStrong: getCssVar('--ink-strong'),
+    muted: getCssVar('--muted'),
+    accent: getCssVar('--accent'),
+    surface: getCssVar('--surface'),
+    canvas: getCssVar('--canvas'),
+  };
+
   ready(function () {
     initAdmin();
   });
@@ -95,12 +108,12 @@
         options: {
           animation: { duration: 0 },
           scales: {
-            y: { beginAtZero: true, ticks: { color: '#6B7280' } },
-            x: { ticks: { color: '#6B7280' } }
+            y: { beginAtZero: true, ticks: { color: CSS.muted } },
+            x: { ticks: { color: CSS.muted } }
           },
-plugins: {
-            legend: { labels: { color: '#2A2F36' } },
-            tooltip: { enabled: true, backgroundColor: '#FFFEFC', titleColor: '#2A2F36', bodyColor: '#2A2F36' }
+          plugins: {
+            legend: { labels: { color: CSS.ink } },
+            tooltip: { enabled: true, backgroundColor: CSS.canvas, titleColor: CSS.ink, bodyColor: CSS.ink }
           }
         }
       });
@@ -112,7 +125,7 @@ plugins: {
         chartData.structure.datasets[0] && chartData.structure.datasets[0].data ?
         chartData.structure.datasets[0].data : [];
 
-      var backgroundColors2 = ['#8FB9A8', '#4E7F6D', '#EEF6F1', '#FCF1E8'];
+      var backgroundColors2 = [CSS.accent, getCssVar('--accent-deep'), getCssVar('--mint'), '#FCF1E8'];
 
       var chart2 = new Chart(ctx2, {
         type: 'doughnut',
@@ -130,7 +143,7 @@ plugins: {
           plugins: {
             legend: {
               labels: {
-                color: '#2A2F36',
+                color: CSS.ink,
                 font: { size: 12 }
               }
             }
@@ -148,11 +161,11 @@ plugins: {
 options: {
           animation: { duration: 0 },
           scales: {
-            y: { beginAtZero: true, ticks: { color: '#6B7280' } },
-            x: { ticks: { color: '#6B7280' } }
+            y: { beginAtZero: true, ticks: { color: CSS.muted } },
+            x: { ticks: { color: CSS.muted } }
           },
           plugins: {
-            legend: { labels: { color: '#2A2F36' } }
+            legend: { labels: { color: CSS.ink } }
           }
         }
         });
@@ -162,9 +175,7 @@ options: {
             labels: labels2,
             datasets: [{
               data: data2,
-              backgroundColor: backgroundColors2.length > 0 ? backgroundColors2 : [
-                '#8FB9A8', '#4E7F6D', '#EEF6F1', '#FCF1E8'
-              ]
+              backgroundColor: backgroundColors2.length > 0 ? backgroundColors2 : [CSS.accent, getCssVar('--accent-deep'), getCssVar('--mint'), '#FCF1E8']
             }]
           },
           options: {

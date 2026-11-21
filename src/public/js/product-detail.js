@@ -258,8 +258,9 @@
           return;
         }
 
+        const productId = addToCartBtn.dataset.productId;
         const quantity = qtyInput ? parseInt(qtyInput.value) : 1;
-        const cartItem = { variantId: variant.id, quantity };
+        const cartItem = { product: productId, size, color, qty: quantity };
 
         // Use withButtonLock to prevent double-click
         ABMT.withButtonLock(addToCartBtn, function () {
@@ -267,10 +268,11 @@
         })
           .then(function (response) {
             // Success - update cart badge if exists
-            if (response && response.cart_count !== undefined) {
-              const badge = document.querySelector('.cart-badge, .nav-cart .badge-count, #cart-count');
+            if (response && response.data && response.data.count !== undefined) {
+              const badge = document.querySelector('.cart-badge, .nav-cart .badge-count, #cart-count, [data-cart-badge], #badge');
               if (badge) {
-                badge.textContent = response.cart_count;
+                badge.textContent = response.data.count > 99 ? '99+' : response.data.count;
+                badge.style.display = 'inline-flex';
               }
             }
             ABMT.toast.success('Thêm vào giỏ thành công');
