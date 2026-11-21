@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title %></title>
+  <link rel="stylesheet" href="/css/app.css">
+  <style>
+    /* TODO: chuyển vào app.css */
+    .account-layout { display: grid; grid-template-columns: 250px 1fr; gap: 24px; align-items: start; }
+    .account-nav { position: sticky; top: 16px; }
+    .account-menu { display: flex; flex-direction: column; gap: 8px; padding: 0; margin: 0; list-style: none; }
+    .account-link, .account-btn {
+      display: block; width: 100%; text-align: left; padding: 10px 14px;
+      border: 1px solid var(--line); border-radius: var(--r-md);
+      background: var(--surface); color: var(--ink); font-size: 14px;
+      font: inherit; text-decoration: none;
+    }
+    .account-link:hover, .account-btn:hover { background: var(--mint); color: var(--accent-deep); border-color: var(--line-strong); cursor: pointer; }
+    .account-link--active { background: var(--accent); color: var(--canvas); border-color: var(--accent-deep); }
+    .account-link--block { display: block; text-align: center; }
+    .account-btn { cursor: pointer; }
+
+    .account-content { min-width: 0; }
+    .account-card { margin-bottom: 20px; }
+    .account-section-head { font-size: 18px; font-weight: 600; color: var(--ink-strong); margin: 0 0 16px; padding: 0; }
+    .account-welcome h2 { margin: 0; }
+
+    .account-profile-list { margin: 0; padding: 0; }
+    .account-profile-row { display: grid; grid-template-columns: 150px 1fr; gap: 8px 16px; border-bottom: 1px solid var(--line); padding: 10px 0; }
+    .account-profile-row:last-child { border-bottom: none; }
+    .account-profile-label { font-size: 13px; color: var(--muted); margin: 0; }
+    .account-profile-value { font-size: 13px; color: var(--ink); margin: 0; }
+
+    .account-empty { font-size: 13px; color: var(--muted); margin: 0; }
+
+    @media (max-width: 767.98px) {
+      .account-layout { grid-template-columns: 1fr; }
+      .account-nav { position: static; margin-bottom: 16px; }
+      .account-menu { flex-direction: row; gap: 6px; overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+      .account-menu::-webkit-scrollbar { display: none; }
+      .account-link, .account-btn { white-space: nowrap; padding: 8px 12px; font-size: 13px; flex-shrink: 0; }
+      .account-profile-row { grid-template-columns: 1fr; gap: 4px; }
+      .account-profile-row:last-child { border-bottom: none; }
+    }
+  </style>
+</head>
+<body>
+  <%- include('../partials/header') %>
+  <main id="main-content" class="main-content">
+    <div class="container">
+      <h1 class="section-title" style="margin-bottom: 24px;">Tài khoản của tôi</h1>
+
+      <% const user = locals.user || {}; %>
+      <% const orders = locals.orders || []; %>
+      <% const STATUS_LABELS = { pending: 'Chờ xử lý', confirmed: 'Đã xác nhận', shipping: 'Đang giao', delivered: 'Đã giao', cancelled: 'Đã hủy' }; %>
+
+      <div class="account-layout" role="region" aria-label="Tùy chọn tài khoản">
+        <nav class="account-nav" aria-label="Điều hướng tài khoản">
+          <ul class="account-menu">
+            <li><a href="#profile" class="account-link account-link--active">Thông tin</a></li>
+            <li><a href="#addresses" class="account-link">Địa chỉ</a></li>
+            <li><a href="#orders" class="account-link">Đơn hàng</a></li>
+            <% if (user.role === 'admin') { %>
+            <li><a href="/admin" class="account-link">Vào trang quản trị</a></li>
+            <% } %>
+            <li><button type="button" class="account-link account-btn" data-action="logout">Đăng xuất</button></li>
+          </ul>
+        </nav>
+
+        <div class="account-content">
+          <%# Xin chào %>
+          <div class="account-welcome" style="margin-bottom: 24px;">
+            <h2 class="section-title" style="margin: 0 0 4px;">Xin chào, <%= (user.name || 'bạn') %></h2>
+            <p style="font-size: 13px; color: var(--muted); margin: 0;">Tài khoản <% if (user.role === 'admin') { %>Quản trị<% } else { %>Khách hàng<% } %></p>
+          </div>
+
+          <%# 1. Thông tin cá nhân %>
+          <section id="profile" class="card account-card" aria-labelledby="h-profile">
+            <h2 id="h-profile" class="account-section-head">Thông tin cá nhân</h2>
+            <dl class="account-profile-list">
+              <div class="account-profile-row">
+                <dt class="account-profile-label">Họ và tên</dt>
+                <dd class="account-profile-value"><%= user.name || 'Chưa có' %></dd>
+              </div>
+              <div class="account-profile-row">
+                <dt class="account-profile-label">Email</dt>
+                <dd class="account-profile-value"><%= user.email || 'Chưa có' %></dd>
+              </div>
+              <% if (user.phone) { %>
+              <div class="account-profile-row">
+                <dt class="account-profile-label">Số điện thoại</dt>
+                <dd class="account-profile-value"><%= user.phone %></dd>
+              </div>
+              <% } %>
+            </dl>
+          </section>
+
+          <%# 2. Sổ địa chỉ %>
+          <section id="addresses" class="card account-card" aria-labelledby="h-addresses">
+            <h2 id="h-addresses" class="account-section-head">Sổ địa chỉ</h2>
+            <% const addresses = user.addresses || []; %>
+            <% if (addresses.length === 0) { %>
+              <p class="account-empty" style="text-align: center; color: var(--muted); padding: 24px 0;">Bạn chưa lưu địa chỉ nào</p>
+            <% } else { %>
+              <div class="account-address-list" style="display: grid; gap: 12px;">
+                <% addresses.forEach(function (addr) { %>
+                <div class="account-address-card" style="border: 1px solid var(--line); border-radius: var(--r-md); padding: 16px; background: var(--surface);">
+                  <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; margin-bottom: 8px;">
+                    <div style="font-size: 14px; font-weight: 600; color: var(--ink-strong);"><%= addr.recipient || addr.label || 'Người nhận' %></div>
+                    <% if (addr.isDefault) { %>
+                      <span class="badge badge-soft" style="font-size: 11px;">Mặc định</span>
+                    <% } %>
+                  </div>
+                  <p style="font-size: 13px; color: var(--ink); margin: 0 0 4px; line-height: 1.5;"><%= addr.street || '' %>, <%= addr.ward || '' %>, <%= addr.district || '' %>, <%= addr.city || '' %></p>
+                  <% if (addr.phone) { %>
+                  <p style="font-size: 13px; color: var(--muted); margin: 0;"><%= addr.phone %></p>
+                  <% } %>
+                </div>
+                <% }) %>
+              </div>
+            <% } %>
+            <% if (addresses.length < 3) { %>
+              <p style="margin-top: 16px;"><a href="/address/new" class="account-link--block">Thêm địa chỉ</a></p>
+            <% } else { %>
+              <p style="margin-top: 16px; font-size: 13px; color: var(--muted);">Đã đạt tối đa 3 địa chỉ</p>
+            <% } %>
+          </section>
+
+          <%# 3. Đơn hàng của tôi %>
+          <section id="orders" class="card account-card" aria-labelledby="h-orders">
+            <h2 id="h-orders" class="account-section-head">Đơn hàng của tôi</h2>
+            <% if (orders.length === 0) { %>
+              <div class="account-empty" style="text-align: center; padding: 32px 0;">
+                <p style="font-size: 13px; color: var(--muted); margin-bottom: 12px;">Bạn chưa có đơn hàng nào</p>
+                <a href="/catalog" class="btn btn-primary btn-block">Mua ngay</a>
+              </div>
+            <% } else { %>
+              <div class="account-table-wrap" style="overflow-x: auto;">
+                <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+                  <thead>
+                    <tr style="text-align: left; color: var(--ink-strong); border-bottom: 1px solid var(--line);">
+                      <th style="padding: 12px 8px; font-weight: 600;">Mã đơn</th>
+                      <th style="padding: 12px 8px; font-weight: 600;">Ngày đặt</th>
+                      <th style="padding: 12px 8px; font-weight: 600; text-align: right;">Tổng tiền</th>
+                      <th style="padding: 12px 8px; font-weight: 600;">Trạng thái</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <% orders.forEach(function (o) { %>
+                    <tr style="border-bottom: 1px solid var(--line);">
+                      <td style="padding: 12px 8px; color: var(--ink);"><%= o.code || '-' %></td>
+                      <td style="padding: 12px 8px; color: var(--muted);"><%= new Date(o.createdAt || Date.now()).toLocaleDateString('vi-VN') %></td>
+                      <td style="padding: 12px 8px; text-align: right; color: var(--ink);"><%= (o.total || 0).toLocaleString('vi-VN') %>₫</td>
+                      <td style="padding: 12px 8px;"><span class="badge" style="background: var(--mint); color: var(--accent-deep); border: 1px solid var(--line-strong); font-size: 11px;"><%= STATUS_LABELS[o.status] || o.status %></span></td>
+                    </tr>
+                    <% }) %>
+                  </tbody>
+                </table>
+              </div>
+            <% } %>
+          </section>
+        </div>
+      </div>
+    </div>
+  </main>
+  <%- include('../partials/footer') %>
+  <script src="/js/api.js"></script>
+  <script src="/js/ui.js"></script>
+  <script src="/js/account.js"></script>
+</body>
+</html>
