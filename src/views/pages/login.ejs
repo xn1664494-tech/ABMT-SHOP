@@ -8,6 +8,7 @@
 </head>
 <body>
   <%- include('../partials/header') %>
+  <%- include('../partials/flash') %>
   <main id="main-content" class="main-content">
     <section class="auth-page">
       <div class="auth-card">
@@ -29,8 +30,8 @@
             </div>
             <p class="field-error" id="loginPasswordError" hidden></p>
           </div>
-          <div id="loginError" role="alert"<% if (!locals || !locals.error) { %> hidden<% } %>>
-            <% if (locals && locals.error) { %><%- locals.error %><% } %>
+          <div id="loginError" class="form-alert" role="alert"<% if (!locals || !locals.error) { %> hidden<% } %>>
+            <% if (locals && locals.error) { %><%= locals.error %><% } %>
           </div>
           <input type="hidden" name="next" value="<%= locals && locals.next ? locals.next : '' %>">
           <button type="submit" class="btn btn-primary btn-block">Đăng nhập</button>

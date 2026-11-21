@@ -8,6 +8,7 @@
 </head>
 <body>
   <%- include('../partials/header') %>
+  <%- include('../partials/flash') %>
   <main id="main-content" class="main-content">
     <section class="auth-page">
       <div class="auth-card">
@@ -46,7 +47,7 @@
             </div>
             <p class="field-error" id="registerConfirmError" hidden></p>
           </div>
-          <div id="registerError" role="alert" hidden></div>
+          <div id="registerError" class="form-alert" role="alert" hidden></div>
           <button type="submit" class="btn btn-primary btn-block">Tạo tài khoản</button>
         </form>
         <p class="auth-switch">Đã có tài khoản? <a href="/login">Đăng nhập</a></p>
