@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title %></title>
+  <link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+  <%- include('../partials/header') %>
+  <main id="main-content" class="main-content">
+    <section class="auth-page">
+      <div class="auth-card">
+        <h1 class="auth-title">Đăng ký</h1>
+        <form id="registerForm" class="auth-form" novalidate>
+          <div class="field">
+            <label class="label" for="registerName">Họ và tên</label>
+            <input type="text" name="name" id="registerName" class="input" autocomplete="name" required aria-invalid="false" aria-describedby="registerNameError">
+            <p class="field-error" id="registerNameError" hidden></p>
+          </div>
+          <div class="field">
+            <label class="label" for="registerEmail">Email</label>
+            <input type="email" name="email" id="registerEmail" class="input" autocomplete="email" required aria-invalid="false" aria-describedby="registerEmailError">
+            <p class="field-error" id="registerEmailError" hidden></p>
+          </div>
+          <div class="field">
+            <label class="label" for="registerPassword">Mật khẩu</label>
+            <div class="input-group">
+              <input type="password" id="registerPassword" name="password" class="input" autocomplete="new-password" required aria-invalid="false" aria-describedby="registerPasswordError">
+              <button type="button" class="input-toggle" data-toggle-password aria-label="Hiện mật khẩu" aria-pressed="false">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" hidden><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+              </button>
+            </div>
+            <p class="field-error" id="registerPasswordError" hidden></p>
+            <p class="field-hint">Ít nhất 8 ký tự, gồm chữ và số</p>
+          </div>
+          <div class="field">
+            <label class="label" for="registerConfirm">Nhập lại mật khẩu</label>
+            <div class="input-group">
+              <input type="password" id="registerConfirm" name="confirmPassword" class="input" autocomplete="new-password" required aria-invalid="false" aria-describedby="registerConfirmError">
+              <button type="button" class="input-toggle" data-toggle-password aria-label="Hiện mật khẩu" aria-pressed="false">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" hidden><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+              </button>
+            </div>
+            <p class="field-error" id="registerConfirmError" hidden></p>
+          </div>
+          <div id="registerError" role="alert" hidden></div>
+          <button type="submit" class="btn btn-primary btn-block">Tạo tài khoản</button>
+        </form>
+        <p class="auth-switch">Đã có tài khoản? <a href="/login">Đăng nhập</a></p>
+      </div>
+    </section>
+  </main>
+  <%- include('../partials/footer') %>
+  <script src="/js/api.js"></script>
+  <script src="/js/ui.js"></script>
+  <script src="/js/password-toggle.js"></script>
+  <script src="/js/register.js"></script>
+</body>
+</html>

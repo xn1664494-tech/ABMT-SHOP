@@ -114,9 +114,11 @@
 
           if (isJson && typeof data === 'object' && data !== null) {
             errData = data;
-            // Keep errors field if present
+            // Keep errors field if present (ưu tiên errors, nếu không thì dùng details)
             if (errData.errors instanceof Object || Array.isArray(errData.errors)) {
               errs = errData.errors;
+            } else if (Array.isArray(errData.details)) {
+              errs = errData.details;
             }
             // Use message/error from server
             message = data.message || data.error;

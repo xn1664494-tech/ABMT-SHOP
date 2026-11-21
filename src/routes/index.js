@@ -16,6 +16,13 @@ router.get('/login', (req, res) => {
   });
 });
 
+// Trang đăng ký
+router.get('/register', (req, res) => {
+  res.render('pages/register', {
+    title: 'Đăng ký'
+  });
+});
+
 // API
 router.use('/auth', require('./auth.route'));
 router.use('/profile', require('./profile.route'));

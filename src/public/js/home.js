@@ -152,8 +152,13 @@
     // đảm bảo trạng thái đồng bộ ban đầu
     go(current);
 
+    var prevBtn = slider.querySelector('.banner-arrow--prev');
+    var nextBtn = slider.querySelector('.banner-arrow--next');
+
     if (n < 2) {
       if (dotsWrap) dotsWrap.hidden = true;
+      if (prevBtn) prevBtn.hidden = true;
+      if (nextBtn) nextBtn.hidden = true;
       return;
     }
 
@@ -193,6 +198,19 @@
       })(dots[d]);
     }
 
+    if (prevBtn) {
+      prevBtn.addEventListener('click', function () {
+        go(current - 1);
+        startAuto();
+      });
+    }
+    if (nextBtn) {
+      nextBtn.addEventListener('click', function () {
+        go(current + 1);
+        startAuto();
+      });
+    }
+
     slider.addEventListener('mouseenter', function () {
       pausedHover = true;
       stopAuto();
@@ -206,8 +224,6 @@
       stopAuto();
     });
     slider.addEventListener('focusout', function () {
-      var nextTarget = null;
-      // focusout: nếu focus rời hẳn slider thì tiếp tục
       setTimeout(function () {
         if (!slider.contains(document.activeElement)) {
           pausedHover = false;
@@ -223,6 +239,27 @@
         startAuto();
       }
     });
+
+    var touchStartX = 0;
+    var touchStartY = 0;
+    slider.addEventListener('touchstart', function (e) {
+      var t = e.changedTouches[0];
+      touchStartX = t.clientX;
+      touchStartY = t.clientY;
+    }, { passive: true });
+    slider.addEventListener('touchend', function (e) {
+      var t = e.changedTouches[0];
+      var dx = t.clientX - touchStartX;
+      var dy = t.clientY - touchStartY;
+      if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy)) {
+        if (dx > 0) {
+          go(current - 1);
+        } else {
+          go(current + 1);
+        }
+        startAuto();
+      }
+    }, { passive: true });
 
     function handleReduceChange() {
       if (reduceMq.matches) {
