@@ -116,43 +116,97 @@ body.no-scroll { overflow: hidden; }
 .banner-slider {
   position: relative; overflow: hidden; border-radius: var(--r-lg);
   min-height: 300px; margin-top: 20px;
+  display: grid;
+  grid-template-columns: 1fr;
+  grid-template-rows: 1fr;
 }
-.banner-slide { background: var(--mint); display: none; }
+.banner-slide {
+  grid-area: 1/1;
+  display: grid;
+  grid-template-columns: 1fr;
+  background: var(--mint);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity .5s ease;
+}
 .banner-slide:nth-child(2) { background: var(--peach); }
-.banner-slide.is-active { display: grid; grid-template-columns: 1fr; }
-.banner-image { display: none; }
-.banner-content { padding: 28px 24px 48px; display: flex; flex-direction: column; gap: 12px; justify-content: center; }
+.banner-slide.is-active {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+.banner-image {
+  grid-column: 2;
+  grid-row: 1;
+  display: none;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  margin: 0;
+  border-radius: 0;
+}
+.banner-content {
+  grid-column: 1;
+  grid-row: 1;
+  padding: 28px 24px 48px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  justify-content: center;
+}
 .banner-eyebrow {
   align-self: flex-start; font-size: 12px; background: var(--surface); color: var(--accent-deep);
   padding: 3px 12px; border-radius: var(--r-pill);
 }
 .banner-title { font-size: clamp(24px, 3vw, 32px); line-height: 1.25; font-weight: 600; color: var(--ink-strong); }
 .banner-dots {
-  position: absolute; bottom: 16px; left: 40px; display: flex; gap: 8px; z-index: 2;
+  position: absolute; bottom: 16px; left: 50%; transform: translateX(-50%);
+  display: flex; gap: 8px; z-index: 2;
 }
 .banner-dot {
-  width: 8px; height: 8px; border-radius: var(--r-pill); border: 0;
-  background: rgba(42,47,54,.25); transition: width .2s; padding: 0;
+  position: relative; width: 24px; height: 24px; padding: 0; border: 0;
+  background: transparent; cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center;
 }
-.banner-dot.is-active { width: 24px; background: var(--ink); }
+.banner-dot::before {
+  content: ""; position: absolute; width: 8px; height: 8px;
+  border-radius: 50%; background: rgba(42,47,54,.25);
+}
+.banner-dot.is-active::before {
+  width: 24px; height: 8px; border-radius: var(--r-pill); background: var(--ink);
+}
 
-@media (max-width: 767.98px) {
-  .banner-dots { left: 40px; }
-}
 @media (min-width: 768px) {
-  .banner-slide.is-active { grid-template-columns: 1.05fr 1fr; min-height: 340px; }
-  .banner-content { grid-column: 1; grid-row: 1; padding: 40px 36px 40px 40px; }
+  .banner-slider { min-height: 340px; }
+  .banner-slide { grid-template-columns: 1.05fr 1fr; }
+  .banner-content { padding: 40px 36px 40px 40px; }
   .banner-image {
-    display: block; grid-column: 2; grid-row: 1; margin: 20px 24px 20px 0;
-    border-radius: var(--r-md); background: var(--lilac); object-fit: contain;
-    width: 100%; height: calc(100% - 40px); min-height: 0;
+    display: block;
+    border-radius: 0;
   }
-  .banner-dots { left: 56px; }
 }
 @media (min-width: 1280px) {
   .banner-slider { min-height: 380px; }
-  .banner-slide.is-active { min-height: 380px; }
-  .banner-image { min-height: 340px; }
+}
+
+/* Nút mũi tên banner (chỉ hiển thị từ 768px) */
+.banner-arrow {
+  position: absolute; top: 50%; transform: translateY(-50%);
+  width: 40px; height: 40px;
+  border: 1px solid var(--line); border-radius: var(--r-pill);
+  background: var(--surface);
+  display: none;
+  align-items: center; justify-content: center;
+  z-index: 2; color: var(--ink); cursor: pointer;
+  transition: background .2s, color .2s;
+}
+.banner-arrow--prev { left: 12px; }
+.banner-arrow--next { right: 12px; }
+.banner-arrow:hover { background: var(--line-strong); color: var(--ink-strong); }
+
+@media (min-width: 768px) {
+  .banner-arrow { display: inline-flex; }
 }
 
 /* shortcuts */
@@ -893,91 +947,46 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 
 /* Ensure no #fff, #ffffff, white keywords in CSS rules above */
 
-/* ===== AUTH PAGE: Trang đăng nhập ===== */
-.auth-page .card-lg {
-  max-width: 420px;
-  margin: 0 auto;
-  padding: 24px;
+/* ===== AUTH PAGE: Trang đăng nhập / đăng ký ===== */
+.auth-page {
+  display: flex; justify-content: center; align-items: center;
+  min-height: 60vh; padding: 48px 16px 72px;
 }
-.auth-page .section-title {
-  text-align: center;
-  margin-top: 0;
-  margin-bottom: 24px;
+.auth-card {
+  width: 100%; max-width: 440px; margin: 0 auto;
+  background: var(--surface); border: 1px solid var(--line);
+  border-radius: var(--r-lg); padding: 32px;
 }
-.auth-page .pill-form {
-  background: var(--surface);
-  border-radius: var(--r-md);
-  padding: 24px;
+.auth-title {
+  text-align: center; font-size: 24px; font-weight: 600;
+  color: var(--ink-strong); margin: 0 0 24px;
 }
-.auth-page .field {
-  margin-bottom: 16px;
+.auth-form { display: grid; gap: 16px; }
+.auth-switch {
+  text-align: center; font-size: 13px; color: var(--muted); margin: 20px 0 0;
 }
-.auth-page .field .label {
-  display: block;
-  margin-bottom: 6px;
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--ink-strong);
-}
-.auth-page .input {
-  width: 100%;
-  border: 1px solid var(--line-strong);
-  border-radius: var(--r-field);
-  padding: 10px 14px;
-  font: inherit;
-  color: var(--ink);
-}
-.auth-page .input:focus {
-  border-color: var(--accent-deep);
-}
-.auth-page .input.is-invalid {
-  border-color: var(--danger);
-}
-.auth-page .field-error {
-  color: var(--danger);
-  font-size: 12px;
-  margin-top: 4px;
-  display: block;
-}
-.auth-page .btn-block {
-  width: 100%;
-  margin-top: 24px;
-}
-.auth-page .link-primary {
-  display: inline-block;
-  margin-top: 12px;
-  color: var(--accent);
-  text-decoration: none;
-}
-.auth-page .text-center {
-  text-align: center;
-  font-size: 13px;
-  color: var(--muted);
-}
-.auth-page .mt-4 {
-  margin-top: 16px;
-}
-.auth-page .mb-8 {
-  margin-bottom: 32px;
-}
-.auth-page .mb-8 {
-  margin-bottom: 32px;
+.auth-switch a { color: var(--accent-deep); }
+.auth-switch a:hover { text-decoration: underline; }
+
+@media (max-width: 479.98px) {
+  .auth-card { padding: 24px; }
 }
 
-/* Nút hiện/ẩn mật khẩu */
-.auth-page .input-group {
-  position: relative;
+/* Ô mật khẩu kèm nút hiện/ẩn */
+.input-group { position: relative; }
+.input-group .input { padding-right: 48px; }
+.input-toggle {
+  position: absolute; top: 50%; right: 8px; transform: translateY(-50%);
+  width: 36px; height: 36px;
+  display: inline-flex; align-items: center; justify-content: center;
+  padding: 0; border: 0; background: transparent;
+  color: var(--muted); border-radius: var(--r-pill); cursor: pointer;
 }
-.auth-page .btn-soft {
-  position: absolute;
-  right: 12px;
-  top: 50%;
-  transform: translateY(-50%);
-  padding: 0;
-  background: none;
-  color: var(--muted);
-  font-size: 12px;
+.input-toggle:hover { color: var(--ink-strong); }
+.input-toggle:focus-visible {
+  outline: 2px solid var(--accent-deep); outline-offset: 2px;
 }
 
-/* Ensure no #fff, #ffffff, white keywords in CSS rules below */
+/* Trạng thái lỗi của input */
+.input.is-invalid { border-color: var(--danger); }
 

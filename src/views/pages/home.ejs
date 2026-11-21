@@ -12,23 +12,29 @@
     <!-- Banner -->
     <section id="home-banner" class="section banner-section">
       <div class="container">
-        <div class="banner-slider" id="banner-slider">
-          <div class="banner-slide is-active">
-            <img src="/images/placeholder/banner.svg" alt="Bộ sưu tập mới ABMT SHOP" class="banner-image">
+        <div class="banner-slider" id="banner-slider" role="region" aria-roledescription="carousel" aria-label="Banner nổi bật">
+          <div class="banner-slide is-active" role="group" aria-roledescription="slide" aria-label="1 / 2">
+            <img src="/images/placeholder/banner-1.svg" alt="Bộ sưu tập mới ABMT SHOP" class="banner-image">
             <div class="banner-content">
               <p class="banner-eyebrow">Bộ sưu tập 2026</p>
               <h1 class="banner-title">Phong cách tối giản cho Nam &amp; Nữ</h1>
               <a href="#section-new-men" class="btn btn-primary">Khám phá ngay</a>
             </div>
           </div>
-          <div class="banner-slide">
-            <img src="/images/placeholder/banner.svg" alt="Ưu đãi mùa mới" class="banner-image">
+          <div class="banner-slide" role="group" aria-roledescription="slide" aria-label="2 / 2">
+            <img src="/images/placeholder/banner-2.svg" alt="Ưu đãi mùa mới" class="banner-image">
             <div class="banner-content">
               <p class="banner-eyebrow">Ưu đãi đặc biệt</p>
               <h2 class="banner-title">Giảm giá lên đến 30%</h2>
               <a href="#section-sale" class="btn btn-primary">Mua ngay</a>
             </div>
           </div>
+          <button type="button" class="banner-arrow banner-arrow--prev" aria-label="Banner trước">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>
+          </button>
+          <button type="button" class="banner-arrow banner-arrow--next" aria-label="Banner sau">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>
+          </button>
         </div>
         <div class="banner-dots" id="banner-dots" aria-label="Chuyển banner">
           <button class="banner-dot is-active" type="button" data-slide="0" aria-label="Banner 1"></button>
