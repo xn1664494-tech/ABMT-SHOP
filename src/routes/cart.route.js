@@ -1,69 +1,64 @@
 const express = require('express');
+const crypto = require('crypto');
 const router = express.Router();
 const Cart = require('../model/Cart');
 const Product = require('../model/Products');
 const asyncHandler = require('../utils/asyncHandler');
 const ErrorResponse = require('../utils/appError');
+const { calculateShippingFee } = require('../model/Order');
+
+const calcSummary = (items) => {
+  const subtotal = items.reduce((sum, item) => sum + (item.unitPrice * item.qty), 0);
+  const shippingFee = calculateShippingFee(subtotal);
+  const total = subtotal + shippingFee;
+  const count = items.reduce((sum, item) => sum + item.qty, 0);
+  return { subtotal, shippingFee, total, count };
+};
 
 /**
- * Kiểm tra xem user đã đăng nhập qua session chưa
+ * Lấy giỏ hàng hiện tại: ưu tiên user (nếu đăng nhập), còn không thì theo sessionId (cookie cartId)
  */
-const isAuthenticated = (req) => !!req.session && !!req.session.user;
+const resolveCart = async (req, currentUser, createIfMissing = false) => {
+  const cartId = req.cookies ? req.cookies.cartId : undefined;
 
-/**
- * GET /cart - Render trang giỏ hàng
- * - Đã đăng nhập: lấy giỏ hàng theo user
- * - Chưa đăng nhập: render giỏ rỗng an toàn
- */
-router.get('/', function (req, res, next) {
-  const authenticated = isAuthenticated(req);
-
-  if (authenticated) {
-    Cart.findOne({ user: req.session.user._id })
-      .then((cart) => {
-        const items = cart ? cart.items : [];
-        const subtotal = items.reduce((sum, item) => sum + (item.unitPrice * item.qty), 0);
-        const shippingFee = subtotal >= 500000 ? 0 : 30000;
-        const total = subtotal + shippingFee;
-        const count = items.reduce((sum, item) => sum + item.qty, 0);
-
-        const cartData = {
-          empty: items.length === 0,
-          items,
-          subtotal,
-          shippingFee,
-          total,
-          count
-        };
-
-        res.render('pages/cart', {
-          title: 'Giỏ hàng',
-          locals: cartData,
-          user: req.session.user
-        });
-      })
-      .catch(next);
-  } else {
-    // Chưa đăng nhập: render giỏ rỗng (không redirect sang login)
-    const cartData = {
-      empty: true,
-      items: [],
-      subtotal: 0,
-      shippingFee: 0,
-      total: 0,
-      count: 0
-    };
-    res.render('pages/cart', {
-      title: 'Giỏ hàng',
-      locals: cartData
-    });
+  let cart = null;
+  if (currentUser) {
+    cart = await Cart.findOne({ user: currentUser.id });
   }
-});
+  if (!cart && cartId) {
+    cart = await Cart.findOne({ sessionId: cartId });
+  }
+  if (!cart && createIfMissing) {
+    const fields = currentUser ? { user: currentUser.id } : { sessionId: cartId || crypto.randomBytes(16).toString('hex') };
+    cart = await Cart.create({ ...fields, items: [] });
+  }
+  return cart;
+};
+
+/**
+ * GET /api/cart - Trả về giỏ hàng dạng JSON
+ */
+router.get(
+  '/',
+  asyncHandler(async (req, res, next) => {
+    const cart = await resolveCart(req, res.locals.currentUser, true);
+    const items = cart ? cart.items : [];
+    const summary = calcSummary(items);
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        empty: items.length === 0,
+        items,
+        ...summary,
+      },
+    });
+  })
+);
 
 /**
  * POST /api/cart/items - Thêm sản phẩm vào giỏ
- * - Khách đã đăng nhập: lưu vào giỏ theo user
- * - Khách vãng lai: lưu vào giỏ theo sessionId
+ * Body: { product, size, color, qty }
  */
 router.post(
   '/items',
@@ -75,114 +70,64 @@ router.post(
     }
 
     const productObj = await Product.findById(product);
-    if (!productObj) {
+    if (!productObj || productObj.isDeleted) {
       return next(new ErrorResponse('Sản phẩm không tồn tại', 404));
     }
 
-    // Tạo SKU từ size và color
-    const sku = `${size}__${color}`;
+    const variant = (productObj.variants || []).find(
+      (v) => v.size === String(size).toUpperCase() && v.color === String(color)
+    );
+    if (!variant) {
+      return next(new ErrorResponse('Biến thể không tồn tại', 404));
+    }
+    if (variant.stock <= 0) {
+      return next(new ErrorResponse('Biến thể đã hết hàng', 409));
+    }
 
-    const authenticated = isAuthenticated(req);
+    const qtyNum = Math.max(1, Number(qty) || 1);
+    if (qtyNum > variant.stock) {
+      return next(new ErrorResponse(`Chỉ còn ${variant.stock} sản phẩm trong kho`, 409));
+    }
 
-    if (authenticated) {
-      // Khách đã đăng nhập: thêm/sửa vào giỏ theo user
-      let cart = await Cart.findOne({ user: req.session.user._id });
+    const sku = variant.sku;
+    const cart = await resolveCart(req, res.locals.currentUser, true);
 
-      if (!cart) {
-        cart = await Cart.create({ user: req.session.user._id, items: [] });
+    const existingIdx = (cart.items || []).findIndex(
+      (item) => item.sku === sku && item.product.equals(product)
+    );
+
+    if (existingIdx >= 0) {
+      const newQty = cart.items[existingIdx].qty + qtyNum;
+      if (newQty > variant.stock) {
+        return next(new ErrorResponse(`Vượt quá tồn kho (còn ${variant.stock})`, 409));
       }
-
-      // Kiểm tra xem sản phẩm đã có trong giỏ chưa (trùng SKU)
-      const existingItemIndex = cart.items.findIndex(
-        (item) => item.sku === sku && item.product.equals(product)
-      );
-
-      if (existingItemIndex >= 0) {
-        cart.items[existingItemIndex].qty += Number(qty) || 1;
-      } else {
-        cart.items.push({
-          product,
-          sku,
-          size,
-          color,
-          qty: Number(qty) || 1,
-          unitPrice: productObj.variants?.find(
-            (v) => v.size === size && v.color === color
-          )?.price || productObj.basePrice,
-        });
-      }
-
-      await cart.save();
-
-      const items = cart.items;
-      const subtotal = items.reduce((sum, item) => sum + (item.unitPrice * item.qty), 0);
-      const shippingFee = subtotal >= 500000 ? 0 : 30000;
-      const total = subtotal + shippingFee;
-      const count = items.reduce((sum, item) => sum + item.qty, 0);
-
-      return res.status(200).json({
-        success: true,
-        data: {
-          items,
-          subtotal,
-          shippingFee,
-          total,
-          count,
-        }
-      });
+      cart.items[existingIdx].qty = newQty;
     } else {
-      // Khách vãng lai: thêm/sửa vào giỏ theo sessionId
-      let sessionId = req.sessionID;
-
-      let cart = await Cart.findOne({ sessionId });
-
-      if (!cart) {
-        cart = await Cart.create({ sessionId, items: [] });
-      }
-
-      const existingItemIndex = cart.items.findIndex(
-        (item) => item.sku === sku && item.product.equals(product)
-      );
-
-      if (existingItemIndex >= 0) {
-        cart.items[existingItemIndex].qty += Number(qty) || 1;
-      } else {
-        cart.items.push({
-          product,
-          sku,
-          size,
-          color,
-          qty: Number(qty) || 1,
-          unitPrice: productObj.variants?.find(
-            (v) => v.size === size && v.color === color
-          )?.price || productObj.basePrice,
-        });
-      }
-
-      await cart.save();
-
-      const items = cart.items;
-      const subtotal = items.reduce((sum, item) => sum + (item.unitPrice * item.qty), 0);
-      const shippingFee = subtotal >= 500000 ? 0 : 30000;
-      const total = subtotal + shippingFee;
-      const count = items.reduce((sum, item) => sum + item.qty, 0);
-
-      return res.status(200).json({
-        success: true,
-        data: {
-          items,
-          subtotal,
-          shippingFee,
-          total,
-          count,
-        }
+      cart.items.push({
+        product,
+        sku,
+        size: String(size).toUpperCase(),
+        color: String(color),
+        qty: qtyNum,
+        unitPrice: variant.price || productObj.basePrice,
       });
     }
+
+    await cart.save();
+
+    const items = cart.items;
+    const summary = calcSummary(items);
+
+    return res.status(200).json({
+      success: true,
+      data: { items, ...summary },
+    });
   })
 );
 
 /**
- * PUT /api/cart/items/:id - Cập nhật số lượng sản phẩm trong giỏ
+ * PUT /api/cart/items/:id - Cập nhật số lượng
+ * Body: { qty }
  */
 router.put(
   '/items/:id',
@@ -190,79 +135,35 @@ router.put(
     const { qty } = req.body;
     const itemId = req.params.id;
 
-    if (!qty || qty < 1) {
-      return next(new ErrorResponse('Số lượng không hợp lệ', 400));
+    const qtyNum = Math.max(1, Number(qty) || 1);
+
+    const cart = await resolveCart(req, res.locals.currentUser);
+    if (!cart) {
+      return next(new ErrorResponse('Giỏ hàng không tồn tại', 404));
     }
 
-    const authenticated = isAuthenticated(req);
-
-    if (authenticated) {
-      let cart = await Cart.findOne({ user: req.session.user._id });
-
-      if (!cart) {
-        return next(new ErrorResponse('Giỏ hàng không tồn tại', 404));
-      }
-
-      const item = cart.items.find((item) => item._id.toString() === itemId);
-
-      if (!item) {
-        return next(new ErrorResponse('Sản phẩm không tồn tại trong giỏ', 404));
-      }
-
-      item.qty = Math.max(1, qty);
-
-      await cart.save();
-
-      const items = cart.items;
-      const subtotal = items.reduce((sum, item) => sum + (item.unitPrice * item.qty), 0);
-      const shippingFee = subtotal >= 500000 ? 0 : 30000;
-      const total = subtotal + shippingFee;
-      const count = items.reduce((sum, item) => sum + item.qty, 0);
-
-      return res.status(200).json({
-        success: true,
-        data: {
-          items,
-          subtotal,
-          shippingFee,
-          total,
-          count,
-        }
-      });
-    } else {
-      let cart = await Cart.findOne({ sessionId: req.sessionID });
-
-      if (!cart) {
-        return next(new ErrorResponse('Giỏ hàng không tồn tại', 404));
-      }
-
-      const item = cart.items.find((item) => item._id.toString() === itemId);
-
-      if (!item) {
-        return next(new ErrorResponse('Sản phẩm không tồn tại trong giỏ', 404));
-      }
-
-      item.qty = Math.max(1, qty);
-
-      await cart.save();
-
-      const items = cart.items;
-      const subtotal = items.reduce((sum, item) => sum + (item.unitPrice * item.qty), 0);
-      const shippingFee = subtotal >= 500000 ? 0 : 30000;
-      const total = subtotal + shippingFee;
-      const count = items.reduce((sum, item) => sum + item.qty, 0);
-
-      return res.status(200).json({
-        success: true,
-        data: {
-          items,
-          subtotal,
-          shippingFee,
-          total,
-          count,
-        }
-      });
+    const item = (cart.items || []).find((it) => it._id.toString() === itemId);
+    if (!item) {
+      return next(new ErrorResponse('Sản phẩm không tồn tại trong giỏ', 404));
     }
+
+    const productObj = await Product.findById(item.product);
+    const variant = (productObj && productObj.variants) ? productObj.variants.find((v) => v.sku === item.sku) : null;
+    const maxStock = variant ? variant.stock : 0;
+    if (qtyNum > maxStock) {
+      return next(new ErrorResponse(`Vượt quá tồn kho (còn ${maxStock})`, 409));
+    }
+
+    item.qty = qtyNum;
+    await cart.save();
+
+    const items = cart.items;
+    const summary = calcSummary(items);
+
+    return res.status(200).json({
+      success: true,
+      data: { items, ...summary },
+    });
   })
 );
 
@@ -274,95 +175,52 @@ router.delete(
   asyncHandler(async (req, res, next) => {
     const itemId = req.params.id;
 
-    const authenticated = isAuthenticated(req);
-
-    if (authenticated) {
-      let cart = await Cart.findOneAndUpdate(
-        { user: req.session.user._id },
-        { $pull: { items: { _id: itemId } } },
-        { new: true }
-      );
-
-      if (!cart) {
-        return next(new ErrorResponse('Giỏ hàng không tồn tại', 404));
-      }
-
-      const items = cart.items || [];
-      const subtotal = items.reduce((sum, item) => sum + (item.unitPrice * item.qty), 0);
-      const shippingFee = subtotal >= 500000 ? 0 : 30000;
-      const total = subtotal + shippingFee;
-      const count = items.reduce((sum, item) => sum + item.qty, 0);
-
-      return res.status(200).json({
-        success: true,
-        data: {
-          items,
-          subtotal,
-          shippingFee,
-          total,
-          count,
-        }
-      });
-    } else {
-      let cart = await Cart.findOneAndUpdate(
-        { sessionId: req.sessionID },
-        { $pull: { items: { _id: itemId } } },
-        { new: true }
-      );
-
-      if (!cart) {
-        return next(new ErrorResponse('Giỏ hàng không tồn tại', 404));
-      }
-
-      const items = cart.items || [];
-      const subtotal = items.reduce((sum, item) => sum + (item.unitPrice * item.qty), 0);
-      const shippingFee = subtotal >= 500000 ? 0 : 30000;
-      const total = subtotal + shippingFee;
-      const count = items.reduce((sum, item) => sum + item.qty, 0);
-
-      return res.status(200).json({
-        success: true,
-        data: {
-          items,
-          subtotal,
-          shippingFee,
-          total,
-          count,
-        }
-      });
+    const cart = await resolveCart(req, res.locals.currentUser);
+    if (!cart) {
+      return next(new ErrorResponse('Giỏ hàng không tồn tại', 404));
     }
+
+    const beforeLen = (cart.items || []).length;
+    cart.items = (cart.items || []).filter((it) => it._id.toString() !== itemId);
+
+    if (cart.items.length === beforeLen) {
+      return next(new ErrorResponse('Sản phẩm không tồn tại trong giỏ', 404));
+    }
+
+    await cart.save();
+
+    const items = cart.items;
+    const summary = calcSummary(items);
+
+    return res.status(200).json({
+      success: true,
+      data: { items, ...summary },
+    });
   })
 );
 
 /**
- * GET /cart/merge - Gộp giỏ guest vào giỏ customer khi đăng nhập
+ * GET /api/cart/merge - Gộp giỏ guest (cartId cookie) vào giỏ user sau đăng nhập
  */
 router.get(
   '/merge',
   asyncHandler(async (req, res, next) => {
-    if (!req.session.user) {
+    const currentUser = res.locals && res.locals.currentUser ? res.locals.currentUser : null;
+    if (!currentUser) {
       return next(new ErrorResponse('Chưa đăng nhập', 401));
     }
 
-    // Lấy giỏ khách vãng lai hiện tại
-    const guestCart = await Cart.findOne({ sessionId: req.sessionID });
+    const cartId = req.cookies ? req.cookies.cartId : undefined;
+    const guestCart = cartId ? await Cart.findOne({ sessionId: cartId }) : null;
 
-    // Lấy/giỏ khách hàng
-    let customerCart = await Cart.findOne({ user: req.session.user._id });
+    let customerCart = await Cart.findOne({ user: currentUser.id });
 
     if (guestCart && guestCart.items && guestCart.items.length > 0) {
       if (!customerCart) {
-        customerCart = await Cart.create({
-          user: req.session.user._id,
-          items: [],
-        });
+        customerCart = await Cart.create({ user: currentUser.id, items: [] });
       }
 
-      // Giữ lại items từ giỏ khách, tránh trùng SKU
-      const existingSkus = new Set(
-        (customerCart.items || []).map((item) => item.sku)
-      );
-
+      const existingSkus = new Set((customerCart.items || []).map((item) => item.sku));
       guestCart.items.forEach((item) => {
         if (!existingSkus.has(item.sku)) {
           customerCart.items.push(item);
@@ -370,26 +228,16 @@ router.get(
       });
 
       await customerCart.save();
+      await Cart.deleteOne({ sessionId: cartId });
+      res.clearCookie('cartId');
     }
 
-    // Xóa giỏ khách vãng lai sau khi gộp
-    await Cart.findOneAndDelete({ sessionId: req.sessionID });
-
-    const items = customerCart.items || [];
-    const subtotal = items.reduce((sum, item) => sum + (item.unitPrice * item.qty), 0);
-    const shippingFee = subtotal >= 500000 ? 0 : 30000;
-    const total = subtotal + shippingFee;
-    const count = items.reduce((sum, item) => sum + item.qty, 0);
+    const items = customerCart ? customerCart.items : [];
+    const summary = calcSummary(items);
 
     return res.status(200).json({
       success: true,
-      data: {
-        items,
-        subtotal,
-        shippingFee,
-        total,
-        count,
-      }
+      data: { items, ...summary },
     });
   })
 );
