@@ -206,10 +206,10 @@
     <nav class="site-nav" id="site-nav" aria-label="Menu chính">
       <button class="menu-close" id="menu-close" type="button" aria-label="Đóng menu">×</button>
       <ul class="nav-list">
-        <li><a href="#section-new-men" class="nav-link">Nam</a></li>
-        <li><a href="#section-new-women" class="nav-link">Nữ</a></li>
-        <li><a href="#section-new-men" class="nav-link">Sản phẩm mới</a></li>
-        <li><a href="#section-sale" class="nav-link">Giảm giá</a></li>
+        <li><a href="/#section-new-men" class="nav-link">Nam</a></li>
+        <li><a href="/#section-new-women" class="nav-link">Nữ</a></li>
+        <li><a href="/catalog?sort=newest" class="nav-link">Sản phẩm mới</a></li>
+        <li><a href="/#section-sale" class="nav-link">Giảm giá</a></li>
       </ul>
     </nav>
     <div class="header-actions">
@@ -273,7 +273,7 @@
     var searchBar = document.getElementById('header-search-bar');
     if (!searchToggle || !searchBar) return;
 
-    var searchInput = searchBar.querySelector('input[name="q"]');
+    var searchInput = searchBar.querySelector('input[name="keyword"]');
 
     function openSearch() {
       searchBar.hidden = false;

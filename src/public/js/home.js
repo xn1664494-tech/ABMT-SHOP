@@ -13,6 +13,7 @@
     initMenu();
     initBanner();
     initCarousels();
+    initVoucherCopy();
   });
 
   function initMenu() {
@@ -369,6 +370,55 @@
       // Initial update
       updateButtons();
     });
+  }
+
+  function initVoucherCopy() {
+    var buttons = document.querySelectorAll('[data-code].voucher-copy');
+    for (var i = 0; i < buttons.length; i++) {
+      (function (button) {
+        button.addEventListener('click', function () {
+          var code = button.getAttribute('data-code') || '';
+          if (!code) return;
+
+          function notify(ok) {
+            var toast = window.ABMT && window.ABMT.toast;
+            if (!toast) return;
+            var message = ok ? 'Đã sao chép mã ' + code : 'Không thể sao chép mã. Vui lòng thử lại.';
+            if (ok) {
+              toast.success(message);
+            } else {
+              toast.error(message);
+            }
+          }
+
+          function fallbackCopy(text) {
+            var input = document.createElement('textarea');
+            input.value = text;
+            input.setAttribute('readonly', '');
+            input.style.position = 'fixed';
+            input.style.opacity = '0';
+            document.body.appendChild(input);
+            input.select();
+            var ok = false;
+            try {
+              ok = document.execCommand('copy');
+            } catch (error) {
+              ok = false;
+            }
+            document.body.removeChild(input);
+            notify(ok);
+          }
+
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(code)
+              .then(function () { notify(true); })
+              .catch(function () { fallbackCopy(code); });
+          } else {
+            fallbackCopy(code);
+          }
+        });
+      })(buttons[i]);
+    }
   }
 
 })();
