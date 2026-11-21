@@ -24,7 +24,6 @@
     const emailInput = form.elements.email;
     const passwordInput = form.elements.password;
     const loginError = document.getElementById('loginError');
-    const nextInput = form.elements.next;
 
     function getFieldError(input) {
       return input.closest('.field').querySelector('.field-error');
@@ -80,6 +79,24 @@
       return valid;
     }
 
+    function getQueryParam(name) {
+      const params = new URLSearchParams(window.location.search);
+      return params.get(name) || '';
+    }
+
+    function isSafeNext(next) {
+      if (typeof next !== 'string' || next === '') {
+        return false;
+      }
+      if (!next.startsWith('/') || next.startsWith('//')) {
+        return false;
+      }
+      if (next.includes('\\') || next.includes('://')) {
+        return false;
+      }
+      return true;
+    }
+
     function showError(message) {
       if (loginError) {
         loginError.textContent = message;
@@ -114,25 +131,17 @@
         submitBtn.setAttribute('aria-busy', 'true');
       }
 
-      var nextValue = (nextInput && nextInput.value) || '';
-      var isValidNext = nextValue && nextValue.startsWith('/') && !nextValue.startsWith('//');
-
       window.ABMT.api.post('/api/auth/login', {
         email: emailInput.value.trim(),
         password: passwordInput.value.trim(),
-        next: isValidNext ? nextValue : undefined
       })
         .then(function (response) {
-          var redirectUrl = response && response.data && response.data.redirectUrl;
-          var validNext = isValidNext ? nextValue : '/';
-
-          if (redirectUrl) {
-            window.location.href = redirectUrl;
-          } else if (validNext) {
-            window.location.href = validNext;
-          } else {
-            window.location.href = '/';
-          }
+          // Đăng nhập thành công (200): không có redirectUrl từ API.
+          // Lấy next từ query string, kiểm tra an toàn; hợp lệ → đến next, ngược lại → /account.
+          const nextFromUrl = getQueryParam('next');
+          const redirectTarget = isSafeNext(nextFromUrl) ? nextFromUrl : '/account';
+          // replace để nút Back không quay lại trang login
+          window.location.replace(redirectTarget);
         })
         .catch(function (error) {
           if (error && (error.code === 401 || error.status === 401 || (error.message && error.message.includes('Email hoặc mật khẩu')))) {

@@ -4,9 +4,39 @@
   // CSRF config
   const CSRF_META = 'csrf-token';
   const CSRF_HEADER = 'X-CSRF-Token';
+  let csrfPromise = null;
 
   // Default timeout
   const DEFAULT_TIMEOUT = 15000;
+
+  /** Lấy CSRF token từ cookie; nếu thiếu thì gọi GET /api/auth/csrf một lần (dùng lại promise) */
+  function getCsrfToken() {
+    const match = document.cookie.match(new RegExp('(?:^|;\\s*)csrfToken=([^;]+)'));
+    if (match) {
+      return Promise.resolve(match[1]);
+    }
+    if (!csrfPromise) {
+      csrfPromise = fetch('/api/auth/csrf', {
+        credentials: 'same-origin',
+        headers: { Accept: 'application/json' },
+      })
+        .then((response) => {
+          if (!response.ok) {
+            return null;
+          }
+          return response.json();
+        })
+        .then((data) => {
+          csrfPromise = null;
+          return data && data.data && data.data.csrfToken ? data.data.csrfToken : null;
+        })
+        .catch(() => {
+          csrfPromise = null;
+          return null;
+        });
+    }
+    return csrfPromise;
+  }
 
   /** ApiError class */
   class ApiError extends Error {
@@ -22,7 +52,7 @@
   }
 
   /** Core request function */
-  function request(method, url, options = {}) {
+  async function request(method, url, options = {}) {
     const {
       body,
       query,
@@ -50,31 +80,25 @@
     const abortController = new AbortController();
     const timeoutId = setTimeout(() => abortController.abort(), timeout || DEFAULT_TIMEOUT);
 
+    const baseHeaders = {
+      Accept: 'application/json',
+      ...extraHeaders
+    };
+
+    // Add CSRF header for write requests
+    if (!/^(GET|HEAD)$/i.test(method)) {
+      const csrfToken = await getCsrfToken();
+      if (csrfToken) {
+        baseHeaders['X-CSRF-Token'] = csrfToken;
+      }
+    }
+
     const fetchOptions = {
       method,
       credentials: 'same-origin',
       signal: abortController.signal,
-      headers: {
-        Accept: 'application/json',
-        ...extraHeaders
-      }
+      headers: baseHeaders
     };
-
-    // Add CSRF header if not GET/HEAD
-    if (!/^(GET|HEAD)$/i.test(method)) {
-      // 1. Check cookie first (server uses csrfToken cookie)
-      const cookieToken = document.cookie.match(/ csrfToken=([^;]+)/);
-      if (cookieToken) {
-        fetchOptions.headers['X-CSRF-Token'] = cookieToken[1];
-      } else {
-        // 2. Fall back to meta tag
-        const metaTag = document.querySelector(`meta[name="${CSRF_META}"]`);
-        if (metaTag) {
-          fetchOptions.headers['X-CSRF-Token'] = metaTag.getAttribute('content') || '';
-        }
-        // If no meta tag, do NOT send header and do NOT error
-      }
-    }
 
     // Add body if provided
     if (body && typeof body === 'object') {
@@ -82,98 +106,103 @@
       fetchOptions.body = JSON.stringify(body);
     }
 
-    return fetch(requestUrl, fetchOptions)
-      .then(response => {
-        clearTimeout(timeoutId);
-        const contentType = response.headers.get('content-type');
+    const performRequest = async (csrfToken) => {
+      const headers = { ...baseHeaders };
+      if (csrfToken) {
+        headers['X-CSRF-Token'] = csrfToken;
+      }
+      const opts = {
+        method,
+        credentials: 'same-origin',
+        signal: abortController.signal,
+        headers
+      };
+      if (body && typeof body === 'object') {
+        opts.headers['Content-Type'] = 'application/json';
+        opts.body = JSON.stringify(body);
+      }
+      const response = await fetch(requestUrl, opts);
+      clearTimeout(timeoutId);
+      const contentType = response.headers.get('content-type');
 
-        // 204 No Content → null
-        if (response.status === 204) {
-          return null;
+      // 204 No Content → null
+      if (response.status === 204) {
+        return null;
+      }
+
+      // Try to parse JSON if content-type indicates JSON
+      let data;
+      if (contentType && contentType.includes('application/json')) {
+        data = await response.json();
+      } else {
+        data = await response.text();
+      }
+
+      // Success: return parsed data (or text if not JSON)
+      if (response.ok) {
+        return contentType && contentType.includes('application/json') ? data : { text: data, ok: true };
+      }
+
+      // Error: build ApiError
+      let message, code;
+      let errData = null;
+      let errs = null;
+
+      if (contentType && contentType.includes('application/json') && typeof data === 'object' && data !== null) {
+        errData = data;
+        if (errData.errors instanceof Object || Array.isArray(errData.errors)) {
+          errs = errData.errors;
+        } else if (Array.isArray(errData.details)) {
+          errs = errData.details;
         }
+        message = data.message || data.error;
+      }
 
-        // Try to parse JSON if content-type indicates JSON
-        let data;
-        if (contentType && contentType.includes('application/json')) {
-          data = response.json();
-        } else {
-          data = response.text();
+      const status = response.status;
+
+      const defaultMessages = {
+        400: 'Yêu cầu không hợp lệ.',
+        401: 'Vui lòng đăng nhập để tiếp tục.',
+        403: 'Bạn không có quyền thực hiện thao tác này.',
+        404: 'Không tìm thấy dữ liệu yêu cầu.',
+        409: 'Dữ liệu đã thay đổi, vui lòng thử lại.',
+        422: 'Thông tin chưa hợp lệ, vui lòng kiểm tra lại.',
+        429: 'Bạn thao tác quá nhanh, vui lòng thử lại sau.',
+        500: 'Máy server đang gặp sự cố, vui lòng thử lại sau.',
+        502: 'Máy server đang gặp sự cố, vui lòng thử lại sau.',
+        503: 'Máy server đang gặp sự cố, vui lòng thử lại sau.'
+      };
+
+      if (message) {
+        code = 'http';
+      } else {
+        code = 'http';
+        message = defaultMessages[status] || 'Máy server đang gặp sự cố, vui lòng thử lại.';
+      }
+
+      throw new ApiError(status, code, message, errData, errs);
+    };
+
+    try {
+      return await performRequest();
+    } catch (err) {
+      // Lỗi CSRF: lấy token mới và thử lại đúng 1 lần
+      if (err instanceof ApiError && err.status === 403 && /csrf/i.test(err.message || '')) {
+        csrfPromise = null;
+        const newToken = await getCsrfToken();
+        if (newToken) {
+          return await performRequest(newToken);
         }
-
-        // Success: return parsed data (or text if not JSON)
-        return { response, data, isJson: contentType && contentType.includes('application/json') };
-      })
-      .then(({ response, data, isJson }) => {
-        if (!response.ok) {
-          clearTimeout(timeoutId);
-          let message, code;
-
-          // Try to extract message and errors from response data
-          let errData = null;
-          let errs = null;
-
-          if (isJson && typeof data === 'object' && data !== null) {
-            errData = data;
-            // Keep errors field if present (ưu tiên errors, nếu không thì dùng details)
-            if (errData.errors instanceof Object || Array.isArray(errData.errors)) {
-              errs = errData.errors;
-            } else if (Array.isArray(errData.details)) {
-              errs = errData.details;
-            }
-            // Use message/error from server
-            message = data.message || data.error;
-          }
-
-          // Determine status code and message
-          const status = response.status;
-
-          // Default messages by status
-          const defaultMessages = {
-            400: 'Yêu cầu không hợp lệ.',
-            401: 'Vui lòng đăng nhập để tiếp tục.',
-            403: 'Bạn không có quyền thực hiện thao tác này.',
-            404: 'Không tìm thấy dữ liệu yêu cầu.',
-            409: 'Dữ liệu đã thay đổi, vui lòng thử lại.',
-            422: 'Thông tin chưa hợp lệ, vui lòng kiểm tra lại.',
-            429: 'Bạn thao tác quá nhanh, vui lòng thử lại sau.',
-            500: 'Máy server đang gặp sự cố, vui lòng thử lại sau.',
-            502: 'Máy server đang gặp sự cố, vui lòng thử lại sau.',
-            503: 'Máy server đang gặp sự cố, vui lòng thử lại sau.'
-          };
-
-          if (message) {
-            // Server provided message (could be Vietnamese)
-            code = 'http';
-          } else {
-            code = 'http';
-            message = defaultMessages[status] || 'Máy server đang gặp sự cố, vui lòng thử lại.';
-          }
-
-          throw new ApiError(
-            status,
-            code,
-            message,
-            errData,
-            errs
-          );
-        }
-
-        // Success
-        clearTimeout(timeoutId);
-        return isJson ? data : { text: data, ok: true };
-      })
-      .catch(err => {
-        clearTimeout(timeoutId);
-        // Network or timeout error
-        if (err.name === 'AbortError') {
-          throw new ApiError(0, 'timeout', 'Máy server phản hồi quá lâu, vui lòng thử lại.');
-        }
-        if (err instanceof ApiError) {
-          throw err;
-        }
-        // Other fetch errors
-        throw new ApiError(0, 'network', 'Không kết nối được tới máy chủ.');
-      });
+      }
+      // Network or timeout error
+      if (err.name === 'AbortError') {
+        throw new ApiError(0, 'timeout', 'Máy server phản hồi quá lâu, vui lòng thử lại.');
+      }
+      if (err instanceof ApiError) {
+        throw err;
+      }
+      throw new ApiError(0, 'network', 'Không kết nối được tới máy chủ.');
+    }
   }
 
   /** Utility methods */
