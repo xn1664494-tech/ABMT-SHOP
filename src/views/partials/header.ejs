@@ -214,8 +214,8 @@
     </nav>
     <div class="header-actions">
       <!-- 1) Ô tìm kiếm (desktop, từ 768px trở lên hiển thị) -->
-      <form class="header-search" action="/products" method="GET" role="search">
-        <input class="header-search-input" type="search" name="q" placeholder="Tìm sản phẩm..." aria-label="Tìm sản phẩm" value="<%= locals.q || '' %>" autocomplete="off">
+      <form class="header-search" action="/catalog" method="GET" role="search">
+        <input class="header-search-input" type="search" name="keyword" placeholder="Tìm sản phẩm..." aria-label="Tìm sản phẩm" value="<%= locals.q || '' %>" autocomplete="off">
         <button class="header-search-btn" type="submit" aria-label="Tìm kiếm">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <circle cx="11" cy="11" r="6.5"/>
@@ -255,8 +255,8 @@
 
   <!-- 5) Hàng tìm kiếm trên điện thoại -->
   <div class="header-search-bar container" id="header-search-bar" hidden>
-    <form class="header-search-bar-form" action="/products" method="GET" role="search">
-      <input class="header-search-bar-input" type="search" name="q" placeholder="Tìm sản phẩm..." aria-label="Tìm sản phẩm" value="<%= locals.q || '' %>" autocomplete="off">
+    <form class="header-search-bar-form" action="/catalog" method="GET" role="search">
+      <input class="header-search-bar-input" type="search" name="keyword" placeholder="Tìm sản phẩm..." aria-label="Tìm sản phẩm" value="<%= locals.q || '' %>" autocomplete="off">
       <button class="header-search-btn" type="submit" aria-label="Tìm kiếm">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <circle cx="11" cy="11" r="6.5"/>

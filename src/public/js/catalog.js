@@ -181,14 +181,14 @@
             params.append(key, value);
           }
         }
-        // Remove price_min/price_max if equal to default/empty
-        if (params.has('price_min')) {
-          const pm = parseInt(params.get('price_min'), 10);
-          if (isNaN(pm) || pm === 0) params.delete('price_min');
+        // Remove minPrice/maxPrice if equal to default/empty
+        if (params.has('minPrice')) {
+          const pm = parseInt(params.get('minPrice'), 10);
+          if (isNaN(pm) || pm === 0) params.delete('minPrice');
         }
-        if (params.has('price_max')) {
-          const pm = parseInt(params.get('price_max'), 10);
-          if (isNaN(pm) || pm === 0) params.delete('price_max');
+        if (params.has('maxPrice')) {
+          const pm = parseInt(params.get('maxPrice'), 10);
+          if (isNaN(pm) || pm === 0) params.delete('maxPrice');
         }
 
         // Build URL with params, reset page to 1

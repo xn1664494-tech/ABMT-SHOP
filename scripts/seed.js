@@ -16,95 +16,112 @@ const SEED_EMAILS = [
   'seed.admin@urbanminimal.test',
 ];
 const SEED_SLUGS = [
-  'ao', 'quan', 'vay', 'dam', 'phu-kien', 'giay-dep',
+  'nam', 'nu',
+  'ao-nam', 'quan-nam',
+  'ao-nu', 'quan-nu', 'vay-nu', 'dam-nu',
   'ao-thun-co-tay', 'quan-jeans-skinny', 'vay-du-tiec',
-  'dam-cuoi', 'balo-deo-xinh', 'giay-dep-trang',
+  'dam-cuoi', 'ao-thun-nu', 'quan-culottes-nu',
 ];
 const SEED_SKUS = [
   'SP-AO-001-M-DEN', 'SP-AO-001-L-TRANG',
   'SP-QU-002-M-XANH', 'SP-QU-002-L-DEN',
   'SP-VY-003-S-HONG', 'SP-VY-003-M-TIM',
   'SP-DM-004-M-TRANG', 'SP-DM-004-L-XANH-DUONG',
-  'SP-PK-005-F-NAU', 'SP-PK-005-F-DEN',
-  'SP-GD-006-42-TRANG', 'SP-GD-006-41-DEN',
+  'SP-AON-005-M-XANH', 'SP-AON-006-L-TRANG',
+  'SP-QU-007-M-XANH', 'SP-QU-008-L-DEN',
 ];
 
 const SEED_ADMIN_PASSWORD = 'Admin@123456';
 
 const CATEGORIES = [
-  { name: 'Áo', order: 1 },
-  { name: 'Quần', order: 2 },
-  { name: 'Váy', order: 3 },
-  { name: 'Đầm', order: 4 },
-  { name: 'Phụ kiện', order: 5 },
-  { name: 'Giày dép', order: 6 },
+  { name: 'Nam', order: 1, children: [
+    { name: 'Áo', order: 1 },
+    { name: 'Quần', order: 2 },
+  ]},
+  { name: 'Nữ', order: 2, children: [
+    { name: 'Áo', order: 1 },
+    { name: 'Quần', order: 2 },
+    { name: 'Váy', order: 3 },
+    { name: 'Đầm', order: 4 },
+  ]},
 ];
 
 const PRODUCTS = [
   {
-    name: 'Áo thun cổ tay cơ bản',
-    categoryName: 'Áo',
+    name: 'Áo thun cotton cổ tròn nam',
+    categoryPath: ['Nam', 'Áo'],
     description: 'Áo thun cotton thấm hút mát mẻ.',
-    basePrice: 199000,
-    images: ['https://cdn.example.com/ao-thun-co-tay.jpg'],
+    basePrice: 299000,
+    images: ['https://cdn.example.com/ao-thun-cotton-nam.jpg'],
     variants: [
-      { size: 'M', color: 'Đen', colorCode: '#111111', stock: 20, price: 199000 },
-      { size: 'L', color: 'Trắng', colorCode: '#FFFFFF', stock: 15, price: 199000 },
+      { size: 'M', color: 'Đen', colorCode: '#111111', stock: 20, price: 299000 },
+      { size: 'L', color: 'Trắng', colorCode: '#FFFFFF', stock: 15, price: 299000 },
     ],
   },
   {
-    name: 'Quần jeans skinny bụi',
-    categoryName: 'Quần',
-    description: 'Quần jeans Skinny dáng form, màu bụi thời thượng.',
-    basePrice: 459000,
-    images: ['https://cdn.example.com/quan-jeans.jpg'],
+    name: 'Áo sơ mi linen tay dài nam',
+    categoryPath: ['Nam', 'Áo'],
+    description: 'Áo sơ mi linen form ngần.',
+    basePrice: 449000,
+    images: ['https://cdn.example.com/ao-so-mi-nam.jpg'],
     variants: [
-      { size: 'M', color: 'Xanh', colorCode: '#4A90E2', stock: 10, price: 459000 },
-      { size: 'L', color: 'Đen', colorCode: '#000000', stock: 8, price: 459000 },
+      { size: 'M', color: 'Xanh dương', colorCode: '#4A90E2', stock: 10, price: 449000 },
+      { size: 'L', color: 'Đen', colorCode: '#000000', stock: 8, price: 449000 },
     ],
   },
   {
-    name: 'Váy dự tiệc nháy nháy',
-    categoryName: 'Váy',
-    description: 'Váy dài dự tiệc vải nháy, sang trọng.',
-    basePrice: 799000,
-    images: ['https://cdn.example.com/vay-du-tiec.jpg'],
+    name: 'Quần jeans ống đứng nam',
+    categoryPath: ['Nam', 'Quần'],
+    description: 'Quần jeans Skinny dáng form.',
+    basePrice: 549000,
+    images: ['https://cdn.example.com/quan-jeans-nam.jpg'],
     variants: [
-      { size: 'S', color: 'Hồng', colorCode: '#FF69B4', stock: 5, price: 799000 },
-      { size: 'M', color: 'Tím', colorCode: '#800080', stock: 4, price: 799000 },
+      { size: 'M', color: 'Xanh', colorCode: '#4A90E2', stock: 12, price: 549000 },
+      { size: 'L', color: 'Đen', colorCode: '#000000', stock: 6, price: 549000 },
+    ],
+  },
+  {
+    name: 'Áo thun cotton nữ',
+    categoryPath: ['Nữ', 'Áo'],
+    description: 'Áo thun cotton-basic dành cho nữ.',
+    basePrice: 329000,
+    images: ['https://cdn.example.com/ao-thun-nu.jpg'],
+    variants: [
+      { size: 'S', color: 'Trắng', colorCode: '#FFFFFF', stock: 18, price: 329000 },
+      { size: 'M', color: 'Hồng', colorCode: '#FF69B4', stock: 14, price: 329000 },
+    ],
+  },
+  {
+    name: 'Quần culottes ống rộng nữ',
+    categoryPath: ['Nữ', 'Quần'],
+    description: 'Quần culottes vải cao su.',
+    basePrice: 399000,
+    images: ['https://cdn.example.com/quan-culottes.jpg'],
+    variants: [
+      { size: 'S', color: 'Xanh', colorCode: '#2E8B57', stock: 10, price: 399000 },
+      { size: 'M', color: 'Đen', colorCode: '#000000', stock: 8, price: 399000 },
+    ],
+  },
+  {
+    name: 'Váy midi dáng chữ A',
+    categoryPath: ['Nữ', 'Váy'],
+    description: 'Váy midi dáng chữ A thanh lịch.',
+    basePrice: 499000,
+    images: ['https://cdn.example.com/vay-midi.jpg'],
+    variants: [
+      { size: 'S', color: 'Hồng', colorCode: '#FF69B4', stock: 5, price: 499000 },
+      { size: 'M', color: 'Tím', colorCode: '#800080', stock: 4, price: 499000 },
     ],
   },
   {
     name: 'Đầm cưới trắng thanh lịch',
-    categoryName: 'Đầm',
-    description: 'Dam cuoi trang vai le dinh hoa.',
+    categoryPath: ['Nữ', 'Đầm'],
+    description: 'Đầm cưới trắng vải sagio.',
     basePrice: 1599000,
     images: ['https://cdn.example.com/dam-cuoi.jpg'],
     variants: [
       { size: 'M', color: 'Trắng', colorCode: '#FFFFFF', stock: 3, price: 1599000 },
       { size: 'L', color: 'Xanh dương', colorCode: '#0000FF', stock: 2, price: 1599000 },
-    ],
-  },
-  {
-    name: 'Balo déo xinh casual',
-    categoryName: 'Phụ kiện',
-    description: 'Balo déo đeo chéo casual, nhiều ngăn.',
-    basePrice: 329000,
-    images: ['https://cdn.example.com/balo-deo.jpg'],
-    variants: [
-      { size: 'F', color: 'Nâu', colorCode: '#8B4513', stock: 12, price: 329000 },
-      { size: 'F', color: 'Đen', colorCode: '#000000', stock: 15, price: 329000 },
-    ],
-  },
-  {
-    name: 'Giày dép trắng classic',
-    categoryName: 'Giày dép',
-    description: 'Giày dép trắng classic đi lại thoải mái.',
-    basePrice: 249000,
-    images: ['https://cdn.example.com/giay-dep-trang.jpg'],
-    variants: [
-      { size: '42', color: 'Trắng', colorCode: '#FFFFFF', stock: 25, price: 249000 },
-      { size: '41', color: 'Đen', colorCode: '#000000', stock: 20, price: 249000 },
     ],
   },
 ];
@@ -190,33 +207,38 @@ const run = async () => {
       status: 'active',
     });
 
-    // Tao danh muc (lay _id de tham chieu).
+    // Tạo danh mục cây: gốc (Nam/Nữ) rồi danh mục con
     const categoryMap = new Map();
     for (const cat of CATEGORIES) {
-      const created = await Category.create(cat);
-      categoryMap.set(cat.name, created._id);
+      // Tạo gốc
+      const root = await Category.create({ name: cat.name, order: cat.order, parentId: null });
+      categoryMap.set(cat.name, root._id);
+      for (const child of cat.children || []) {
+        const created = await Category.create({ name: child.name, order: child.order, parentId: root._id });
+        categoryMap.set(`${cat.name} > ${child.name}`, created._id);
+      }
     }
 
-    // Tao san pham co bien the, sinh SKU qua buildSku.
+    // Tạo sản phẩm có biến thể, sinh SKU qua buildSku
     const skuCounterByCategory = new Map();
     const createdProducts = [];
     for (const p of PRODUCTS) {
-      const categoryId = categoryMap.get(p.categoryName);
+      const categoryId = categoryMap.get(p.categoryPath.join(' > '));
       if (!categoryId) {
-        throw new Error(`Khong tim thay danh muc: ${p.categoryName}`);
+        throw new Error(`Không tìm thấy danh mục: ${p.categoryPath.join(' > ')}`);
       }
 
-      if (!skuCounterByCategory.has(p.categoryName)) {
-        skuCounterByCategory.set(p.categoryName, 0);
+      if (!skuCounterByCategory.has(p.categoryPath[0])) {
+        skuCounterByCategory.set(p.categoryPath[0], 0);
       }
-      let counter = skuCounterByCategory.get(p.categoryName);
+      let counter = skuCounterByCategory.get(p.categoryPath[0]);
 
       const variants = p.variants.map((v) => {
         counter += 1;
-        skuCounterByCategory.set(p.categoryName, counter);
+        skuCounterByCategory.set(p.categoryPath[0], counter);
         const prefix = {
-          Áo: 'AO', Quần: 'QU', Váy: 'VY', Đầm: 'DM', 'Phụ kiện': 'PK', 'Giày dép': 'GD',
-        }[p.categoryName];
+          Nam: 'AO', Nữ: 'VY',
+        }[p.categoryPath[0]];
         return {
           size: v.size,
           color: v.color,
