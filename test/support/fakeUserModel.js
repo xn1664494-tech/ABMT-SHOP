@@ -12,6 +12,9 @@ const createFakeUserModel = () => {
     setOptions() {
       return this;
     },
+    lean() {
+      return this;
+    },
     then(resolve, reject) {
       return Promise.resolve(result).then(resolve, reject);
     },
