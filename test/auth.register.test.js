@@ -61,6 +61,7 @@ test('T3-1-1: dang ky thanh cong tra 201 va khong lo password', async () => {
   assert.equal(res.body.data.user.password, undefined);
   assert.equal(res.body.data.user.passwordHash, undefined);
   assert.equal(JSON.stringify(res.body).includes('Secret123'), false);
+  assert.doesNotMatch(JSON.stringify(res.body), /\$2[aby]\$\d{2}\$/);
   assert.equal(users.length, 1);
 });
 
