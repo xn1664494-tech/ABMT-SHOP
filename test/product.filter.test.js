@@ -141,3 +141,43 @@ test('T4-2-1: ghep nhieu bo loc', () => {
   assert.ok(filter.$or);
   assert.equal(filter.variants.$elemMatch.stock.$gt, 0);
 });
+
+test('T4-4-3: chi size cung tao mot $elemMatch kem stock > 0', () => {
+  const filter = buildFilter({ size: 'M' });
+
+  assert.deepEqual(filter.variants, {
+    $elemMatch: {
+      stock: { $gt: 0 },
+      size: { $regex: '^M$', $options: 'i' },
+    },
+  });
+});
+
+test('T4-4-3: inStock=false khong tao dieu kien variants', () => {
+  assert.deepEqual(buildFilter({ inStock: 'false' }), {});
+  assert.deepEqual(buildFilter({ inStock: '0' }), {});
+});
+
+test('T4-4-3: gia tri mang chi dung phan tu dau tien', () => {
+  const filter = buildFilter({
+    category: [CATEGORY_ID, 'khong-phai-id'],
+    keyword: ['áo', 'Giày'],
+  });
+
+  assert.equal(String(filter.category), CATEGORY_ID);
+  assert.deepEqual(filter.$or[0].name, { $regex: 'áo', $options: 'i' });
+});
+
+test('T4-4-3: nhieu tham so sai tra 400 kem day du details', () => {
+  const error = expectError(() =>
+    buildFilter({
+      category: 'khong-phai-id',
+      minPrice: '-1',
+      keyword: 'a'.repeat(101),
+    }),
+  );
+
+  assert.ok(hasField(error, 'category'));
+  assert.ok(hasField(error, 'minPrice'));
+  assert.ok(hasField(error, 'keyword'));
+});
