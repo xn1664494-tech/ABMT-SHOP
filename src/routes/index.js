@@ -115,6 +115,24 @@ router.get('/account', asyncHandler(async (req, res, next) => {
   });
 }));
 
+router.get('/profile', (req, res) => {
+  if (!res.locals.currentUser) {
+    return res.redirect(302, '/login?next=/profile');
+  }
+
+  res.set('Cache-Control', 'no-store');
+  res.render('pages/profile', {
+    title: 'Hồ sơ của tôi',
+    locals: {
+      user: {
+        id: res.locals.currentUser.id,
+        name: res.locals.currentUser.name,
+        role: res.locals.currentUser.role,
+      },
+    },
+  });
+});
+
 // Trang giỏ hàng (HTML)
 router.get('/cart', asyncHandler(async (req, res, next) => {
   const cartId = getCartId(req);

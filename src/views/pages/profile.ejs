@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title %></title>
+  <link rel="stylesheet" href="/css/app.css">
+  <style>
+    .profile-layout { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px; align-items: start; }
+    .profile-list { margin: 0; padding: 0; }
+    .profile-row { display: grid; grid-template-columns: 140px 1fr; gap: 8px 16px; border-bottom: 1px solid var(--line); padding: 10px 0; }
+    .profile-row:last-child { border-bottom: none; }
+    .profile-label { font-size: 13px; color: var(--muted); margin: 0; }
+    .profile-value { font-size: 13px; color: var(--ink); margin: 0; overflow-wrap: anywhere; }
+    .profile-actions { margin-top: 16px; display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+    @media (max-width: 480px) {
+      .profile-row { grid-template-columns: 1fr; gap: 4px; }
+    }
+  </style>
+</head>
+<body>
+  <%- include('../partials/header') %>
+  <main id="main-content" class="main-content">
+    <div class="container">
+      <h1 class="section-title">Hồ sơ của tôi</h1>
+      <p style="font-size: 13px; margin: 0 0 24px;"><a href="/account">← Quay lại tài khoản</a></p>
+
+      <% const user = locals.user || {}; %>
+
+      <div class="profile-layout">
+        <section class="card" aria-labelledby="h-profile-summary">
+          <h2 id="h-profile-summary" class="card-title">Thông tin cá nhân</h2>
+          <dl class="profile-list">
+            <div class="profile-row">
+              <dt class="profile-label">Họ và tên</dt>
+              <dd class="profile-value" data-profile="name"><%= user.name || '—' %></dd>
+            </div>
+            <div class="profile-row">
+              <dt class="profile-label">Email</dt>
+              <dd class="profile-value" data-profile="email">Đang tải...</dd>
+            </div>
+            <div class="profile-row">
+              <dt class="profile-label">Vai trò</dt>
+              <dd class="profile-value"><%= user.role === 'admin' ? 'Quản trị' : 'Khách hàng' %></dd>
+            </div>
+            <div class="profile-row">
+              <dt class="profile-label">Số điện thoại</dt>
+              <dd class="profile-value" data-profile="phone">Chưa có</dd>
+            </div>
+            <div class="profile-row">
+              <dt class="profile-label">Ngày tạo</dt>
+              <dd class="profile-value" data-profile="createdAt">—</dd>
+            </div>
+          </dl>
+          <p id="profileLoadError" class="form-alert" role="alert" hidden></p>
+        </section>
+
+        <section class="card" aria-labelledby="h-profile-form">
+          <h2 id="h-profile-form" class="card-title">Cập nhật thông tin</h2>
+          <form id="profileForm" class="auth-form" novalidate>
+            <div class="field">
+              <label class="label" for="profileName">Họ và tên</label>
+              <input type="text" name="name" id="profileName" class="input" value="<%= user.name || '' %>" required minlength="2" maxlength="100" autocomplete="name" aria-invalid="false" aria-describedby="profileNameError">
+              <p class="field-error" id="profileNameError" hidden></p>
+            </div>
+            <div class="field">
+              <label class="label" for="profileEmail">Email</label>
+              <input type="email" name="email" id="profileEmail" class="input" required maxlength="254" autocomplete="email" aria-invalid="false" aria-describedby="profileEmailError">
+              <p class="field-error" id="profileEmailError" hidden></p>
+            </div>
+            <p id="profileFormError" class="form-alert" role="alert" hidden></p>
+            <button type="submit" class="btn btn-primary btn-block">Lưu thay đổi</button>
+          </form>
+        </section>
+
+        <section class="card" aria-labelledby="h-password-form">
+          <h2 id="h-password-form" class="card-title">Đổi mật khẩu</h2>
+          <form id="passwordForm" class="auth-form" novalidate>
+            <div class="field">
+              <label class="label" for="currentPassword">Mật khẩu hiện tại</label>
+              <div class="input-group">
+                <input type="password" name="currentPassword" id="currentPassword" class="input" required autocomplete="current-password" aria-invalid="false" aria-describedby="currentPasswordError">
+                <button type="button" class="input-toggle" data-toggle-password aria-label="Hiện mật khẩu" aria-pressed="false">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11-8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" hidden><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.5 18.5 0 0 1 2.16-3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                </button>
+              </div>
+              <p class="field-error" id="currentPasswordError" hidden></p>
+            </div>
+            <div class="field">
+              <label class="label" for="newPassword">Mật khẩu mới</label>
+              <div class="input-group">
+                <input type="password" name="newPassword" id="newPassword" class="input" required minlength="8" maxlength="72" autocomplete="new-password" aria-invalid="false" aria-describedby="newPasswordError">
+                <button type="button" class="input-toggle" data-toggle-password aria-label="Hiện mật khẩu" aria-pressed="false">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11-8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" hidden><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.5 18.5 0 0 1 2.16-3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                </button>
+              </div>
+              <p class="field-error" id="newPasswordError" hidden></p>
+            </div>
+            <p id="passwordFormError" class="form-alert" role="alert" hidden></p>
+            <button type="submit" class="btn btn-primary btn-block">Đổi mật khẩu</button>
+          </form>
+          <p class="card-text" style="font-size: 12px; margin-top: 12px;">Đổi mật khẩu thành công sẽ đăng xuất phiên hiện tại. Vui lòng đăng nhập lại bằng mật khẩu mới.</p>
+        </section>
+      </div>
+
+      <div class="profile-actions">
+        <button type="button" class="btn" data-action="logout">Đăng xuất</button>
+      </div>
+    </div>
+  </main>
+  <%- include('../partials/footer') %>
+  <script src="/js/api.js"></script>
+  <script src="/js/ui.js"></script>
+  <script src="/js/password-toggle.js"></script>
+  <script src="/js/account.js"></script>
+  <script src="/js/profile.js"></script>
+</body>
+</html>
