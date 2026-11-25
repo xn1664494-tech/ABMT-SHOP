@@ -1,8 +1,10 @@
 ﻿<article class="product-card" id="product-<%= product.slug %>">
   <a href="/products/<%= product.slug %>" class="product-link">
-    <div class="product-thumb<%= locals.badge || locals.rank ? ' has-badge' : '' %>">
+    <div class="product-thumb<%= locals.badge || locals.rank || product.outOfStock ? ' has-badge' : '' %>">
       <img src="<%= product.image %>" alt="<%= product.name %>" loading="lazy" decoding="async" width="300" height="400">
-      <% if (locals.badge) { %>
+      <% if (product.outOfStock) { %>
+        <span class="badge badge-sale">Hết hàng</span>
+      <% } else if (locals.badge) { %>
         <span class="badge <%= locals.badge === 'Giảm giá' ? 'badge-sale' : 'badge-soft' %>"><%= locals.badge %></span>
       <% } %>
       <% if (locals.rank) { %>

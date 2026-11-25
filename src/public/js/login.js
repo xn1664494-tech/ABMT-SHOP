@@ -61,7 +61,7 @@
         hideFieldError(emailInput);
       }
 
-      var passwordValue = (passwordInput.value || '').trim();
+      var passwordValue = passwordInput.value || '';
       if (!passwordValue) {
         valid = false;
         showFieldError(passwordInput, 'Vui lòng nhập mật khẩu');
@@ -133,7 +133,7 @@
 
       window.ABMT.api.post('/api/auth/login', {
         email: emailInput.value.trim(),
-        password: passwordInput.value.trim(),
+        password: passwordInput.value,
       })
         .then(function (response) {
           // Đăng nhập thành công (200): không có redirectUrl từ API.
@@ -144,8 +144,8 @@
           window.location.replace(redirectTarget);
         })
         .catch(function (error) {
-          if (error && (error.code === 401 || error.status === 401 || (error.message && error.message.includes('Email hoặc mật khẩu')))) {
-            showError('Email hoặc mật khẩu không đúng');
+          if (error && (error.code === 401 || error.status === 401)) {
+            showError(error.message || 'Email hoặc mật khẩu không chính xác');
           } else {
             ABMT.toast.fromError(error);
           }

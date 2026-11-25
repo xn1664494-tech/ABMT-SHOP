@@ -2,6 +2,8 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const bcrypt = require('bcryptjs');
 
+process.env.NODE_ENV = 'test';
+
 // ---------------------------------------------------------------------------
 // Cô lập tầng persistence: thay model User bằng in-memory fake để test HTTP
 // end-to-end qua Express mà không ghi dữ liệu thật vào MongoDB.
