@@ -42,10 +42,14 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
+// Middleware nhận biết người dùng hiện tại.
+// Phải chạy trước cả /api để các route API đọc được res.locals.currentUser
+// (hiện tại là /api/cart của Dev 2); middleware này không chặn request,
+// nên không thay thế authenticate/authorize ở các route cần bảo vệ.
+app.use(currentUser);
+
 // Routes — API chỉ mount dưới /api, trang HTML mount dưới /
 app.use('/api', apiRoutes);
-// Middleware nhận biết người dùng hiện tại chỉ cho route trang (EJS), không áp cho /api
-app.use(currentUser);
 app.use('/', routes);
 
 // Smoke check: server còn sống
