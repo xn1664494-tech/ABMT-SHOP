@@ -49,6 +49,7 @@ test('T3-1-2: login thanh cong tra 200, dat cookie HttpOnly va khong lo token tr
   assert.equal(res.body.data.user.email, 'customer@example.com');
   assert.equal(res.body.data.user.password, undefined);
   assert.equal(JSON.stringify(res.body).includes(PASSWORD), false);
+  assert.doesNotMatch(JSON.stringify(res.body), /\$2[aby]\$\d{2}\$/);
 
   const cookies = cookiesOf(res);
   const accessCookie = cookies.find((item) => item.startsWith('accessToken='));
