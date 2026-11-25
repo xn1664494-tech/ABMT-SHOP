@@ -23,8 +23,8 @@ const router = express.Router();
 
 router.get('/csrf', issueCsrfToken);
 
-router.post('/register', authLimiter, validate(registerSchema), register);
-router.post('/login', authLimiter, validate(loginSchema), login);
+router.post('/register', authLimiter, csrfProtection, validate(registerSchema), register);
+router.post('/login', authLimiter, csrfProtection, validate(loginSchema), login);
 router.post('/forgot-password', authLimiter, validate(forgotPasswordSchema), forgotPassword);
 router.post('/reset-password', authLimiter, validate(resetPasswordSchema), resetPassword);
 router.post('/refresh', authLimiter, csrfProtection, refresh);

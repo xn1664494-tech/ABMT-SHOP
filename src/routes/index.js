@@ -184,31 +184,47 @@ router.get('/cart', asyncHandler(async (req, res, next) => {
 
 // Trang catalog (HTML)
 router.get('/catalog', asyncHandler(async (req, res, next) => {
-  // Dùng service sản phẩm thật để lấy dữ liệu lọc
   const productService = require('../services/ProductsServices');
   const Category = require('../model/Category');
 
+  const q = (name) => {
+    const value = req.query[name];
+    return Array.isArray(value) ? String(value[0] || '') : String(value || '');
+  };
+
   const filters = {
-    category: req.query.category,
-    minPrice: req.query.minPrice,
-    maxPrice: req.query.maxPrice,
-    keyword: req.query.keyword,
-    size: req.query.size,
-    color: req.query.color,
-    inStock: req.query.inStock,
-    page: req.query.page,
-    limit: req.query.limit,
-    sort: req.query.sort,
+    category: q('category'),
+    minPrice: q('minPrice'),
+    maxPrice: q('maxPrice'),
+    keyword: q('keyword'),
+    size: q('size'),
+    color: q('color'),
+    inStock: q('inStock'),
+    material: q('material'),
+    page: q('page'),
+    limit: q('limit'),
+    sort: q('sort'),
   };
 
   const data = await productService.list(filters, {});
   const categories = await Category.find({ isDeleted: false }).sort({ order: 1, name: 1 }).lean();
-
-  // Lấy danh sách size và màu từ sản phẩm đang hoạt động
   const allProducts = await Product.find({ isDeleted: false, isActive: true }).select('variants basePrice').lean();
   const sizes = [...new Set(allProducts.flatMap((p) => (p.variants || []).map((v) => v.size)).filter(Boolean))].sort();
   const colors = [...new Set(allProducts.flatMap((p) => (p.variants || []).map((v) => v.color)).filter(Boolean))].sort();
 
+  let cartCount = 0;
+  if (res.locals.currentUser) {
+    const cart = await Cart.findOne({ user: res.locals.currentUser.id }).select('items.qty').lean();
+    cartCount = cart ? (cart.items || []).reduce((sum, i) => sum + (Number(i.qty) || 0), 0) : 0;
+  } else {
+    const cartId = req.cookies ? req.cookies.cartId : null;
+    if (cartId) {
+      const cart = await Cart.findOne({ sessionId: cartId }).select('items.qty').lean();
+      cartCount = cart ? (cart.items || []).reduce((sum, i) => sum + (Number(i.qty) || 0), 0) : 0;
+    }
+  }
+
+  const flash = getFlash(req);
   res.render('pages/catalog', {
     title: 'Danh sách sản phẩm',
     categories,
@@ -218,29 +234,31 @@ router.get('/catalog', asyncHandler(async (req, res, next) => {
     pagination: data.pagination,
     currentPage: data.pagination.page,
     totalPages: data.pagination.totalPages,
+    flash,
     locals: {
-      category: req.query.category || '',
-      size: req.query.size || '',
-      price_min: req.query.minPrice || '',
-      price_max: req.query.maxPrice || '',
+      category: filters.category,
+      size: filters.size,
+      color: filters.color,
+      material: filters.material,
+      inStock: filters.inStock,
+      keyword: filters.keyword,
+      q: filters.keyword,
+      price_min: filters.minPrice,
+      price_max: filters.maxPrice,
+      flash,
     },
-    sortBy: req.query.sort || 'newest',
-    cartCount: 0,
+    sortBy: filters.sort || 'newest',
+    cartCount,
   });
 }));
 
 // Trang chi tiết sản phẩm (HTML)
 router.get('/products/:slug', asyncHandler(async (req, res, next) => {
-  const productService = require('../services/ProductsServices');
-  const Category = require('../model/Category');
-
-  // Tìm sản phẩm theo slug
   const product = await Product.findOne({ slug: req.params.slug, isDeleted: false, isActive: true }).lean();
   if (!product) {
     throw new ErrorResponse('Sản phẩm không tồn tại', 404);
   }
 
-  // Sản phẩm liên quan cùng danh mục
   const related = await Product.find({
     category: product.category,
     _id: { $ne: product._id },
@@ -257,21 +275,36 @@ router.get('/products/:slug', asyncHandler(async (req, res, next) => {
     color: v.color,
     colorCode: v.colorCode,
     sku: v.sku,
-    stock: v.stock,
-    price: v.price || product.basePrice,
-    price_formatted: (v.price || product.basePrice).toLocaleString('vi-VN'),
+    stock: Number(v.stock) || 0,
+    price: Number(v.price || product.basePrice) || 0,
+    price_formatted: (Number(v.price || product.basePrice) || 0).toLocaleString('vi-VN'),
   }));
 
+  let cartCount = 0;
+  if (res.locals.currentUser) {
+    const cart = await Cart.findOne({ user: res.locals.currentUser.id }).select('items.qty').lean();
+    cartCount = cart ? (cart.items || []).reduce((sum, i) => sum + (Number(i.qty) || 0), 0) : 0;
+  } else {
+    const cartId = req.cookies ? req.cookies.cartId : null;
+    if (cartId) {
+      const cart = await Cart.findOne({ sessionId: cartId }).select('items.qty').lean();
+      cartCount = cart ? (cart.items || []).reduce((sum, i) => sum + (Number(i.qty) || 0), 0) : 0;
+    }
+  }
+
+  const flash = getFlash(req);
   res.render('pages/product-detail', {
     title: product.name,
+    flash,
+    locals: { flash },
     product: {
       ...product,
-      price: product.basePrice,
-      basePrice: product.basePrice,
+      price: Number(product.basePrice) || 0,
+      basePrice: Number(product.basePrice) || 0,
     },
     variants,
     productsRelated: related,
-    cartCount: 0,
+    cartCount,
   });
 }));
 

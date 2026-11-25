@@ -22,6 +22,9 @@
     var qp = [];
     if (L.category) qp.push('category=' + encodeURIComponent(L.category));
     if (L.size) qp.push('size=' + encodeURIComponent(L.size));
+    if (L.color) qp.push('color=' + encodeURIComponent(L.color));
+    if (L.keyword) qp.push('keyword=' + encodeURIComponent(L.keyword));
+    if (L.inStock) qp.push('inStock=' + encodeURIComponent(L.inStock));
     if (L.price_min) qp.push('minPrice=' + encodeURIComponent(L.price_min));
     if (L.price_max) qp.push('maxPrice=' + encodeURIComponent(L.price_max));
     if (sortVal && sortVal !== 'newest') qp.push('sort=' + encodeURIComponent(sortVal));
@@ -96,23 +99,19 @@
                 <select id="filter-color" name="color" class="select">
                   <option value="">Tất cả màu sắc</option>
                   <% colorList.forEach(function (color) { %>
-                    <option value="<%= color %>"><%= color %></option>
+                    <option value="<%= color %>" <%= L.color === color ? 'selected' : '' %>><%= color %></option>
                   <% }) %>
                 </select>
               </div>
 
               <div class="filter-group">
-                <label class="label" for="filter-material">Chất liệu</label>
-                <select id="filter-material" name="material" class="select">
-                  <option value="">Tất cả chất liệu</option>
-                  <option value="cotton">Cotton</option>
-                  <option value="kaki">Kaki</option>
-                  <option value="len">Len</option>
-                  <option value="lua">Lụa</option>
-                  <option value="da">Da</option>
-                  <option value="jean">Jean</option>
+                <label class="label" for="filter-instock">Tồn kho</label>
+                <select id="filter-instock" name="inStock" class="select">
+                  <option value="">Tất cả</option>
+                  <option value="true" <%= String(L.inStock) === 'true' || String(L.inStock) === '1' ? 'selected' : '' %>>Chỉ còn hàng</option>
                 </select>
               </div>
+              <input type="hidden" name="keyword" value="<%= L.keyword || '' %>">
 
               <div class="filter-group">
                 <label class="label" for="price-range">Khoảng giá</label>
@@ -144,7 +143,8 @@
                     slug: item.slug,
                     image: (item.images && item.images[0]) || '/images/placeholder/product.svg',
                     price: Number(item.basePrice) || 0,
-                    salePrice: null
+                    salePrice: null,
+                    outOfStock: item.inStock === false
                   };
                 %>
                   <%- include('../partials/product-card', { product: cardProduct }) %>

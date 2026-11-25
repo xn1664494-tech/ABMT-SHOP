@@ -95,9 +95,7 @@
             </div>
           </div>
 
-          <button type="button" id="add" class="btn btn-primary pdp-add" data-product-id="<%= productId %>" <%= totalStock <= 0 ? 'disabled' : '' %>>
-            Thêm vào giỏ
-          </button>
+          <button type="button" id="add" class="btn btn-primary pdp-add" data-product-id="<%= productId %>" data-base-price="<%= basePrice %>" data-total-stock="<%= totalStock %>" <%= totalStock <= 0 ? 'disabled' : '' %>>Thêm vào giỏ</button>
 
           <div class="pdp-meta">
             <span>Mã sản phẩm: <strong id="sku">—</strong></span>
