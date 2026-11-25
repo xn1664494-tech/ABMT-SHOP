@@ -1,145 +1,190 @@
 (function () {
   'use strict';
 
-  function ready(fn) {
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', fn);
-    } else {
-      fn();
+  var aList = document.getElementById('aList');
+  if (!aList) {
+    return;
+  }
+
+  var checkoutForm = document.getElementById('checkoutForm');
+  var addressForm = document.getElementById('aForm');
+  var noteEl = document.getElementById('note');
+  var noteCnt = document.getElementById('noteCnt');
+  var payInfo = document.getElementById('payInfo');
+  var payContainer = document.getElementById('oPay') || document;
+  var submitting = false;
+  var cascadeReady = false;
+
+  function getAddressRadios() {
+    return aList.querySelectorAll('input[name="addressId"]');
+  }
+
+  function getSelectedAddress() {
+    var radios = getAddressRadios();
+    for (var i = 0; i < radios.length; i += 1) {
+      if (radios[i].checked) return radios[i];
+    }
+    return null;
+  }
+
+  function isNewAddress(radio) {
+    return !radio || radio.value === '' || radio.value === 'new';
+  }
+
+  function ensureCascade() {
+    if (cascadeReady || !addressForm) return;
+    cascadeReady = true;
+    if (window.ABMT && window.ABMT.address && window.ABMT.address.initCascade) {
+      window.ABMT.address.initCascade(
+        addressForm.querySelector('[name="province"]'),
+        addressForm.querySelector('[name="district"]'),
+        addressForm.querySelector('[name="ward"]')
+      );
     }
   }
 
-  ready(function () {
-    initCheckout();
+  function syncAddressMode() {
+    var selected = getSelectedAddress();
+    var useNew = isNewAddress(selected);
+    if (addressForm) addressForm.hidden = !useNew;
+    if (useNew) ensureCascade();
+  }
+
+  function updateNoteCount() {
+    if (!noteEl || !noteCnt) return;
+    var max = Number(noteEl.maxLength) > 0 ? noteEl.maxLength : 0;
+    var length = noteEl.value.length;
+    noteCnt.textContent = max > 0 ? length + '/' + max : String(length);
+  }
+
+  function syncPayInfo() {
+    var checked = payContainer.querySelector('input[name="paymentMethod"]:checked');
+    if (!payInfo) return;
+    var info = checked && checked.dataset ? checked.dataset.info : '';
+    payInfo.textContent = info || '';
+    payInfo.hidden = !info;
+  }
+
+  function getPaymentMethod() {
+    var checked = payContainer.querySelector('input[name="paymentMethod"]:checked');
+    return checked ? checked.value : 'cod';
+  }
+
+  function buildPayload() {
+    var selected = getSelectedAddress();
+    var payload = {
+      note: noteEl ? noteEl.value.trim() : '',
+      paymentMethod: getPaymentMethod(),
+    };
+
+    if (isNewAddress(selected)) {
+      if (!addressForm) {
+        throw new Error('Thiếu thông tin địa chỉ giao hàng.');
+      }
+      var addressApi = window.ABMT && window.ABMT.address;
+      if (!addressApi || !addressApi.validate || !addressApi.buildAddressPayload) {
+        throw new Error('Không khởi tạo được biểu mẫu địa chỉ.');
+      }
+      if (!addressApi.validate(addressForm)) {
+        throw new Error('__validation__');
+      }
+      payload.address = addressApi.buildAddressPayload(addressForm);
+      delete payload.address.isDefault;
+    } else {
+      payload.addressId = selected.value;
+    }
+
+    return payload;
+  }
+
+  function redirectAfterSuccess(response) {
+    var data = response && response.data ? response.data : response || {};
+    if (window.ABMT && window.ABMT.toast) {
+      window.ABMT.toast.success('Đặt hàng thành công.');
+    }
+    var target = data.redirectUrl || '/account';
+    if (data.redirectUrl) {
+      window.location.href = target;
+      return;
+    }
+    window.setTimeout(function () {
+      window.location.href = target;
+    }, 450);
+  }
+
+  function handleSubmit(event) {
+    if (event) event.preventDefault();
+    if (submitting) return;
+
+    var payload;
+    try {
+      payload = buildPayload();
+    } catch (error) {
+      if (error && error.message === '__validation__') {
+        if (window.ABMT && window.ABMT.toast) {
+          window.ABMT.toast.error('Vui lòng kiểm tra lại địa chỉ giao hàng.');
+        }
+        return;
+      }
+      if (window.ABMT && window.ABMT.toast) {
+        window.ABMT.toast.error(error && error.message ? error.message : 'Không thể đặt hàng.');
+      }
+      return;
+    }
+
+    var button =
+      (event && event.submitter) ||
+      document.getElementById('placeOrder') ||
+      (checkoutForm ? checkoutForm.querySelector('[type="submit"]') : null);
+
+    submitting = true;
+
+    var request = function () {
+      return window.ABMT.api.post('/api/orders', payload);
+    };
+    var action = button && window.ABMT.loading
+      ? window.ABMT.loading.wrap(button, request)
+      : request();
+
+    Promise.resolve(action)
+      .then(function (response) {
+        redirectAfterSuccess(response);
+      })
+      .catch(function (error) {
+        submitting = false;
+        if (window.ABMT && window.ABMT.toast) {
+          window.ABMT.toast.fromError(error);
+        }
+      });
+  }
+
+  aList.addEventListener('change', function (event) {
+    if (event.target && event.target.name === 'addressId') {
+      syncAddressMode();
+    }
   });
 
-  function initCheckout() {
-    // Elements
-    const aList = document.querySelector('#aList');
-    const addNewAddr = document.querySelector('#add-new-address');
-    const aForm = document.querySelector('#aForm');
-    const noteInput = document.querySelector('#note');
-    const noteCnt = document.querySelector('#noteCnt');
-    const placeOrderBtn = document.querySelector('#checkout-btn');
-    const paymentRadios = document.querySelectorAll('input[name="paymentMethod"]');
-
-    // ── Ghi ký tự cho ghi chú ──────────────────────────────────────
-    if (noteCnt && noteInput) {
-      noteCnt.textContent = '0/' + (noteInput.maxLength || 200);
-      noteInput.addEventListener('input', function () {
-        const len = this.value.length;
-        noteCnt.textContent = len + '/' + (noteInput.maxLength || 200);
-      });
-    }
-
-    // ── Chọn địa chỉ đã lưu / thêm mới ──────────────────────────────
-    if (aList) {
-      const savedRadios = aList.querySelectorAll('input[name="address-radio"]');
-      const addNewToggle = document.querySelector('#toggle-add-new');
-      if (addNewToggle) {
-        addNewToggle.addEventListener('click', function () {
-          if (addNewAddr.style.display === 'none' || addNewAddr.hidden) {
-            addNewAddr.style.display = 'block';
-            addNewAddr.hidden = false;
-          } else {
-            addNewAddr.style.display = 'none';
-            addNewAddr.hidden = true;
-          }
-        });
-      }
-    }
-
-    // ── Nút đặt hàng ────────────────────────────────────────────────
-    if (placeOrderBtn) {
-      placeOrderBtn.addEventListener('click', function () {
-        // Validate: chọn địa chỉ
-        let hasAddress = false;
-        if (aList) {
-          const checked = aList.querySelector('input[name="address-radio"]:checked');
-          if (checked) hasAddress = true;
-        }
-        if (!hasAddress) {
-          // Kiểm tra có đang thêm mới không
-          const isAdding = addNewAddr && (addNewAddr.style.display !== 'none' && !addNewAddr.hidden);
-          if (!isAdding) {
-            ABMT.toast.error('Vui lòng chọn hoặc thêm địa chỉ mới');
-            return;
-          }
-        }
-
-        // Validate form nếu thêm mới
-        if (isAdding && aForm) {
-          if (!ABMT.address.validate(aForm)) {
-            return;
-          }
-          // Gather form data
-          const formData = new FormData(aForm);
-          const addrObj = {};
-          formData.forEach(function (v, k) { addrObj[k] = v; });
-        }
-
-        // Khóa nút và gọi API
-        ABMT.withButtonLock(placeOrderBtn, function () {
-          // Build order data
-          let addressId = '';
-          let address = {};
-          if (aList) {
-            const checked = aList.querySelector('input[name="address-radio"]:checked');
-            if (checked) addressId = checked.value;
-          }
-          if (!addressId && isAdding && aForm) {
-            address = { ...addrObj };
-          }
-
-          const note = noteInput ? noteInput.value : '';
-          const paymentMethod = document.querySelector('input[name="paymentMethod"]:checked') ?
-            document.querySelector('input[name="paymentMethod"]:checked').value : '';
-
-          return window.ABMT.api.post('/api/orders', {
-            addressId: addressId || undefined,
-            address: Object.keys(address).length > 0 ? address : undefined,
-            note: note,
-            paymentMethod: paymentMethod || undefined
-          });
-        })
-          .then(function (response) {
-            // Success
-            const orderCode = (response && response.data && response.data.code) || '';
-            if (orderCode) {
-              ABMT.toast.success('Đặt hàng thành công. Mã đơn: ' + orderCode);
-              setTimeout(function () {
-                window.location.href = '/account#orders';
-              }, 1500);
-            } else if (response && response.redirectUrl) {
-              window.location.href = response.redirectUrl;
-            } else {
-              ABMT.toast.success('Đặt hàng thành công');
-              setTimeout(function () {
-                window.location.href = '/account#orders';
-              }, 2000);
-            }
-          })
-          .catch(function (error) {
-            // Lỗi 401 (chưa đăng nhập/phiên hết hạn) → về login
-            if (error && (error.status === 401 || error.code === 401)) {
-              window.location.replace('/login?next=/checkout');
-              return;
-            }
-            // Lỗi 409 (hết hàng) → toast với chi tiết
-            if (error && (error.status === 409 || error.code === 409)) {
-              ABMT.toast.fromError(error);
-              placeOrderBtn.disabled = false;
-              placeOrderBtn.classList.remove('is-loading');
-              placeOrderBtn.removeAttribute('aria-busy');
-              return;
-            }
-            ABMT.toast.fromError(error);
-            placeOrderBtn.disabled = false;
-            placeOrderBtn.classList.remove('is-loading');
-            placeOrderBtn.removeAttribute('aria-busy');
-          });
-      });
-    }
+  if (noteEl) {
+    noteEl.addEventListener('input', updateNoteCount);
+    updateNoteCount();
   }
 
+  payContainer.addEventListener('change', function (event) {
+    if (event.target && event.target.name === 'paymentMethod') {
+      syncPayInfo();
+    }
+  });
+
+  if (addressForm) {
+    addressForm.addEventListener('keydown', function (event) {
+      if (event.key === 'Enter') event.preventDefault();
+    });
+  }
+
+  if (checkoutForm) {
+    checkoutForm.addEventListener('submit', handleSubmit);
+  }
+
+  syncAddressMode();
+  syncPayInfo();
 })();

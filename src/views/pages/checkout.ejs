@@ -8,128 +8,210 @@
 </head>
 <body>
   <%- include('../partials/header') %>
-  <main id="main-content" class="main-content">
-    <div class="container">
-      <!-- Address Form -->
-      <section id="address-section" class="section" style="padding-bottom: 24px;">
-        <div class="container">
-          <div class="row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px;">
-            <!-- Địa chỉ đã lưu -->
-            <% if (locals && locals.savedAddresses && locals.savedAddresses.length > 0) { %>
-            <div style="margin-bottom: 24px;">
-              <h3 style="font-size: 16px; font-weight: 600; color: var(--ink-strong); margin-bottom: 12px;">Địa chỉ đã lưu</h3>
-              <% locals.savedAddresses.forEach(function(addr, i) { %>
-              <div style="background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); padding: 16px; margin-bottom: 12px;">
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                  <span style="font-size: 14px; color: var(--ink-strong);"><%= addr.name %> - <%= addr.phone %></span>
-                  <input type="radio" name="address-radio" value="<%= addr._id || i %>"
-                    <% if (i === 0) { %>checked<% } %>
-                    style="margin: 0; width: 18px; height: 18px;">
+  <div data-flash data-type="info" hidden></div>
+  <%
+    var L = (locals && locals.locals) ? locals.locals : (locals || {});
+    var lines = Array.isArray(L.lines) ? L.lines : [];
+    var savedAddresses = Array.isArray(L.savedAddresses) ? L.savedAddresses : [];
+    var provinces = Array.isArray(L.provinces) ? L.provinces : [];
+    var paymentMethods = Array.isArray(L.paymentMethods) ? L.paymentMethods : ['cod', 'bank_transfer'];
+    var subtotal = Number(L.subtotal) || 0;
+    var shippingFee = Number(L.shippingFee) || 0;
+    var total = Number(L.total) || 0;
+    var hasDefault = savedAddresses.some(function (addr) { return addr && addr.isDefault; });
+    var payMeta = {
+      cod: {
+        title: 'Thanh toán khi nhận hàng (COD)',
+        text: 'Thanh toán bằng tiền mặt khi đơn hàng được giao tới.',
+        info: 'Bạn sẽ thanh toán trực tiếp cho nhân viên giao hàng khi nhận đơn.'
+      },
+      bank_transfer: {
+        title: 'Chuyển khoản ngân hàng',
+        text: 'Chuyển khoản trước khi đơn hàng được xử lý.',
+        info: 'Vui lòng chuyển khoản tới tài khoản ABMT SHOP và ghi mã đơn hàng trong nội dung.'
+      }
+    };
+  %>
+  <main id="main-content" class="main-content checkout-page">
+    <div class="container page-shell">
+      <nav class="breadcrumb" aria-label="Breadcrumb">
+        <a href="/">Trang chủ</a>
+        <span class="sep">/</span>
+        <a href="/cart">Giỏ hàng</a>
+        <span class="sep">/</span>
+        <span aria-current="page">Thanh toán</span>
+      </nav>
+
+      <div class="page-head">
+        <div>
+          <h1 class="page-title">Thanh toán</h1>
+          <p class="page-sub">Chọn địa chỉ nhận hàng và phương thức thanh toán</p>
+        </div>
+        <a href="/cart" class="page-back">Quay lại giỏ hàng</a>
+      </div>
+
+      <form id="checkoutForm" class="checkout-layout" novalidate>
+        <div class="checkout-col">
+          <section class="checkout-block" aria-labelledby="ship-title">
+            <div class="block-head">
+              <h2 class="block-title" id="ship-title">Địa chỉ giao hàng</h2>
+            </div>
+
+            <div id="aList" class="address-list">
+              <% if (savedAddresses.length === 0) { %>
+                <p class="address-empty">Bạn chưa có địa chỉ đã lưu. Vui lòng nhập địa chỉ mới bên dưới.</p>
+              <% } %>
+              <% savedAddresses.forEach(function (addr, index) {
+                var addrId = addr && addr._id ? String(addr._id) : '';
+                var fullAddress = [addr.street, addr.ward, addr.district, addr.city].filter(Boolean).join(', ');
+              %>
+                <label class="address-option">
+                  <input type="radio" name="addressId" value="<%= addrId %>"
+                    <%= (addr.isDefault || (!hasDefault && index === 0)) ? 'checked' : '' %>>
+                  <span class="address-option-body">
+                    <span class="address-name">
+                      <%= addr.recipient || addr.label || 'Người nhận' %>
+                      <% if (addr.isDefault) { %><span class="address-default">Mặc định</span><% } %>
+                    </span>
+                    <span class="address-text"><%= addr.phone || '' %></span>
+                    <span class="address-text"><%= fullAddress %></span>
+                  </span>
+                </label>
+              <% }) %>
+              <label class="address-option">
+                <input type="radio" name="addressId" value="new" <%= savedAddresses.length === 0 ? 'checked' : '' %>>
+                <span class="address-option-body">
+                  <span class="address-name">Thêm địa chỉ mới</span>
+                  <span class="address-text">Nhập địa chỉ giao hàng cho đơn này</span>
+                </span>
+              </label>
+            </div>
+
+            <div id="aForm" class="address-form-card"<%= savedAddresses.length > 0 ? ' hidden' : '' %>>
+              <div class="form-grid two">
+                <div class="field">
+                  <label class="label" for="co-name">Họ và tên</label>
+                  <input type="text" id="co-name" name="name" class="input" autocomplete="name" placeholder="Nguyễn Văn A">
+                  <small class="field-error-msg"></small>
                 </div>
-                <p style="font-size: 13px; color: var(--muted); margin: 4px 0 0;"><%= addr.province %><%= addr.district ? ', ' + addr.district : '' %><%= addr.ward ? ', ' + addr.ward : '' %>, <%= addr.street || 'Địa chỉ chi tiết chưa có' %></p>
+                <div class="field">
+                  <label class="label" for="co-phone">Số điện thoại</label>
+                  <input type="tel" id="co-phone" name="phone" class="input" autocomplete="tel" placeholder="0901234567">
+                  <small class="field-error-msg"></small>
+                </div>
+                <div class="field">
+                  <label class="label" for="co-province">Tỉnh/Thành</label>
+                  <select id="co-province" name="province" class="select">
+                    <option value="">-- Chọn Tỉnh/Thành --</option>
+                    <% provinces.forEach(function (province) { %>
+                      <option value="<%= province.code %>"><%= province.name %></option>
+                    <% }) %>
+                  </select>
+                  <small class="field-error-msg"></small>
+                </div>
+                <div class="field">
+                  <label class="label" for="co-district">Quận/Huyện</label>
+                  <select id="co-district" name="district" class="select" disabled>
+                    <option value="">-- Chọn Quận/Huyện --</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label class="label" for="co-ward">Phường/Xã</label>
+                  <select id="co-ward" name="ward" class="select" disabled>
+                    <option value="">-- Chọn Phường/Xã --</option>
+                  </select>
+                  <small class="field-error-msg"></small>
+                </div>
+                <div class="field">
+                  <label class="label" for="co-street">Địa chỉ cụ thể</label>
+                  <input type="text" id="co-street" name="street" class="input" autocomplete="street-address" placeholder="Số nhà, tên đường">
+                  <small class="field-error-msg"></small>
+                </div>
               </div>
+            </div>
+          </section>
+
+          <section class="checkout-block" aria-labelledby="items-title">
+            <div class="block-head">
+              <h2 class="block-title" id="items-title">Sản phẩm</h2>
+            </div>
+            <div id="lines" class="checkout-lines">
+              <% lines.forEach(function (line) {
+                var unitPrice = Number(line.unitPrice) || 0;
+                var quantity = Number(line.quantity) || 1;
+              %>
+                <div class="checkout-line">
+                  <div class="checkout-thumb">
+                    <img src="/images/placeholder/product.svg" alt="<%= line.productName %>" width="90" height="120" loading="lazy" decoding="async">
+                  </div>
+                  <div>
+                    <p class="checkout-line-name"><%= line.productName %></p>
+                    <p class="checkout-line-meta">Số lượng: <%= quantity %> × <%= unitPrice.toLocaleString('vi-VN') %>₫</p>
+                  </div>
+                  <p class="checkout-line-price"><%= (unitPrice * quantity).toLocaleString('vi-VN') %>₫</p>
+                </div>
               <% }) %>
             </div>
-            <% } else { %>
-            <div style="background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); padding: 16px; color: var(--muted);">
-              <p>Chưa có địa chỉ đã lưu</p>
+          </section>
+
+          <section class="checkout-block" aria-labelledby="pay-title">
+            <div class="block-head">
+              <h2 class="block-title" id="pay-title">Phương thức thanh toán</h2>
             </div>
-            <% } %>
-
-            <!-- Thêm địa chỉ mới -->
-            <div id="add-new-address" style="background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); padding: 16px;">
-              <h3 style="font-size: 16px; font-weight: 600; color: var(--ink-strong); margin-bottom: 16px;">Thêm địa chỉ mới</h3>
-              <form id="aForm" style="display: grid; gap: 12px;">
-                <input type="text" name="name" class="input" placeholder="Họ và tên" required
-                  style="<%= locals && locals.nameError ? 'border-color: var(--danger);' : '' %>"
-                  aria-invalid="<%= !!locals && locals.nameError %>" aria-describedby="name-help">
-                <small id="name-help" style="color: var(--muted); font-size: 12%;">Họ và tên không rỗng</small>
-
-                <select name="province" class="select" required
-                  style="<%= locals && locals.provinceError ? 'border-color: var(--danger);' : '' %>"
-                  aria-invalid="<%= !!locals && locals.provinceError %>">
-                  <option value="">-- Chọn Tỉnh/Thành --</option>
-                  <% if (locals && locals && provinces) { %>
-                  <% provinces.forEach(function(prov) { %>
-                    <option value="<%= prov.code %>" <%= (locals.selectedProvince === prov.code ? 'selected' : '') %>><%= prov.name %></option>
-                  <% }) %>
-                  <% } %>
-                </select>
-
-                <select name="district" class="select" aria-label="Quận/Huyện"
-                  style="<%= locals && locals.districtError ? 'border-color: var(--danger);' : '' %>"
-                  aria-invalid="<%= !!locals && locals.districtError %>">
-                  <option value="">-- Chọn Quận/Huyện --</option>
-                </select>
-
-                <select name="ward" class="select" aria-label="Phường/Xã"
-                  style="<%= locals && locals.wardError ? 'border-color: var(--danger);' : '' %>"
-                  aria-invalid="<%= !!locals && locals.wardError %>">
-                  <option value="">-- Chọn Phường/Xã --</option>
-                </select>
-
-                <input type="text" name="street" class="input" placeholder="Địa chỉ cụ thể" required
-                  style="<%= locals && locals.streetError ? 'border-color: var(--danger);' : '' %>"
-                  aria-invalid="<%= !!locals && locals.streetError %>" aria-describedby="street-help">
-                <small id="street-help" style="color: var(--muted); font-size: 12%;">Địa chỉ cụ thể không rỗng</small>
-
-                <% if (locals && locals.maxed) { %>
-                <div style="color: var(--danger); font-size: 12px; margin-top: -12px;">Bạn đã đạt giới hạn số địa chỉ có thể lưu</div>
-                <% } %>
-              </form>
+            <div id="oPay" class="pay-methods">
+              <% paymentMethods.forEach(function (method) {
+                var meta = payMeta[method] || { title: method, text: '', info: '' };
+              %>
+                <label class="pay-option">
+                  <input type="radio" name="paymentMethod" value="<%= method %>" data-info="<%= meta.info %>" <%= method === 'cod' ? 'checked' : '' %>>
+                  <span class="pay-option-body">
+                    <span class="pay-option-title"><%= meta.title %></span>
+                    <span class="pay-option-text"><%= meta.text %></span>
+                  </span>
+                </label>
+              <% }) %>
+              <div id="payInfo" class="pay-info"><%= payMeta.cod.info %></div>
             </div>
-          </div>
+          </section>
+
+          <section class="checkout-block" aria-labelledby="note-title">
+            <div class="block-head">
+              <h2 class="block-title" id="note-title">Ghi chú đơn hàng</h2>
+              <span class="note-count" id="noteCnt">0/500</span>
+            </div>
+            <div class="note-wrap">
+              <label class="label" for="note">Ghi chú</label>
+              <textarea id="note" name="note" class="textarea" rows="3" maxlength="500" placeholder="Ví dụ: giao ngoài giờ hành chính"></textarea>
+            </div>
+          </section>
         </div>
-      </section>
 
-      <!-- Order Summary -->
-      <section id="order-summary" class="section" style="position: -webkit-sticky; position: sticky; top: 100px; background: var(--canvas); padding-bottom: 80px;">
-        <div class="container">
-          <div class="section-head" style="margin-bottom: 20px;">
-            <h2 class="section-title">Tóm tắt đơn hàng</h2>
+        <aside class="checkout-summary" aria-label="Tóm tắt đơn hàng">
+          <h2 class="block-title">Tóm tắt đơn hàng</h2>
+          <div class="summary-row">
+            <span>Tạm tính</span>
+            <span class="summary-value" id="sSub"><%= subtotal.toLocaleString('vi-VN') %>₫</span>
           </div>
-          <div class="order-lines" style="display: grid; grid-template-rows: auto auto auto; gap: 16px; margin-bottom: 24px;">
-            <% if (locals && locals.lines && locals.lines.length > 0) { %>
-            <% locals.lines.forEach(function(line) { %>
-              <div style="background: var(--surface); border-radius: var(--r-md); padding: 12px; border: 1px solid var(--line);">
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                  <span style="font-size: 13px; color: var(--ink-strong);"><%= line.productName %></span>
-                  <span style="font-size: 13px; color: var(--muted);"><%= line.quantity || 1 %> × <%= (line.unitPrice || 0).toLocaleString('vi-VN') %>₫</span>
-                </div>
-                <% if (line.note) { %>
-                <div style="font-size: 12px; color: var(--muted); margin-top: 4px;">Ghi chú: <%= line.note %></div>
-                <% } %>
-              </div>
-            <% }) %>
-            <% } else { %>
-            <div style="color: var(--muted); font-size: 13px;">Không có sản phẩm</div>
-            <% } %>
+          <div class="summary-row">
+            <span>Phí vận chuyển</span>
+            <span class="summary-value" id="sShip"><%= shippingFee.toLocaleString('vi-VN') %>₫</span>
           </div>
+          <div class="summary-row total">
+            <span>Tổng cộng</span>
+            <span id="sTot"><%= total.toLocaleString('vi-VN') %>₫</span>
+          </div>
+          <button type="submit" id="placeOrder" class="btn btn-primary btn-block">Đặt hàng</button>
+          <p class="checkout-note">Bằng việc đặt hàng, bạn đồng ý với chính sách mua bán của ABMT SHOP.</p>
+        </aside>
+      </form>
+    </div>
 
-          <div style="display: grid; grid-template-areas: "sub" "ship" "tot" "pay"; gap: 8px; font-size: 13px;">
-            <div id="sSub" style="grid-area: sub; color: var(--ink-strong); font-weight: 500;">Tạm tính: <%= locals && locals.subtotal ? locals.subtotal.toLocaleString('vi-VN') : '0' %>₫</div>
-            <div id="sShip" style="grid-area: ship; color: var(--muted);">Phí ship: <%= locals && locals.shippingFee ? locals.shippingFee.toLocaleString('vi-VN') : '0' %>₫</div>
-            <div id="sTot" style="grid-area: tot; color: var(--ink-strong); font-weight: 600; font-size: 18px;">Tổng: <%= locals && locals.total ? locals.total.toLocaleString('vi-VN') : '0' %>₫</div>
-            <% if (locals && locals.paymentMethod) { %>
-            <div id="payInfo" style="grid-area: pay; color: var(--muted);">Phương thức: <%= locals.paymentMethod %></div>
-            <% } %>
-          </div>
-
-          <% if (locals && locals.paymentMethods) { %>
-          <div style="margin: 20px 0; font-size: 13px; color: var(--ink-soft);">
-            <% locals.paymentMethods.forEach(function(pm) { %>
-              <label style="display: block; padding: 8px 12px; border: 1px solid var(--line); border-radius: var(--r-pill); margin-bottom: 4px; cursor: pointer;">
-                <input type="radio" name="paymentMethod" value="<%= pm %>" style="margin-right: 6px; width: 18px; height: 18px;">
-                <%= pm %>
-              </label>
-            <% }) %>
-          </div>
-          <% } %>
-        </div>
-      </section>
-
-      <!-- Placeholder for sticky footer -->
-      <div style="height: 80px;"></div>
+    <div class="checkout-bar">
+      <div class="checkout-bar-total">
+        <span class="checkout-bar-label">Tổng cộng</span>
+        <span class="checkout-bar-value"><%= total.toLocaleString('vi-VN') %>₫</span>
+      </div>
+      <button type="submit" form="checkoutForm" class="btn btn-primary">Đặt hàng</button>
     </div>
   </main>
   <%- include('../partials/footer') %>

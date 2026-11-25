@@ -6,15 +6,21 @@
       "districts": [
         {
           "code": "D01",
-          "name": "Hoàn Kiếm"
+          "name": "Hoàn Kiếm",
+          "wards": [
+            { "code": "W01", "name": "Phúc Tân" },
+            { "code": "W02", "name": "Hàng Bài" },
+            { "code": "W03", "name": "Tràng Tiền" }
+          ]
         },
         {
           "code": "D02",
-          "name": "Đống Đa"
-        },
-        {
-          "code": "D03",
-          "name": "Ba Đình"
+          "name": "Đống Đa",
+          "wards": [
+            { "code": "W04", "name": "Cát Linh" },
+            { "code": "W05", "name": "Láng Hạ" },
+            { "code": "W06", "name": "Ô Chợ Dừa" }
+          ]
         }
       ]
     },
@@ -23,16 +29,22 @@
       "name": "TP. Hồ Chí Minh",
       "districts": [
         {
+          "code": "D03",
+          "name": "Quận 1",
+          "wards": [
+            { "code": "W07", "name": "Bến Nghé" },
+            { "code": "W08", "name": "Bến Thành" },
+            { "code": "W09", "name": "Tân Định" }
+          ]
+        },
+        {
           "code": "D04",
-          "name": "Quận 1"
-        },
-        {
-          "code": "D05",
-          "name": "Quận Bình Thạnh"
-        },
-        {
-          "code": "D06",
-          "name": "Quận Phú Nhuận"
+          "name": "Quận Bình Thạnh",
+          "wards": [
+            { "code": "W10", "name": "Phường 1" },
+            { "code": "W11", "name": "Phường 2" },
+            { "code": "W12", "name": "Phường 3" }
+          ]
         }
       ]
     },
@@ -41,16 +53,22 @@
       "name": "Phú Thọ",
       "districts": [
         {
-          "code": "D07",
-          "name": "Thành phố Phú Thọ"
+          "code": "D05",
+          "name": "Thành phố Việt Trì",
+          "wards": [
+            { "code": "W13", "name": "Bạch Hạc" },
+            { "code": "W14", "name": "Thanh Miếu" },
+            { "code": "W15", "name": "Vân Phú" }
+          ]
         },
         {
-          "code": "D08",
-          "name": "Huyện Đoan Hùng"
-        },
-        {
-          "code": "D09",
-          "name": "Huyện Yên Lạc"
+          "code": "D06",
+          "name": "Huyện Đoan Hùng",
+          "wards": [
+            { "code": "W16", "name": "Xã Sóc Đăng" },
+            { "code": "W17", "name": "Xã Chí Đám" },
+            { "code": "W18", "name": "Xã Tây Cốc" }
+          ]
         }
       ]
     }

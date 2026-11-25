@@ -8,110 +8,178 @@
 </head>
 <body>
   <%- include('../partials/header') %>
-  <div class="container">
-    <!-- Sidebar Mobile -->
-    <div class="sb-overlay" id="sb-overlay"></div>
-    <aside class="admin-sidebar" id="admin-sidebar" style="width: 260px; left: -260px;">
-      <div class="sb-header">
-        <h3 style="margin: 0; font-size: 18px; font-weight: 600; color: var(--ink-strong);">ABMT SHOP</h3>
-        <button type="button" class="btn-close" id="sb-close" aria-label="Đóng sidebar">×</button>
-      </div>
-      <nav class="sb-nav" style="padding: 20px 0;">
-        <ul style="list-style: none; padding: 0;">
-          <li><a href="/admin" style="display: block; padding: 10px 16px; color: var(--ink); font-size: 14px; text-decoration: none; border-radius: var(--r-md); margin-bottom: 4px;">Trang chủ</a></li>
-          <li><a href="/admin/products" style="display: block; padding: 10px 16px; color: var(--ink); font-size: 14px; text-decoration: none; border-radius: var(--r-md); margin-bottom: 4px;">Sản phẩm</a></li>
-          <li><a href="/admin/orders" style="display: block; padding: 10px 16px; color: var(--ink); font-size: 14px; text-decoration: none; border-radius: var(--r-md); margin-bottom: 4px;">Đơn hàng</a></li>
-        </ul>
-      </nav>
-    </aside>
-    <div class="sb-toggle" id="sb-toggle" style="display: none; padding: 8px 12px; cursor: pointer; color: var(--ink);">
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
-    </div>
+  <div data-flash data-type="info" hidden></div>
+  <%
+    var L = (locals && locals.locals) ? locals.locals : (locals || {});
+    var stats = (L && L.stats) ? L.stats : {};
+    var recentOrders = Array.isArray(L.recentOrders) ? L.recentOrders : [];
+    var lowStockProducts = Array.isArray(L.lowStockProducts) ? L.lowStockProducts : [];
+    var totalProducts = Number(stats.totalProducts) || 0;
+    var totalOrders = Number(stats.totalOrders) || 0;
+    var totalRevenue = Number(stats.totalRevenue) || 0;
+    var activeUsers = Number(stats.activeUsers) || 0;
 
-    <main id="admin-main" style="margin-left: 0; transition: margin-left .3s;">
-      <% if (locals && locals.stats) { %>
-      <!-- Stats Cards -->
-      <div class="stats-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 32px;">
-        <div class="stat-card" style="background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); padding: 24px; text-align: center;">
-          <div style="font-size: 32px; font-weight: 700; color: var(--accent);"><%= locals.stats.totalProducts %></div>
-          <div style="font-size: 12px; color: var(--muted); margin-top: 4px;">Sản phẩm</div>
-        </div>
-        <div class="stat-card" style="background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); padding: 24px; text-align: center;">
-          <div style="font-size: 32px; font-weight: 700; color: var(--accent);"><%= locals.stats.totalOrders %></div>
-          <div style="font-size: 12px; color: var(--muted); margin-top: 4px;">Đơn hàng</div>
-        </div>
-        <div class="stat-card" style="background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); padding: 24px; text-align: center;">
-          <div style="font-size: 32px; font-weight: 700; color: var(--accent);"><%= locals.stats.totalRevenue %></div>
-          <div style="font-size: 12px; color: var(--muted); margin-top: 4px;">Doanh thu</div>
-        </div>
-        <div class="stat-card" style="background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); padding: 24px; text-align: center;">
-          <div style="font-size: 32px; font-weight: 700; color: var(--accent);"><%= locals.stats.activeUsers %></div>
-          <div style="font-size: 12px; color: var(--muted); margin-top: 4px;">Khách hoạt động</div>
-        </div>
-      </div>
-      <% } %>
+    function formatDate(value) {
+      var d = new Date(value);
+      if (isNaN(d.getTime())) return '';
+      return d.toLocaleDateString('vi-VN');
+    }
 
-      <!-- Chart Section -->
-      <div class="chart-section" style="background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); padding: 24px; margin-bottom: 32px;">
-        <div class="section-head" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-          <h2 class="section-title">Thống kê</h2>
-          <small style="color: var(--muted);">30 ngày qua</small>
-        </div>
-        <div class="chart-wrapper" style="height: 300px; position: relative;">
-          <!-- Doanh thu chart -->
-          <canvas id="chart-doanh-thu" width="100%" height="200" style="display: block;"></canvas>
-          <canvas id="chart-doanh-thu-legacy" width="100%" height="200" style="display: none;"></canvas>
-          <!-- Cấu trúc chart -->
-          <canvas id="chart-cou-structure" width="100%" height="150" style="display: block;"></canvas>
-        </div>
+    var revenueMap = {};
+    recentOrders.forEach(function (order) {
+      var d = new Date(order.createdAt);
+      if (isNaN(d.getTime())) return;
+      var key = d.toISOString().slice(0, 10);
+      revenueMap[key] = (revenueMap[key] || 0) + (Number(order.total) || 0);
+    });
+
+    var revenueLabels = [];
+    var revenueValues = [];
+    var today = new Date();
+    today.setHours(0, 0, 0, 0);
+    for (var dayOffset = 6; dayOffset >= 0; dayOffset -= 1) {
+      var day = new Date(today.getTime() - dayOffset * 86400000);
+      var dayKey = day.toISOString().slice(0, 10);
+      revenueLabels.push(day.getDate() + '/' + (day.getMonth() + 1));
+      revenueValues.push(revenueMap[dayKey] || 0);
+    }
+
+    var chartData = {
+      revenue: { labels: revenueLabels, data: revenueValues },
+      donut: {
+        labels: ['Sắp hết hàng', 'Còn hàng'],
+        data: [lowStockProducts.length, Math.max(0, totalProducts - lowStockProducts.length)]
+      }
+    };
+  %>
+  <main id="main-content" class="main-content">
+    <div class="container admin-shell">
+      <div class="admin-topbar">
+        <button type="button" id="tg" class="admin-menu-btn" aria-label="Mở menu quản trị" aria-controls="sb" aria-expanded="false">☰</button>
+        <span class="admin-brand">ABMT ADMIN</span>
       </div>
 
-      <!-- Recent Orders -->
-      <% if (locals && locals.recentOrders && locals.recentOrders.length > 0) { %>
-      <div class="section" style="background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); padding: 24px; margin-bottom: 32px;">
-        <div class="section-head" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-          <h2 class="section-title">Đơn hàng gần đây</h2>
-          <a href="/admin/orders" style="font-size: 12px; color: var(--accent); text-decoration: none;">Xem tất cả</a>
-        </div>
-        <div style="max-height: 400px; overflow-y: auto;">
-          <% locals.recentOrders.forEach(function(order) { %>
-          <div style="padding: 12px 0; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center;">
+      <div class="admin-scrim" id="scrim"></div>
+
+      <div class="admin-layout">
+        <aside class="admin-sidebar" id="sb" aria-label="Điều hướng quản trị">
+          <div class="admin-side-head">
+            <span class="admin-side-title">ABMT ADMIN</span>
+            <button type="button" class="admin-side-close" aria-label="Đóng menu">×</button>
+          </div>
+          <nav class="admin-nav">
+            <a href="/admin" class="is-active" aria-current="page">Tổng quan</a>
+            <a href="/admin/products/new">Thêm sản phẩm</a>
+            <a href="/catalog">Xem cửa hàng</a>
+            <a href="/account">Tài khoản</a>
+          </nav>
+        </aside>
+
+        <div class="admin-main">
+          <div class="page-head">
             <div>
-              <div style="font-size: 13px; color: var(--ink-strong);"><%= order.code %> - <%= order.customerName %></div>
-              <div style="font-size: 12px; color: var(--muted);"><%= order.createdAt || '' %></div>
+              <h1 class="page-title">Tổng quan</h1>
+              <p class="page-sub">Theo dõi hoạt động kinh doanh của cửa hàng</p>
             </div>
-            <div style="font-size: 13px; color: var(--acct);"><%= order.total || '0' %>₫</div>
+            <a href="/admin/products/new" class="btn btn-primary btn-sm">Thêm sản phẩm</a>
           </div>
-          <% }) %>
+
+          <div class="metric-grid">
+            <div class="metric-card">
+              <span class="metric-label">Doanh thu</span>
+              <span class="metric-value metric-accent" id="vRev"><%= totalRevenue.toLocaleString('vi-VN') %>₫</span>
+            </div>
+            <div class="metric-card">
+              <span class="metric-label">Đơn hàng</span>
+              <span class="metric-value" id="vOrd"><%= totalOrders %></span>
+            </div>
+            <div class="metric-card">
+              <span class="metric-label">Sản phẩm</span>
+              <span class="metric-value"><%= totalProducts %></span>
+            </div>
+            <div class="metric-card">
+              <span class="metric-label">Khách hàng</span>
+              <span class="metric-value"><%= activeUsers %></span>
+            </div>
+          </div>
+
+          <div class="chart-grid">
+            <section class="admin-panel" aria-labelledby="chart-title">
+              <div class="admin-panel-head">
+                <h2 class="admin-panel-title" id="chart-title">Doanh thu 7 ngày</h2>
+                <span class="admin-panel-note">Đơn đã giao</span>
+              </div>
+              <div class="chart-box">
+                <canvas id="chart" height="240" aria-label="Biểu đồ doanh thu 7 ngày" role="img"></canvas>
+                <p class="chart-fallback" data-chart-fallback hidden></p>
+              </div>
+            </section>
+
+            <section class="admin-panel" aria-labelledby="donut-title">
+              <div class="admin-panel-head">
+                <h2 class="admin-panel-title" id="donut-title">Tình trạng tồn kho</h2>
+                <a href="/catalog" class="admin-panel-link">Xem sản phẩm</a>
+              </div>
+              <div class="chart-box">
+                <canvas id="donut" height="240" aria-label="Biểu đồ tình trạng tồn kho" role="img"></canvas>
+                <p class="chart-fallback" data-chart-fallback hidden></p>
+              </div>
+            </section>
+          </div>
+
+          <div class="chart-grid">
+            <section class="admin-panel" aria-labelledby="recent-title">
+              <div class="admin-panel-head">
+                <h2 class="admin-panel-title" id="recent-title">Đơn hàng gần đây</h2>
+              </div>
+              <% if (recentOrders.length > 0) { %>
+                <div class="admin-list">
+                  <% recentOrders.forEach(function (order) { %>
+                    <div class="admin-list-item">
+                      <div class="admin-list-main">
+                        <span class="admin-list-title"><%= order.code || 'Đơn hàng' %></span>
+                        <span class="admin-list-sub"><%= order.customerName || 'Khách hàng' %> · <%= formatDate(order.createdAt) %></span>
+                      </div>
+                      <span class="admin-list-value"><%= (Number(order.total) || 0).toLocaleString('vi-VN') %>₫</span>
+                    </div>
+                  <% }) %>
+                </div>
+              <% } else { %>
+                <p class="admin-empty">Chưa có đơn hàng nào.</p>
+              <% } %>
+            </section>
+
+            <section class="admin-panel" aria-labelledby="stock-title">
+              <div class="admin-panel-head">
+                <h2 class="admin-panel-title" id="stock-title">Sắp hết hàng</h2>
+              </div>
+              <% if (lowStockProducts.length > 0) { %>
+                <div class="admin-list">
+                  <% lowStockProducts.forEach(function (product) { %>
+                    <div class="admin-list-item">
+                      <div class="admin-list-main">
+                        <span class="admin-list-title"><%= product.name %></span>
+                        <span class="admin-list-sub">Còn lại trong kho</span>
+                      </div>
+                      <span class="admin-list-value is-danger"><%= Number(product.stock) || 0 %></span>
+                    </div>
+                  <% }) %>
+                </div>
+              <% } else { %>
+                <p class="admin-empty">Không có sản phẩm nào sắp hết hàng.</p>
+              <% } %>
+            </section>
+          </div>
         </div>
       </div>
-      <% } %>
-
-      <!-- Products Low Stock -->
-      <% if (locals && locals.lowStockProducts && locals.lowStockProducts.length > 0) { %>
-      <div class="section" style="background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); padding: 24px; margin-bottom: 32px;">
-        <div class="section-head" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-          <h2 class="section-title">Sản phẩm sắp hết hàng</h2>
-          <span style="font-size: 12px; color: var(--danger);"><%= locals.lowStockProducts.length %> sản phẩm</span>
-        </div>
-        <div style="max-height: 300px; overflow-y: auto;">
-          <% locals.lowStockProducts.forEach(function(prod) { %>
-          <div style="padding: 8px 0; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center;">
-            <span style="font-size: 13px; color: var(--ink-strong);"><%= prod.name %></span>
-            <span style="font-size: 12px; color: var(--danger);"><%= prod.stock || 0 %> còn</span>
-          </div>
-          <% }) %>
-        </div>
-      </div>
-      <%} %>
-    </main>
-  </div>
-
-  <!-- Chart.js -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-
+    </div>
+  </main>
+  <%- include('../partials/footer') %>
+  <script type="application/json" id="admin-chart-data"><%- JSON.stringify(chartData).replace(/</g, '\\u003c') %></script>
   <script src="/js/api.js"></script>
   <script src="/js/ui.js"></script>
+  <!-- Chart.js 4.4.1 - chờ nhóm duyệt CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <script src="/js/admin.js"></script>
 </body>
 </html>
