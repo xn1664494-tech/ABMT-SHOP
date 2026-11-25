@@ -17,6 +17,7 @@ installFakeUserModel(fakeUserModel);
 const request = require('supertest');
 const app = require('../src/app');
 const { authorize } = require('../src/middleware/authenticate');
+const requireAdmin = require('../src/middleware/requireAdmin');
 
 const PASSWORD = 'Secret123';
 
@@ -172,6 +173,36 @@ test('T4-1-1: middleware authorize chan customer va cho phep admin', async () =>
 
   await request(miniApp).get('/admin-only').set('x-test-role', 'customer').expect(403);
   await request(miniApp).get('/admin-only').set('x-test-role', 'admin').expect(200);
+});
+
+test('T4-4-3: requireAdmin tra 403 khi chua co req.user', async () => {
+  const miniApp = express();
+  miniApp.get('/admin-only', requireAdmin, (req, res) =>
+    res.status(200).json({ success: true }),
+  );
+
+  const res = await request(miniApp).get('/admin-only');
+
+  assert.equal(res.status, 403);
+});
+
+test('T4-4-3: requireAdmin chan customer va cho phep admin', async () => {
+  const miniApp = express();
+  miniApp.get('/admin-only', (req, res, next) => {
+    req.user = { role: req.headers['x-test-role'] };
+    next();
+  }, requireAdmin, (req, res) => res.status(200).json({ success: true }));
+
+  const denied = await request(miniApp)
+    .get('/admin-only')
+    .set('x-test-role', 'customer');
+  assert.equal(denied.status, 403);
+
+  const allowed = await request(miniApp)
+    .get('/admin-only')
+    .set('x-test-role', 'admin');
+  assert.equal(allowed.status, 200);
+  assert.equal(allowed.body.success, true);
 });
 
 test('T4-1-1: /me tra thong tin user hien tai, khong lo password', async () => {

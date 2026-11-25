@@ -35,6 +35,7 @@ let available = false;
 let skipReason = '';
 let adminToken = null;
 let customerToken = null;
+let customerId = null;
 let csrfToken = null;
 let categoryId = null;
 let categorySlug = null;
@@ -147,6 +148,7 @@ test.before(async () => {
 
     adminToken = signFor(adminUser);
     customerToken = signFor(customerUser);
+    customerId = customerUser._id.toString();
 
     const category = await Category.create({ name: `${MARKER} Ao` });
     categoryId = category._id.toString();
@@ -589,6 +591,10 @@ test('GET /api/products loc size+color chi khop cung mot bien the', async (t) =>
     .query({ size: 'm', color: 'đỏ' });
   assert.equal(lowerCase.statusCode, 200);
   assert.ok(lowerCase.body.data.items.some((item) => item.id === match.id));
+  assert.ok(!lowerCase.body.data.items.some((item) => item.id === split.id));
+  assert.ok(
+    !lowerCase.body.data.items.some((item) => item.id === outOfStock.id),
+  );
 });
 
 test('GET /api/products loc theo category, khoang gia, keyword, inStock', async (t) => {
@@ -663,6 +669,44 @@ test('GET /api/products loc theo category, khoang gia, keyword, inStock', async 
   assert.equal(invalid.body.success, false);
 
   await otherCategory.deleteOne();
+});
+
+test('T4-4-3: DELETE /api/products/:id chua dang nhap tra 401', async (t) => {
+  if (skipIfUnavailable(t)) return;
+
+  const res = await agent.delete(`/api/products/${productId}`);
+
+  assert.equal(res.statusCode, 401);
+  assert.equal(res.body.success, false);
+});
+
+test('T4-4-3: DELETE /api/products/:id vai khach tra 403', async (t) => {
+  if (skipIfUnavailable(t)) return;
+
+  const res = await agent
+    .delete(`/api/products/${productId}`)
+    .set(authHeader(customerToken))
+    .set(csrfHeader());
+
+  assert.equal(res.statusCode, 403);
+  assert.equal(res.body.success, false);
+});
+
+test('T4-4-3: DELETE /api/products/:id khong tin role tu khai trong token', async (t) => {
+  if (skipIfUnavailable(t)) return;
+
+  const forgedToken = jwt.sign(
+    { sub: customerId, role: 'admin', ver: 0 },
+    JWT_SECRET,
+    { expiresIn: '15m', issuer: ISSUER, audience: AUDIENCE },
+  );
+  const res = await agent
+    .delete(`/api/products/${productId}`)
+    .set(authHeader(forgedToken))
+    .set(csrfHeader());
+
+  assert.equal(res.statusCode, 403);
+  assert.equal(res.body.success, false);
 });
 
 test('DELETE /api/products/:id xoa mem thanh cong', async (t) => {
