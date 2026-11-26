@@ -129,6 +129,30 @@ test('T5-4-3: gop gio khi dang nhap khong nhan trung SKU va xoa gio guest', asyn
   );
 });
 
+test('T5-2-1: merge vuot kho - API 409, trang /cart clamp va hien flash', async () => {
+  seedGuestCart([makeItem('SKU-USER', 9)]);
+  const userCart = seedUserCart([makeItem('SKU-USER', 5)]);
+
+  const apiRes = await request(app)
+    .post('/api/cart/merge')
+    .set('Cookie', cookiesFor());
+
+  assert.equal(apiRes.status, 409);
+  assert.equal(apiRes.body.success, false);
+  assert.equal(userCart.items[0].qty, 5);
+
+  const pageRes = await request(app)
+    .get('/cart')
+    .set('Cookie', cookiesFor());
+
+  assert.equal(pageRes.status, 200);
+  assert.equal(userCart.items[0].qty, 10);
+  assert.match(
+    pageRes.text,
+    /Một số sản phẩm đã được điều chỉnh số lượng/
+  );
+});
+
 test('T5-4-3: gop gio tao user cart neu chua co', async () => {
   seedGuestCart([makeItem('SKU-GUEST', 2)]);
 
