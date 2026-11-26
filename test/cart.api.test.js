@@ -61,6 +61,11 @@ const seedEmptyCart = () => {
 };
 
 test.beforeEach(() => {
+  const product = productModel.products[0];
+  product.basePrice = 150000;
+  product.isActive = true;
+  product.variants[0].price = 199000;
+  product.variants[0].stock = 5;
   seedCart();
 });
 
@@ -143,4 +148,51 @@ test('T5-4-3: cong don so luong vuot ton kho bi tu choi', async () => {
   assert.equal(res.status, 409);
   assert.equal(res.body.success, false);
   assert.equal(cartModel.carts[0].items[0].qty, 4);
+});
+
+test('T5-4-1: qty khong phai so nguyen duong bi tu choi 400', async () => {
+  for (const bad of [1.5, 0, -1, 'abc']) {
+    const res = await request(app)
+      .put(`/api/cart/items/${itemId}`)
+      .set('Cookie', 'cartId=session-abc')
+      .send({ qty: bad });
+
+    assert.equal(res.status, 400);
+    assert.equal(res.body.success, false);
+  }
+});
+
+test('T5-4-3: GET/PUT lam moi gia tu DB khi gia bien the thay doi', async () => {
+  productModel.products[0].variants[0].price = 250000;
+
+  const getRes = await request(app)
+    .get('/api/cart')
+    .set('Cookie', 'cartId=session-abc');
+
+  assert.equal(getRes.status, 200);
+  assert.equal(getRes.body.data.items[0].unitPrice, 250000);
+  assert.equal(getRes.body.data.subtotal, 250000);
+
+  const putRes = await request(app)
+    .put(`/api/cart/items/${itemId}`)
+    .set('Cookie', 'cartId=session-abc')
+    .send({ qty: 2 });
+
+  assert.equal(putRes.status, 200);
+  assert.equal(putRes.body.data.items[0].unitPrice, 250000);
+  assert.equal(putRes.body.data.subtotal, 500000);
+});
+
+test('T5-4-3: khong cho them san pham isActive=false', async () => {
+  seedEmptyCart();
+  productModel.products[0].isActive = false;
+
+  const res = await request(app)
+    .post('/api/cart/items')
+    .set('Cookie', 'cartId=session-abc')
+    .send({ product: productId.toString(), size: 'M', color: 'den', qty: 1 });
+
+  assert.equal(res.status, 404);
+  assert.equal(res.body.success, false);
+  assert.equal(cartModel.carts[0].items.length, 0);
 });
