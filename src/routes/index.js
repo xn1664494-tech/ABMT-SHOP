@@ -9,6 +9,7 @@ const { ACCESS_COOKIE, verifyToken } = require('../services/tokenService');
 const { calculateShippingFee } = require('../model/Order');
 const asyncHandler = require('../utils/asyncHandler');
 const ErrorResponse = require('../utils/appError');
+const { getFlash } = require('../utils/flash');
 
 const router = express.Router();
 
