@@ -1,0 +1,34 @@
+<%
+  var artIndex = typeof index !== 'undefined' ? index : 0;
+  var artName = String((product && product.name) || '');
+  var artSlug = String((product && (product.categorySlug || product.category)) || '');
+  var artImage = (product && typeof product.image === 'string') ? product.image : '';
+  var artHasImage = artImage.length > 0 && artImage.indexOf('cdn.example.com') === -1 && artImage.indexOf('/images/placeholder/') === -1 && /^(\/|https?:\/\/)/i.test(artImage);
+  var artSymbol = 'i-tee';
+  var artMap = [
+    ['ao-thun', 'i-tee'], ['ao-so-mi', 'a-shirt'], ['ao-khoac', 'a-jacket'],
+    ['quan-dai', 'a-pants'], ['quan-short', 'a-shorts'], ['vay-dam', 'a-dress'], ['chan-vay', 'a-skirt']
+  ];
+  for (var ai = 0; ai < artMap.length; ai += 1) {
+    if (artSlug.indexOf(artMap[ai][0]) !== -1) { artSymbol = artMap[ai][1]; break; }
+  }
+  if (artSymbol === 'i-tee') {
+    var artKeywords = [
+      ['quần short', 'a-shorts'], ['short', 'a-shorts'], ['chân váy', 'a-skirt'],
+      ['váy', 'a-dress'], ['đầm', 'a-dress'], ['khoác', 'a-jacket'],
+      ['sơ mi', 'a-shirt'], ['polo', 'a-shirt'], ['quần', 'a-pants'], ['áo thun', 'i-tee']
+    ];
+    var lowerName = artName.toLowerCase();
+    for (var aj = 0; aj < artKeywords.length; aj += 1) {
+      if (lowerName.indexOf(artKeywords[aj][0]) !== -1) { artSymbol = artKeywords[aj][1]; break; }
+    }
+  }
+  var artPastels = ['art-sky', 'art-mint', 'art-peach', 'art-lilac'];
+  var artClass = artPastels[Math.abs(Number(artIndex) || 0) % artPastels.length];
+%>
+<span class="product-art <%= artClass %>" aria-hidden="true">
+  <svg class="art-ico"><use href="#<%= artSymbol %>"></use></svg>
+</span>
+<% if (artHasImage) { %>
+  <img src="<%= artImage %>" alt="<%= artName %>" loading="lazy" decoding="async" width="300" height="400" class="product-photo" data-product-photo>
+<% } %>

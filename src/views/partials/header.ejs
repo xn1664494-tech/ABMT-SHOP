@@ -1,3 +1,4 @@
+<%- include('./svg-sprite') %>
 <style>
   .header-actions {
     display: flex;
@@ -252,7 +253,7 @@
           columns.push({
             title: 'Xem nhanh',
             links: [
-              { name: 'Sản phẩm mới', href: '/catalog?sort=newest' },
+              { name: 'Sản phẩm mới', href: '/catalog?sort=newest&new=1' },
               { name: 'Đang giảm giá', href: '/catalog?sort=price_asc' },
               { name: 'Tất cả đồ ' + root.name, href: rootHref(root, '/catalog') }
             ]
@@ -302,7 +303,7 @@
         <% } else { %>
           <li><a href="/#section-new-women" class="nav-link">Nữ</a></li>
         <% } %>
-        <li><a href="/catalog?sort=newest" class="nav-link">Sản phẩm mới</a></li>
+        <li><a href="/catalog?sort=newest&amp;new=1" class="nav-link">Sản phẩm mới</a></li>
         <li><a href="/#section-sale" class="nav-link">Giảm giá</a></li>
       </ul>
     </nav>

@@ -14,29 +14,43 @@
     var items = (typeof products !== 'undefined' && Array.isArray(products)) ? products : [];
     var pg = (typeof pagination !== 'undefined' && pagination) ? pagination : { page: 1, total: 0, totalPages: 0, itemCount: 0 };
     var sortVal = (typeof sortBy !== 'undefined' && sortBy) ? sortBy : 'newest';
+    var isNewPage = (typeof isNewPage !== 'undefined' && isNewPage) || String(L.new || '') === '1';
     var categoryList = (typeof categories !== 'undefined' && Array.isArray(categories)) ? categories : [];
     var sizeList = (typeof sizes !== 'undefined' && Array.isArray(sizes)) ? sizes : [];
     var colorList = (typeof colors !== 'undefined' && Array.isArray(colors)) ? colors : [];
+    var bounds = (typeof priceBounds !== 'undefined' && priceBounds) ? priceBounds : { min: 0, max: 1000000 };
+    var priceMinBound = Number(bounds.min) || 0;
+    var priceMaxBound = Number(bounds.max) || 1000000;
+    var priceStep = 10000;
+    var requestedMin = L.price_min === '' || L.price_min === undefined ? '' : String(L.price_min);
+    var requestedMax = L.price_max === '' || L.price_max === undefined ? '' : String(L.price_max);
     var currentPageNum = Number(pg.page) || 1;
     var totalPagesNum = Number(pg.totalPages) || 0;
+    function fmt(value) { return Number(value || 0).toLocaleString('vi-VN') + '₫'; }
     var qp = [];
     if (L.category) qp.push('category=' + encodeURIComponent(L.category));
     if (L.size) qp.push('size=' + encodeURIComponent(L.size));
     if (L.color) qp.push('color=' + encodeURIComponent(L.color));
     if (L.keyword) qp.push('keyword=' + encodeURIComponent(L.keyword));
     if (L.inStock) qp.push('inStock=' + encodeURIComponent(L.inStock));
-    if (L.price_min) qp.push('minPrice=' + encodeURIComponent(L.price_min));
-    if (L.price_max) qp.push('maxPrice=' + encodeURIComponent(L.price_max));
+    if (requestedMin !== '') qp.push('minPrice=' + encodeURIComponent(requestedMin));
+    if (requestedMax !== '') qp.push('maxPrice=' + encodeURIComponent(requestedMax));
+    if (isNewPage) qp.push('new=1');
     if (sortVal && sortVal !== 'newest') qp.push('sort=' + encodeURIComponent(sortVal));
+    else if (isNewPage) qp.push('sort=newest');
     var baseQuery = qp.length ? '?' + qp.join('&') + '&page=' : '?page=';
     var cc = (typeof currentCategory !== 'undefined' && currentCategory) ? currentCategory : null;
     var rc = (typeof rootCategory !== 'undefined' && rootCategory) ? rootCategory : null;
     var childCats = (typeof childCategories !== 'undefined' && Array.isArray(childCategories)) ? childCategories : [];
-    var rootCats = (typeof rootCategories !== 'undefined' && Array.isArray(rootCategories)) ? rootCategories : [];
+    var rootCats = (typeof rootCategories !== 'undefined' && Array.isArray(rootCategories))
+      ? rootCategories.filter(function (cat) { return cat.children && cat.children.length; })
+      : [];
     function chipHref(slug) {
       var parts = [];
       if (slug) parts.push('category=' + encodeURIComponent(slug));
+      if (isNewPage) parts.push('new=1');
       if (sortVal && sortVal !== 'newest') parts.push('sort=' + encodeURIComponent(sortVal));
+      else if (isNewPage) parts.push('sort=newest');
       return '/catalog' + (parts.length ? '?' + parts.join('&') : '');
     }
     function isCurrentCat(slug) { return !!(cc && cc.slug === slug); }
@@ -46,25 +60,29 @@
       <nav class="breadcrumb" aria-label="Breadcrumb">
         <a href="/">Trang chủ</a>
         <span class="sep">/</span>
-        <% if (rc && cc && cc.slug !== rc.slug) { %>
-          <a href="<%= chipHref(rc.slug) %>"><%= rc.name %></a>
-          <span class="sep">/</span>
+        <% if (isNewPage && !rc) { %>
+          <span aria-current="page">Sản phẩm mới</span>
+        <% } else { %>
+          <% if (rc && cc && cc.slug !== rc.slug) { %>
+            <a href="<%= chipHref(rc.slug) %>"><%= rc.name %></a>
+            <span class="sep">/</span>
+          <% } %>
+          <span aria-current="page"><%= cc ? cc.name : (isNewPage ? 'Sản phẩm mới' : 'Sản phẩm') %></span>
         <% } %>
-        <span aria-current="page"><%= cc ? cc.name : 'Sản phẩm' %></span>
       </nav>
 
       <div class="page-head sh">
         <div>
-          <h1 class="page-title"><%= cc ? 'Thời trang ' + cc.name : 'Danh sách sản phẩm' %></h1>
+          <h1 class="page-title"><%= isNewPage ? 'Sản phẩm mới' : (cc ? 'Thời trang ' + cc.name : 'Danh sách sản phẩm') %></h1>
           <p class="page-sub"><%= Number(pg.total) || 0 %> sản phẩm</p>
         </div>
       </div>
 
       <div class="catalog-chips chips" role="group" aria-label="Chọn danh mục">
         <% if (!rc) { %>
-          <a class="catalog-chip<%= !cc ? ' is-current' : '' %>" href="<%= chipHref('') %>">Tất cả</a>
+          <a class="catalog-chip<%= !cc && !isNewPage ? ' is-current' : '' %>" href="<%= chipHref('') %>">Tất cả</a>
           <% rootCats.forEach(function (cat) { %>
-            <a class="catalog-chip" href="<%= chipHref(cat.slug) %>"><%= cat.name %></a>
+            <a class="catalog-chip<%= isCurrentCat(cat.slug) ? ' is-current' : '' %>" href="<%= chipHref(cat.slug) %>"><%= cat.name %></a>
           <% }) %>
         <% } else { %>
           <a class="catalog-chip<%= isCurrentCat(rc.slug) ? ' is-current' : '' %>" href="<%= chipHref(rc.slug) %>">Tất cả <%= rc.name %></a>
@@ -88,6 +106,7 @@
                 <option value="price_asc" <%= sortVal === 'price_asc' ? 'selected' : '' %>>Giá thấp đến cao</option>
                 <option value="price_desc" <%= sortVal === 'price_desc' ? 'selected' : '' %>>Giá cao đến thấp</option>
               </select>
+              <input type="hidden" name="new" value="<%= isNewPage ? '1' : '' %>">
               <button type="submit" class="btn btn-ghost btn-sm">Áp dụng</button>
             </div>
           </div>
@@ -99,22 +118,28 @@
           <aside id="filter-drawer" class="filter-drawer" aria-label="Bộ lọc sản phẩm">
             <div class="drawer-head">
               <h2 class="drawer-title">Bộ lọc</h2>
-              <button type="button" id="filter-close" class="drawer-close" aria-label="Đóng bộ lọc">×</button>
+              <button type="button" id="filter-close" class="drawer-close" aria-label="Đóng bộ lọc">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+              </button>
             </div>
 
             <div class="filter-form">
               <div class="filter-group">
-                <label class="label" for="filter-category">Danh mục</label>
+                <label class="label filter-label" for="filter-category">
+                  <svg class="filter-ico" aria-hidden="true"><use href="#i-grid"></use></svg>Danh mục
+                </label>
                 <select id="filter-category" name="category" class="select">
                   <option value="">Tất cả danh mục</option>
                     <% categoryList.forEach(function (cat) { %>
-                      <option value="<%= cat.slug %>" <%= (L.category === cat.slug || (cc && cat._id && cc._id.toString() === cat._id.toString())) ? 'selected' : '' %>><%= cat.name %></option>
+                      <option value="<%= cat.slug %>" <%= (L.category === cat.slug || (cc && cat._id && cc._id.toString() === cc._id.toString())) ? 'selected' : '' %>><%= cat.name %></option>
                     <% }) %>
                 </select>
               </div>
 
               <div class="filter-group">
-                <label class="label" for="filter-size">Kích cỡ</label>
+                <label class="label filter-label" for="filter-size">
+                  <svg class="filter-ico" aria-hidden="true"><use href="#i-ruler"></use></svg>Kích cỡ
+                </label>
                 <select id="filter-size" name="size" class="select">
                   <option value="">Tất cả kích cỡ</option>
                   <% sizeList.forEach(function (size) { %>
@@ -124,7 +149,9 @@
               </div>
 
               <div class="filter-group">
-                <label class="label" for="filter-color">Màu sắc</label>
+                <label class="label filter-label" for="filter-color">
+                  <svg class="filter-ico" aria-hidden="true"><use href="#i-palette"></use></svg>Màu sắc
+                </label>
                 <select id="filter-color" name="color" class="select">
                   <option value="">Tất cả màu sắc</option>
                   <% colorList.forEach(function (color) { %>
@@ -134,7 +161,9 @@
               </div>
 
               <div class="filter-group">
-                <label class="label" for="filter-instock">Tồn kho</label>
+                <label class="label filter-label" for="filter-instock">
+                  <svg class="filter-ico" aria-hidden="true"><use href="#i-check"></use></svg>Tồn kho
+                </label>
                 <select id="filter-instock" name="inStock" class="select">
                   <option value="">Tất cả</option>
                   <option value="true" <%= String(L.inStock) === 'true' || String(L.inStock) === '1' ? 'selected' : '' %>>Chỉ còn hàng</option>
@@ -143,22 +172,25 @@
               <input type="hidden" name="keyword" value="<%= L.keyword || '' %>">
 
               <div class="filter-group">
-                <label class="label" for="price-range">Khoảng giá</label>
-                <input type="range" id="price-range" class="price-slider" min="0" max="1000000" step="1000"
-                  value="<%= Number(L.price_min) || 0 %>" data-min="0" data-max="1000000" data-step="1000"
-                  aria-label="Chọn khoảng giá">
-                <div class="price-inputs">
-                  <input type="number" id="price-min" name="minPrice" class="input price-input" min="0" max="1000000" step="1000"
-                    value="<%= L.price_min || '' %>" placeholder="Từ" aria-label="Giá tối thiểu">
-                  <span class="price-dash">–</span>
-                  <input type="number" id="price-max" name="maxPrice" class="input price-input" min="0" max="1000000" step="1000"
-                    value="<%= L.price_max || '' %>" placeholder="Đến" aria-label="Giá tối đa">
+                <label class="label filter-label" for="price-min">
+                  <svg class="filter-ico" aria-hidden="true"><use href="#i-tag"></use></svg>Khoảng giá
+                </label>
+                <div class="price-range" data-price-range data-min="<%= priceMinBound %>" data-max="<%= priceMaxBound %>" data-step="<%= priceStep %>">
+                  <div class="price-track"><span class="price-track-fill"></span></div>
+                  <input type="range" id="price-min-range" class="price-thumb price-thumb-min" min="<%= priceMinBound %>" max="<%= priceMaxBound %>" step="<%= priceStep %>" value="<%= requestedMin !== '' ? requestedMin : priceMinBound %>" aria-label="Giá thấp nhất">
+                  <input type="range" id="price-max-range" class="price-thumb price-thumb-max" min="<%= priceMinBound %>" max="<%= priceMaxBound %>" step="<%= priceStep %>" value="<%= requestedMax !== '' ? requestedMax : priceMaxBound %>" aria-label="Giá cao nhất">
                 </div>
+                <div class="price-inputs">
+                  <input type="text" inputmode="numeric" id="price-min" name="minPrice" class="input price-input" value="<%= requestedMin !== '' ? fmt(requestedMin) : '' %>" placeholder="Từ" aria-label="Giá tối thiểu" data-price-input>
+                  <span class="price-dash">–</span>
+                  <input type="text" inputmode="numeric" id="price-max" name="maxPrice" class="input price-input" value="<%= requestedMax !== '' ? fmt(requestedMax) : '' %>" placeholder="Đến" aria-label="Giá tối đa" data-price-input>
+                </div>
+                <p class="price-hint">Từ <%= fmt(priceMinBound) %> đến <%= fmt(priceMaxBound) %></p>
               </div>
 
               <div class="filter-actions">
                 <button type="submit" class="btn btn-primary">Áp dụng</button>
-                <a href="/catalog" class="btn btn-ghost">Xóa lọc</a>
+                <a href="<%= chipHref('') %>" class="btn btn-ghost">Xóa lọc</a>
               </div>
             </div>
           </aside>
@@ -166,17 +198,8 @@
           <div class="catalog-results">
             <% if (items.length > 0) { %>
               <div class="catalog-grid grid">
-                <% items.forEach(function (item) {
-                  var cardProduct = {
-                    name: item.name,
-                    slug: item.slug,
-                    image: (item.images && item.images[0]) || '/images/placeholder/product.svg',
-                    price: Number(item.basePrice) || 0,
-                    salePrice: null,
-                    outOfStock: item.inStock === false
-                  };
-                %>
-                  <%- include('../partials/product-card', { product: cardProduct }) %>
+                <% items.forEach(function (item, itemIndex) { %>
+                  <%- include('../partials/product-card', { product: item, index: itemIndex }) %>
                 <% }) %>
               </div>
 
@@ -187,9 +210,13 @@
               %>
                 <nav class="pagination" aria-label="Phân trang sản phẩm">
                   <% if (currentPageNum > 1) { %>
-                    <a class="pager" href="<%= baseQuery + (currentPageNum - 1) %>" aria-label="Trang trước">‹</a>
+                    <a class="pager" href="<%= baseQuery + (currentPageNum - 1) %>" aria-label="Trang trước">
+                      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>
+                    </a>
                   <% } else { %>
-                    <span class="pager is-disabled" aria-hidden="true">‹</span>
+                    <span class="pager is-disabled" aria-hidden="true">
+                      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>
+                    </span>
                   <% } %>
 
                   <% for (var pageNum = startPage; pageNum <= endPage; pageNum += 1) { %>
@@ -199,9 +226,13 @@
                   <% } %>
 
                   <% if (currentPageNum < totalPagesNum) { %>
-                    <a class="pager" href="<%= baseQuery + (currentPageNum + 1) %>" aria-label="Trang sau">›</a>
+                    <a class="pager" href="<%= baseQuery + (currentPageNum + 1) %>" aria-label="Trang sau">
+                      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+                    </a>
                   <% } else { %>
-                    <span class="pager is-disabled" aria-hidden="true">›</span>
+                    <span class="pager is-disabled" aria-hidden="true">
+                      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+                    </span>
                   <% } %>
                 </nav>
               <% } %>
@@ -209,11 +240,7 @@
               <div class="empty-state">
                 <p class="empty-state-title">Không tìm thấy sản phẩm</p>
                 <p class="empty-state-text">Thử bỏ bớt bộ lọc hoặc khám phá toàn bộ danh mục của chúng tôi.</p>
-                <% if (rc) { %>
-                  <a href="<%= chipHref(rc.slug) %>" class="btn btn-primary">Tất cả đồ <%= rc.name %></a>
-                <% } else { %>
-                  <a href="<%= chipHref('') %>" class="btn btn-primary">Xem tất cả sản phẩm</a>
-                <% } %>
+                <a href="<%= chipHref('') %>" class="btn btn-primary">Xóa lọc</a>
               </div>
             <% } %>
           </div>

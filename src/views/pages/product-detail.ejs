@@ -13,7 +13,7 @@
     var p = (typeof product !== 'undefined' && product) ? product : {};
     var vs = (typeof variants !== 'undefined' && Array.isArray(variants)) ? variants : [];
     var related = (typeof productsRelated !== 'undefined' && Array.isArray(productsRelated)) ? productsRelated : [];
-    var imgs = (Array.isArray(p.images) && p.images.length > 0) ? p.images : ['/images/placeholder/product.svg'];
+    var imgs = (Array.isArray(p.images) && p.images.length > 0) ? p.images : [];
     var mainImg = imgs[0];
     var uniqueSizes = [];
     vs.forEach(function (v) {
@@ -43,7 +43,7 @@
       <div class="pdp-grid">
         <div class="pdp-gallery">
           <div class="pdp-main">
-            <img src="<%= mainImg %>" alt="<%= p.name %>" width="600" height="800" decoding="async">
+            <%- include('../partials/product-art', { product: { name: p.name, image: mainImg || '', category: p.category }, index: 0 }) %>
           </div>
           <% if (imgs.length > 1) { %>
             <div class="pdp-thumbs">

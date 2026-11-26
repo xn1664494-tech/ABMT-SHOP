@@ -40,22 +40,79 @@
       else if (mq.addListener) mq.addListener(handleMq);
     }
 
+    const priceArea = document.querySelector('[data-price-range]');
     const minInput = document.querySelector('#price-min');
     const maxInput = document.querySelector('#price-max');
-    const range = document.querySelector('#price-range');
+    const minRange = document.querySelector('#price-min-range');
+    const maxRange = document.querySelector('#price-max-range');
+    const fill = priceArea && priceArea.querySelector('.price-track-fill');
 
-    function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
-    function syncRange() {
-      if (!range) return;
-      const min = parseInt(range.min || '0', 10);
-      const max = parseInt(range.max || '1000000', 10);
-      const a = clamp(parseInt((minInput && minInput.value) || '0', 10) || 0, min, max);
-      const b = clamp(parseInt((maxInput && maxInput.value) || String(max), 10) || max, min, max);
-      range.value = String(Math.min(a, b));
+    if (priceArea && minInput && maxInput && minRange && maxRange) {
+      const boundMin = Number(priceArea.dataset.min || 0);
+      const boundMax = Number(priceArea.dataset.max || 1000000);
+      const step = Number(priceArea.dataset.step || 10000);
+
+      const parseMoney = (value) => {
+        const digits = String(value || '').replace(/[^\d]/g, '');
+        return digits ? Number(digits) : null;
+      };
+      const formatMoney = (value) => `${Number(value).toLocaleString('vi-VN')}₫`;
+      const clamp = (value) => Math.max(boundMin, Math.min(boundMax, value));
+      const roundStep = (value) => Math.round(value / step) * step;
+      const read = (input, fallback) => {
+        const parsed = parseMoney(input.value);
+        return parsed === null ? fallback : clamp(parsed);
+      };
+
+      function paint() {
+        let low = read(minInput, boundMin);
+        let high = read(maxInput, boundMax);
+        if (low > high) {
+          const swap = low;
+          low = high;
+          high = swap;
+          minInput.value = formatMoney(low);
+          maxInput.value = formatMoney(high);
+        }
+        minRange.value = String(low);
+        maxRange.value = String(high);
+        if (fill) {
+          const span = Math.max(1, boundMax - boundMin);
+          fill.style.left = `${((low - boundMin) / span) * 100}%`;
+          fill.style.width = `${((high - low) / span) * 100}%`;
+        }
+      }
+
+      function fromRange(source) {
+        let low = Number(minRange.value);
+        let high = Number(maxRange.value);
+        if (source === minRange && low > high) low = high;
+        if (source === maxRange && high < low) high = low;
+        minRange.value = String(clamp(low));
+        maxRange.value = String(clamp(high));
+        if (low <= boundMin && source === minRange && parseMoney(minInput.value) === null) minInput.value = '';
+        else minInput.value = formatMoney(roundStep(low));
+        if (high >= boundMax && source === maxRange && parseMoney(maxInput.value) === null) maxInput.value = '';
+        else maxInput.value = formatMoney(roundStep(high));
+        paint();
+      }
+
+      minRange.addEventListener('input', () => fromRange(minRange));
+      maxRange.addEventListener('input', () => fromRange(maxRange));
+      minInput.addEventListener('input', paint);
+      maxInput.addEventListener('input', paint);
+      minInput.addEventListener('blur', () => {
+        const value = parseMoney(minInput.value);
+        minInput.value = value === null ? '' : formatMoney(value);
+        paint();
+      });
+      maxInput.addEventListener('blur', () => {
+        const value = parseMoney(maxInput.value);
+        maxInput.value = value === null ? '' : formatMoney(value);
+        paint();
+      });
+      paint();
     }
-    if (minInput) minInput.addEventListener('input', syncRange);
-    if (maxInput) maxInput.addEventListener('input', syncRange);
-    if (range) range.addEventListener('input', () => { if (minInput) minInput.value = range.value; });
 
     filterForm.addEventListener('submit', function (e) {
       e.preventDefault();
@@ -65,12 +122,19 @@
         const v = String(value || '').trim();
         if (!v) continue;
         if (key === 'minPrice' || key === 'maxPrice') {
-          const n = parseInt(v, 10);
-          if (!Number.isFinite(n) || n <= 0) continue;
+          const n = Number(v.replace(/[^\d]/g, ''));
+          if (!Number.isFinite(n) || n < 0) continue;
+          if (n === 0 && key === 'minPrice') continue;
           params.set(key, String(n));
           continue;
         }
         params.set(key, v);
+      }
+      const min = params.get('minPrice');
+      const max = params.get('maxPrice');
+      if (min !== null && max !== null && Number(min) > Number(max)) {
+        params.set('minPrice', max);
+        params.set('maxPrice', min);
       }
       const base = filterForm.getAttribute('action') || '/catalog';
       const qs = params.toString();

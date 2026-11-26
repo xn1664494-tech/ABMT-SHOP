@@ -100,11 +100,20 @@ module.exports = {
       filters.category,
     );
 
-    const { category: _categoryParam, ...filterSource } = filters;
+    const { category: _categoryParam, priceIds, ...filterSource } = filters;
+    const priceFilterApplied = Array.isArray(priceIds);
+    if (priceFilterApplied) {
+      delete filterSource.minPrice;
+      delete filterSource.maxPrice;
+    }
     const filter = {
       ...buildVisibilityFilter(options),
       ...buildFilter(filterSource, {}),
     };
+
+    if (priceFilterApplied) {
+      filter._id = { $in: priceIds };
+    }
 
     if (!found) {
       return {

@@ -139,7 +139,7 @@
               %>
                 <div class="checkout-line">
                   <div class="checkout-thumb">
-                    <img src="/images/placeholder/product.svg" alt="<%= line.productName %>" width="90" height="120" loading="lazy" decoding="async">
+                    <%- include('../partials/product-art', { product: { name: line.productName, image: '' }, index: 0 }) %>
                   </div>
                   <div>
                     <p class="checkout-line-name"><%= line.productName %></p>

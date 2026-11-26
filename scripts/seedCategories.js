@@ -107,6 +107,9 @@ const run = async () => {
   const productMap = new Map(existingProducts.map((p) => [p.slug, p]));
   const counters = new Map();
   const SKU_SEQUENCE_OFFSET = 500;
+  const SALE_SLUGS = new Set([
+    'ao-thun-polo-pique-nam', 'ao-khoac-bomber-nam', 'quan-jeans-mom-nu', 'vay-midi-dang-chu-a'
+  ]);
 
   for (const product of PRODUCTS) {
     const categoryId = idBySlug.get(product.category);
@@ -121,7 +124,7 @@ const run = async () => {
       colorCode: product.colorCode,
       sku: buildSku({ prefix, sequence, size: 'M', color: product.color }),
       stock: 12,
-      price: product.price,
+      price: SALE_SLUGS.has(product.slug) ? Math.round((product.price * 0.8) / 1000) * 1000 : product.price,
     };
 
     let doc = productMap.get(product.slug);
