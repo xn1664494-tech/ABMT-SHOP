@@ -93,6 +93,27 @@ router.get('/register', (req, res) => {
   });
 });
 
+// Trạng thái đơn hàng dùng cho trang tài khoản
+const ORDER_STATUS_KEYS = ['pending', 'confirmed', 'shipping', 'delivered', 'cancelled'];
+
+const queryValue = (req, name) => {
+  const value = req.query ? req.query[name] : undefined;
+  if (Array.isArray(value)) return String(value[0] || '');
+  return String(value == null ? '' : value);
+};
+
+const escapeRegex = (value) => String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+const countOrdersByStatus = async (userId) => {
+  const counts = { pending: 0, confirmed: 0, shipping: 0, delivered: 0, cancelled: 0 };
+  await Promise.all(
+    ORDER_STATUS_KEYS.map(async (status) => {
+      counts[status] = await Order.countDocuments({ user: userId, status });
+    })
+  );
+  return counts;
+};
+
 // Trang tài khoản của tôi (đích mặc định sau khi đăng nhập)
 router.get('/account', asyncHandler(async (req, res, next) => {
   if (!res.locals.currentUser) {
@@ -107,36 +128,132 @@ router.get('/account', asyncHandler(async (req, res, next) => {
     return res.redirect(302, '/login?next=/account');
   }
 
-  const orders = await Order.find({ user: user._id })
-    .sort({ createdAt: -1 })
-    .limit(20)
-    .lean();
+  const tabQuery = queryValue(req, 'tab');
+  const tab = ['overview', 'orders', 'addresses', 'profile'].includes(tabQuery)
+    ? tabQuery
+    : 'overview';
+
+  const statusQuery = queryValue(req, 'status');
+  const status = ORDER_STATUS_KEYS.includes(statusQuery) ? statusQuery : '';
+  const keyword = queryValue(req, 'q').trim();
+
+  let page = parseInt(queryValue(req, 'page'), 10);
+  if (!Number.isFinite(page) || page < 1) page = 1;
+
+  const counts = await countOrdersByStatus(user._id);
+  const totalOrders = ORDER_STATUS_KEYS.reduce(
+    (sum, key) => sum + (Number(counts[key]) || 0),
+    0
+  );
+  const processingCount = (Number(counts.pending) || 0)
+    + (Number(counts.confirmed) || 0)
+    + (Number(counts.shipping) || 0);
+
+  let orders = [];
+  let pagination = null;
+  let recentOrders = [];
+
+  if (tab === 'orders') {
+    const filter = { user: user._id };
+    if (status) filter.status = status;
+    if (keyword) {
+      const regex = new RegExp(escapeRegex(keyword), 'i');
+      filter.$or = [{ code: regex }, { 'items.name': regex }];
+    }
+
+    const perPage = 10;
+    const total = await Order.countDocuments(filter);
+    const totalPages = Math.max(1, Math.ceil(total / perPage));
+    if (page > totalPages) page = totalPages;
+
+    orders = await Order.find(filter)
+      .sort({ createdAt: -1 })
+      .skip((page - 1) * perPage)
+      .limit(perPage)
+      .lean();
+
+    pagination = { page, perPage, total, totalPages };
+  } else if (tab === 'overview') {
+    recentOrders = await Order.find({ user: user._id })
+      .sort({ createdAt: -1 })
+      .limit(3)
+      .lean();
+  }
+
+  const addresses = Array.isArray(user.addresses) ? user.addresses : [];
+  const defaultAddress = addresses.find((addr) => addr && addr.isDefault) || addresses[0] || null;
 
   res.set('Cache-Control', 'no-store');
   res.render('pages/account', {
     title: 'Tài khoản của tôi',
     user,
-    orders
+    orders,
+    recentOrders,
+    counts,
+    totalOrders,
+    processingCount,
+    addresses,
+    defaultAddress,
+    tab,
+    status,
+    q: keyword,
+    pagination,
   });
 }));
 
-router.get('/profile', (req, res) => {
+// Chi tiết đơn hàng — chỉ chủ đơn được xem
+router.get('/account/orders/:code', asyncHandler(async (req, res, next) => {
+  if (!res.locals.currentUser) {
+    const nextPath = '/account/orders/' + encodeURIComponent(String(req.params.code || ''));
+    return res.redirect(302, '/login?next=' + encodeURIComponent(nextPath));
+  }
+
+  const code = String(req.params.code || '').trim().toUpperCase();
+  const order = code
+    ? await Order.findOne({ code, user: res.locals.currentUser.id }).lean()
+    : null;
+
+  if (!order) {
+    return res.status(404).render('error', {
+      title: 'Không tìm thấy đơn hàng',
+      statusCode: 404,
+      message: 'Đơn hàng không tồn tại hoặc bạn không có quyền xem.',
+    });
+  }
+
+  res.set('Cache-Control', 'no-store');
+  res.render('pages/order-detail', {
+    title: 'Đơn hàng ' + order.code,
+    order,
+  });
+}));
+
+router.get('/profile', asyncHandler(async (req, res, next) => {
   if (!res.locals.currentUser) {
     return res.redirect(302, '/login?next=/profile');
   }
 
+  const current = res.locals.currentUser;
+  const fullUser = await User.findById(current.id)
+    .select('name email role addresses createdAt')
+    .lean();
+
+  const user = {
+    id: current.id,
+    name: (fullUser && fullUser.name) || current.name || '',
+    email: (fullUser && fullUser.email) || '',
+    role: (fullUser && fullUser.role) || current.role || 'customer',
+    addresses: (fullUser && Array.isArray(fullUser.addresses)) ? fullUser.addresses : [],
+    createdAt: (fullUser && fullUser.createdAt) || null,
+  };
+
   res.set('Cache-Control', 'no-store');
   res.render('pages/profile', {
     title: 'Hồ sơ của tôi',
-    locals: {
-      user: {
-        id: res.locals.currentUser.id,
-        name: res.locals.currentUser.name,
-        role: res.locals.currentUser.role,
-      },
-    },
+    user,
+    tab: 'profile',
   });
-});
+}));
 
 // Trang giỏ hàng (HTML)
 router.get('/cart', asyncHandler(async (req, res, next) => {
