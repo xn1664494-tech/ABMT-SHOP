@@ -267,6 +267,27 @@ test('T5-4-3: gop gio tao user cart neu chua co', async () => {
   assert.equal(res.body.data.count, 2);
 });
 
+test('T5-2-3: guest cart tu chuyen thanh user cart qua GET /api/cart', async () => {
+  seedGuestCart([makeItem('SKU-GUEST', 3)]);
+
+  const res = await request(app)
+    .get('/api/cart')
+    .set('Cookie', cookiesFor());
+
+  assert.equal(res.status, 200);
+  assert.equal(res.body.data.items.length, 1);
+  assert.equal(res.body.data.items[0].sku, 'SKU-GUEST');
+  assert.equal(res.body.data.count, 3);
+  assert.equal(cartModel.carts.length, 1);
+  assert.equal(String(cartModel.carts[0].user), String(user._id));
+  assert.equal(cartModel.carts[0].sessionId, null);
+  assert.ok(
+    (res.headers['set-cookie'] || []).some((cookie) =>
+      cookie.startsWith('cartId=;')
+    )
+  );
+});
+
 test('T5-4-3: gop gio chua dang nhap bi tu choi', async () => {
   seedGuestCart([makeItem('SKU-GUEST', 1)]);
 
