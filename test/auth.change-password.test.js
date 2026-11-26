@@ -42,6 +42,18 @@ const csrfFor = async (agent) => {
   return res.body.data.csrfToken;
 };
 
+// origin/main bypass CSRF khi NODE_ENV=test. Bat tam trong pham vi 1 request
+// de assert hanh vi that cua csrfProtection, roi khoi phuc ngay sau do.
+const withCsrfEnforced = async (fn) => {
+  const previousNodeEnv = process.env.NODE_ENV;
+  process.env.NODE_ENV = 'development';
+  try {
+    return await fn();
+  } finally {
+    process.env.NODE_ENV = previousNodeEnv;
+  }
+};
+
 test.beforeEach(() => {
   fakeUserModel.users.length = 0;
 });
@@ -57,28 +69,32 @@ test('T4-1-3: doi mat khau khong dang nhap tra 401', async () => {
   assert.equal(res.body.success, false);
 });
 
-test.skip('T4-1-3: doi mat khau thieu CSRF token tra 403', async () => {
+test('T4-1-3: doi mat khau thieu CSRF token tra 403', async () => {
   await seedUser();
   const agent = request.agent(app);
   await login(agent);
 
-  const res = await agent
-    .patch('/api/profile/me/password')
-    .send({ currentPassword: OLD_PASSWORD, newPassword: NEW_PASSWORD });
+  const res = await withCsrfEnforced(() =>
+    agent
+      .patch('/api/profile/me/password')
+      .send({ currentPassword: OLD_PASSWORD, newPassword: NEW_PASSWORD }),
+  );
 
   assert.equal(res.status, 403);
 });
 
-test.skip('T4-1-3: doi mat khau CSRF token khong hop le tra 403', async () => {
+test('T4-1-3: doi mat khau CSRF token khong hop le tra 403', async () => {
   await seedUser();
   const agent = request.agent(app);
   await login(agent);
   await csrfFor(agent);
 
-  const res = await agent
-    .patch('/api/profile/me/password')
-    .set('X-CSRF-Token', 'wrong-token')
-    .send({ currentPassword: OLD_PASSWORD, newPassword: NEW_PASSWORD });
+  const res = await withCsrfEnforced(() =>
+    agent
+      .patch('/api/profile/me/password')
+      .set('X-CSRF-Token', 'wrong-token')
+      .send({ currentPassword: OLD_PASSWORD, newPassword: NEW_PASSWORD }),
+  );
 
   assert.equal(res.status, 403);
 });

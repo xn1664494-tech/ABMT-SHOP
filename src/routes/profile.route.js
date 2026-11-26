@@ -31,8 +31,6 @@ router.patch(
   validate(changePasswordSchema),
   changeMyPassword,
 );
-router.get('/:userId', authenticate, requireSelfOrAdmin('userId'), getProfile);
-
 /**
  * GET /api/profile/addresses - Danh sách địa chỉ của user
  */
@@ -196,5 +194,8 @@ router.delete(
     });
   })
 );
+
+// Dat sau cac route /addresses de "addresses" khong bi bat nhu mot userId.
+router.get('/:userId', authenticate, requireSelfOrAdmin('userId'), getProfile);
 
 module.exports = router;

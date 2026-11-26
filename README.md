@@ -193,6 +193,22 @@ npm run test:jest:watch
 
 Mã nguồn: `src/utils/productFilter.js` (`buildFilter`, `escapeRegex`). Minh chứng: `test/product.filter.test.js`, `test/product.api.test.js`, `postman/ProductFilter.postman_collection.json`.
 
+### Phân trang & sắp xếp sản phẩm (T4-2-2)
+
+`GET /api/products` nhận thêm các query phân trang/sắp xếp (ghép được với bộ lọc):
+
+| Query | Mặc định | Quy tắc |
+|---|---|---|
+| `page` | `1` | Số nguyên ≥ 1; sai (`0`, `-1`, `abc`, `1.5`) → 400 |
+| `limit` | `20` | Số nguyên ≥ 1; vượt `100` bị ép về `100`; sai → 400 |
+| `sort` | `newest` | `newest` \| `price_asc` \| `price_desc` (không phân biệt hoa/thường); sai → 400 |
+
+- Response: `data = { items, pagination }` với `pagination = { page, limit, total, totalPages }`; `skip = (page - 1) * limit`.
+- Luôn có tie-breaker `_id` để thứ tự ổn định giữa các trang (tránh trùng/thiếu bản ghi khi giá hoặc `createdAt` bằng nhau).
+- Tham số sai trả 400 kèm `details: [{ field, message }]` (field là `page`, `limit` hoặc `sort`).
+
+Mã nguồn: `src/utils/productFilter.js` (`buildPagination`, `buildSort`, `DEFAULT_PAGE_SIZE`, `MAX_PAGE_SIZE`). Minh chứng: `test/product.pagination.test.js`, `test/product.api.test.js`, `postman/ProductPagination.postman_collection.json`, báo cáo `docs/reports/T4-2-2_PAGINATION.md`.
+
 ### Tối ưu truy vấn danh sách (T4-2-3)
 
 - `GET /api/products` trả `data = { items, pagination }`. Mỗi item chỉ gồm trường cần cho card/catalog (`name`, `slug`, `category`, `images`, `basePrice`, `variants`, `isActive`, `createdAt`, `updatedAt`, `id`, `totalStock`, `inStock`); `description` chỉ có ở endpoint chi tiết.

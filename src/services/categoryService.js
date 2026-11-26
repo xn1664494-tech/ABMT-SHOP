@@ -1,7 +1,9 @@
 const mongoose = require('mongoose');
 const Category = require('../model/Category');
+const Product = require('../model/Products');
 const slugify = require('slugify');
 const ErrorResponse = require('../utils/appError');
+const { toPublicCategory } = require('../utils/categorySerializer');
 
 const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id);
 
@@ -75,9 +77,10 @@ const hasCircularReference = async (categoryId, newParentId) => {
 
 module.exports = {
   async list() {
-    return Category.find({ isDeleted: false })
+    const categories = await Category.find({ isDeleted: false })
       .sort({ parentId: 1, order: 1, createdAt: 1 })
       .lean();
+    return categories.map(toPublicCategory);
   },
 
   async tree() {
@@ -87,11 +90,9 @@ module.exports = {
 
     for (const cat of all) {
       map[cat._id.toString()] = {
-        id: cat._id.toString(),
-        ...cat,
+        ...toPublicCategory(cat),
         children: [],
       };
-      delete map[cat._id.toString()]._id;
     }
 
     for (const cat of all) {
@@ -186,6 +187,11 @@ module.exports = {
     });
     if (childrenCount > 0) {
       throw new ErrorResponse('Không thể xóa danh mục này vì còn danh mục con', 409);
+    }
+
+    const productCount = await Product.countDocuments({ category: id });
+    if (productCount > 0) {
+      throw new ErrorResponse('Không thể xóa danh mục này vì còn sản phẩm', 409);
     }
 
     cat.isDeleted = true;

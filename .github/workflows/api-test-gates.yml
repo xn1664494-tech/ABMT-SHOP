@@ -3,10 +3,14 @@ name: API test gates
 on:
   pull_request:
     branches:
+      - main
       - feature/post-phase2-hardening
+      - 'fix/**'
   push:
     branches:
+      - main
       - feature/post-phase2-hardening
+      - 'fix/**'
   workflow_dispatch:
 
 permissions:
@@ -70,6 +74,13 @@ jobs:
 
       - name: Integration tests (real MongoDB)
         run: npm run test:integration
+
+      - name: Postman collections (newman)
+        run: npm run test:postman
+        # Newman chay tren MongoMemoryServer rieng. Dat NODE_ENV khac "test"
+        # de CSRF khong bi bypass va kiem thu that su duoc header/cookie.
+        env:
+          NODE_ENV: development
 
       - name: Jest tests
         run: npm run test:jest

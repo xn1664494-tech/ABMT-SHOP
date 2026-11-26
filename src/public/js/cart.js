@@ -14,6 +14,8 @@
 
   var timers = Object.create(null);
   var busy = Object.create(null);
+  var pendingSave = Object.create(null);
+  var saveFailed = Object.create(null);
 
   function formatMoney(value) {
     var number = Number(value);
@@ -156,10 +158,10 @@
 
   function sendUpdate(itemId, desiredQty) {
     var line = findLine(itemId);
-    if (!line || busy[itemId]) return;
+    if (!line || busy[itemId]) return pendingSave[itemId] || Promise.resolve();
 
     var input = line.querySelector('.qty-field');
-    if (!input) return;
+    if (!input) return Promise.resolve();
 
     var saved = Number(input.dataset.saved || input.value) || 1;
     var max = Number(input.max) || 0;
@@ -168,18 +170,20 @@
     if (max > 0 && qty > max) qty = max;
 
     input.value = String(qty);
-    if (qty === saved) return;
+    if (qty === saved) return Promise.resolve();
 
     busy[itemId] = true;
+    saveFailed[itemId] = false;
     setLineError(line, '');
     setBusy(line, true);
 
-    window.ABMT.api
-      .patch('/api/cart/items/' + encodeURIComponent(itemId), { quantity: qty })
+    var request = window.ABMT.api
+      .put('/api/cart/items/' + encodeURIComponent(itemId), { qty })
       .then(function (response) {
         renderFromResponse(unwrap(response));
       })
       .catch(function (error) {
+        saveFailed[itemId] = true;
         input.value = String(saved);
         setLineError(line, error && error.message ? error.message : 'Không cập nhật được số lượng.');
         if (window.ABMT.toast) window.ABMT.toast.fromError(error);
@@ -187,7 +191,11 @@
       .then(function () {
         busy[itemId] = false;
         setBusy(line, false);
+        delete pendingSave[itemId];
       });
+
+    pendingSave[itemId] = request;
+    return request;
   }
 
   function queueUpdate(itemId, value, immediate) {
@@ -196,13 +204,34 @@
       delete timers[itemId];
     }
     if (immediate) {
-      sendUpdate(itemId, value);
-      return;
+      return sendUpdate(itemId, value);
     }
     timers[itemId] = window.setTimeout(function () {
       delete timers[itemId];
       sendUpdate(itemId, value);
     }, DEBOUNCE_MS);
+    return pendingSave[itemId] || Promise.resolve();
+  }
+
+  function flushUpdate(itemId) {
+    if (timers[itemId]) {
+      window.clearTimeout(timers[itemId]);
+      delete timers[itemId];
+      var line = findLine(itemId);
+      var input = line ? line.querySelector('.qty-field') : null;
+      return sendUpdate(itemId, input ? input.value : 0).then(function () {
+        return !saveFailed[itemId];
+      });
+    }
+
+    if (!pendingSave[itemId]) {
+      saveFailed[itemId] = false;
+      return Promise.resolve(true);
+    }
+
+    return pendingSave[itemId].then(function () {
+      return !saveFailed[itemId];
+    });
   }
 
   function removeItem(itemId) {
@@ -246,6 +275,15 @@
     if (!itemId) return;
 
     var action = button.dataset.action;
+    if (action === 'checkout') {
+      event.preventDefault();
+      var href = button.getAttribute('href');
+      flushUpdate(itemId).then(function (ok) {
+        if (ok && href) window.location.assign(href);
+      });
+      return;
+    }
+
     if (action === 'remove') {
       removeItem(itemId);
       return;

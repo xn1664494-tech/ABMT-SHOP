@@ -9,6 +9,8 @@ const { ACCESS_COOKIE, verifyToken } = require('../services/tokenService');
 const { calculateShippingFee } = require('../model/Order');
 const asyncHandler = require('../utils/asyncHandler');
 const ErrorResponse = require('../utils/appError');
+const { getFlash } = require('../utils/flash');
+const { ensureCartItemIds } = require('../utils/cartItems');
 
 const router = express.Router();
 
@@ -41,6 +43,8 @@ const setCartCookie = (res, cartId) => {
     maxAge: 30 * 24 * 60 * 60 * 1000, // 30 ngày
   });
 };
+
+const isValidObjectId = (id) => require('mongoose').Types.ObjectId.isValid(id);
 
 const isSafeNext = (next) => {
   if (typeof next !== 'string' || next === '') {
@@ -135,6 +139,7 @@ router.get('/profile', (req, res) => {
 
 // Trang giỏ hàng (HTML)
 router.get('/cart', asyncHandler(async (req, res, next) => {
+  res.set('Cache-Control', 'no-store');
   const cartId = getCartId(req);
   let cart = await Cart.findOne({ sessionId: cartId });
 
@@ -147,7 +152,7 @@ router.get('/cart', asyncHandler(async (req, res, next) => {
           { sessionId: cartId },
           { $set: { user: res.locals.currentUser.id, sessionId: null, expiresAt: null } }
         );
-        cart = await Cart.findOne({ sessionId: cartId });
+        cart = await Cart.findOne({ user: res.locals.currentUser.id });
       } else {
         // Gộp items từ guest cart vào user cart
         const existingSkus = new Set((userCart.items || []).map((i) => i.sku));
@@ -164,7 +169,14 @@ router.get('/cart', asyncHandler(async (req, res, next) => {
     cart = userCart || cart;
   }
 
-  const items = cart ? cart.items : [];
+  if (cart && ensureCartItemIds(cart)) {
+    await cart.save();
+  }
+
+  const viewCart = cart
+    ? await Cart.findOne({ _id: cart._id }).populate('items.product', 'name slug images variants')
+    : null;
+  const items = viewCart ? viewCart.items : [];
   const { subtotal, shippingFee, total, count } = calcCartSummary(items);
 
   res.render('pages/cart', {
@@ -367,7 +379,27 @@ router.get('/checkout', asyncHandler(async (req, res, next) => {
     cart = userCart || cart;
   }
 
-  const items = cart ? cart.items : [];
+  if (cart && ensureCartItemIds(cart)) {
+    await cart.save();
+  }
+
+  const rawItemId = req.query.item;
+  let selectedItemId = null;
+  if (rawItemId !== undefined) {
+    if (typeof rawItemId !== 'string' || !isValidObjectId(rawItemId)) {
+      return res.redirect(302, '/cart?error=' + encodeURIComponent('Mã sản phẩm trong giỏ không hợp lệ'));
+    }
+    selectedItemId = rawItemId;
+  }
+
+  let items = cart ? cart.items : [];
+  if (selectedItemId) {
+    items = items.filter((item) => String(item._id) === selectedItemId);
+    if (items.length === 0) {
+      return res.redirect(302, '/cart?error=' + encodeURIComponent('Sản phẩm không tồn tại trong giỏ hàng'));
+    }
+  }
+
   if (items.length === 0) {
     return res.redirect(302, '/cart');
   }
@@ -396,6 +428,7 @@ router.get('/checkout', asyncHandler(async (req, res, next) => {
       total,
       savedAddresses,
       paymentMethods,
+      itemId: selectedItemId || '',
     },
     cartCount: count,
   });
