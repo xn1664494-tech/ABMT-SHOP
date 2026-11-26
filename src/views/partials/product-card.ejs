@@ -1,7 +1,7 @@
 ﻿<article class="product-card" id="product-<%= product.slug %>">
   <a href="/products/<%= product.slug %>" class="product-link">
     <div class="product-thumb<%= locals.badge || locals.rank || product.outOfStock ? ' has-badge' : '' %>">
-      <img src="<%= product.image %>" alt="<%= product.name %>" loading="lazy" decoding="async" width="300" height="400">
+      <img src="<%= product.image %>" alt="<%= product.name %>" loading="lazy" decoding="async" width="300" height="400" data-fallback="/images/placeholder/product.svg">
       <% if (product.outOfStock) { %>
         <span class="badge badge-sale">Hết hàng</span>
       <% } else if (locals.badge) { %>

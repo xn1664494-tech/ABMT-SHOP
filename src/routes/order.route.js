@@ -9,6 +9,7 @@ const { csrfProtection } = require('../middleware/csrf');
 const asyncHandler = require('../utils/asyncHandler');
 const ErrorResponse = require('../utils/appError');
 const { calculateShippingFee } = require('../model/Order');
+const addressService = require('../services/addressService');
 
 const isValidObjectId = (id) => require('mongoose').Types.ObjectId.isValid(id);
 
@@ -42,20 +43,67 @@ router.post(
       if (!addr) {
         return next(new ErrorResponse('Địa chỉ không tồn tại', 404));
       }
+
+      let province = addr.city;
+      let ward = addr.ward;
+      let provinceCode = addr.provinceCode;
+      let wardCode = addr.wardCode;
+
+      if (provinceCode && wardCode) {
+        const found = addressService.findWard(provinceCode, wardCode);
+        if (!found) {
+          return next(new ErrorResponse('Địa chỉ không hợp lệ', 400));
+        }
+        province = found.province.fullName;
+        ward = found.ward.name;
+        provinceCode = found.province.code;
+        wardCode = found.ward.code;
+      }
+
       shippingAddress = {
         fullName: addr.recipient || addr.label || 'Người nhận',
         phone: addr.phone,
-        province: addr.city,
+        province,
         district: addr.district,
-        ward: addr.ward,
+        ward,
         detail: addr.street,
+        provinceCode,
+        wardCode,
       };
     } else if (address && typeof address === 'object') {
-      const { fullName, phone, province, district, ward, detail } = address;
-      if (!fullName || !phone || !province || !district || !ward || !detail) {
+      const { fullName, phone, province, district, ward, detail, provinceCode, wardCode } = address;
+      if (!fullName || !phone || !detail) {
         return next(new ErrorResponse('Thiếu thông tin địa chỉ giao hàng', 400));
       }
-      shippingAddress = { fullName, phone, province, district, ward, detail };
+
+      let finalProvince = province;
+      let finalWard = ward;
+      let finalProvinceCode = provinceCode;
+      let finalWardCode = wardCode;
+
+      if (provinceCode && wardCode) {
+        const found = addressService.findWard(provinceCode, wardCode);
+        if (!found) {
+          return next(new ErrorResponse('Địa chỉ không hợp lệ', 400));
+        }
+        finalProvince = found.province.fullName;
+        finalWard = found.ward.name;
+        finalProvinceCode = found.province.code;
+        finalWardCode = found.ward.code;
+      } else if (!province || !ward) {
+        return next(new ErrorResponse('Thiếu thông tin địa chỉ giao hàng', 400));
+      }
+
+      shippingAddress = {
+        fullName,
+        phone,
+        province: finalProvince,
+        district: district || undefined,
+        ward: finalWard,
+        detail,
+        provinceCode: finalProvinceCode || undefined,
+        wardCode: finalWardCode || undefined,
+      };
     } else {
       return next(new ErrorResponse('Thiếu địa chỉ giao hàng', 400));
     }

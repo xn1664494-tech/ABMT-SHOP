@@ -9,10 +9,6 @@
 <body>
   <%- include('../partials/header') %>
   <div data-flash data-type="info" hidden></div>
-  <%
-    var L = (locals && locals.locals) ? locals.locals : (locals || {});
-    var provinces = Array.isArray(L.provinces) ? L.provinces : [];
-  %>
   <main id="main-content" class="main-content address-page">
     <div class="container page-shell">
       <nav class="breadcrumb" aria-label="Breadcrumb">
@@ -46,26 +42,22 @@
             <small class="field-error-msg"></small>
           </div>
           <div class="field">
-            <label class="label" for="ad-province">Tỉnh/Thành</label>
-            <select id="ad-province" name="province" class="select">
-              <option value="">-- Chọn Tỉnh/Thành --</option>
-              <% provinces.forEach(function (province) { %>
-                <option value="<%= province.code %>"><%= province.name %></option>
-              <% }) %>
-            </select>
-            <small class="field-error-msg"></small>
-          </div>
-          <div class="field">
-            <label class="label" for="ad-district">Quận/Huyện</label>
-            <select id="ad-district" name="district" class="select" disabled>
-              <option value="">-- Chọn Quận/Huyện --</option>
-            </select>
-          </div>
-          <div class="field">
-            <label class="label" for="ad-ward">Phường/Xã</label>
-            <select id="ad-ward" name="ward" class="select" disabled>
-              <option value="">-- Chọn Phường/Xã --</option>
-            </select>
+            <label class="label" for="ad-search">Phường/Xã, Tỉnh/Thành</label>
+            <div class="addr-combo" data-addr-combo>
+              <input type="text" id="ad-search" class="input" data-addr-search
+                role="combobox" aria-autocomplete="list" aria-expanded="false"
+                aria-controls="ad-suggestions" autocomplete="off"
+                placeholder="Gõ tên phường/xã hoặc tỉnh, ví dụ: Giảng Võ">
+              <ul class="addr-list" id="ad-suggestions" data-addr-list role="listbox" hidden></ul>
+              <div class="addr-chip" data-addr-chip hidden>
+                <span class="addr-chip-label" data-addr-chip-label></span>
+                <button type="button" class="addr-chip-change" data-addr-change>Đổi</button>
+              </div>
+              <input type="hidden" name="province" value="">
+              <input type="hidden" name="provinceCode" value="">
+              <input type="hidden" name="ward" value="">
+              <input type="hidden" name="wardCode" value="">
+            </div>
             <small class="field-error-msg"></small>
           </div>
           <div class="field">

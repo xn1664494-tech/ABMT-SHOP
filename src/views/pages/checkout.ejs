@@ -13,7 +13,6 @@
     var L = (locals && locals.locals) ? locals.locals : (locals || {});
     var lines = Array.isArray(L.lines) ? L.lines : [];
     var savedAddresses = Array.isArray(L.savedAddresses) ? L.savedAddresses : [];
-    var provinces = Array.isArray(L.provinces) ? L.provinces : [];
     var paymentMethods = Array.isArray(L.paymentMethods) ? L.paymentMethods : ['cod', 'bank_transfer'];
     var subtotal = Number(L.subtotal) || 0;
     var shippingFee = Number(L.shippingFee) || 0;
@@ -100,26 +99,22 @@
                   <small class="field-error-msg"></small>
                 </div>
                 <div class="field">
-                  <label class="label" for="co-province">Tỉnh/Thành</label>
-                  <select id="co-province" name="province" class="select">
-                    <option value="">-- Chọn Tỉnh/Thành --</option>
-                    <% provinces.forEach(function (province) { %>
-                      <option value="<%= province.code %>"><%= province.name %></option>
-                    <% }) %>
-                  </select>
-                  <small class="field-error-msg"></small>
-                </div>
-                <div class="field">
-                  <label class="label" for="co-district">Quận/Huyện</label>
-                  <select id="co-district" name="district" class="select" disabled>
-                    <option value="">-- Chọn Quận/Huyện --</option>
-                  </select>
-                </div>
-                <div class="field">
-                  <label class="label" for="co-ward">Phường/Xã</label>
-                  <select id="co-ward" name="ward" class="select" disabled>
-                    <option value="">-- Chọn Phường/Xã --</option>
-                  </select>
+                  <label class="label" for="co-search">Phường/Xã, Tỉnh/Thành</label>
+                  <div class="addr-combo" data-addr-combo>
+                    <input type="text" id="co-search" class="input" data-addr-search
+                      role="combobox" aria-autocomplete="list" aria-expanded="false"
+                      aria-controls="co-suggestions" autocomplete="off"
+                      placeholder="Gõ tên phường/xã hoặc tỉnh, ví dụ: Giảng Võ">
+                    <ul class="addr-list" id="co-suggestions" data-addr-list role="listbox" hidden></ul>
+                    <div class="addr-chip" data-addr-chip hidden>
+                      <span class="addr-chip-label" data-addr-chip-label></span>
+                      <button type="button" class="addr-chip-change" data-addr-change>Đổi</button>
+                    </div>
+                    <input type="hidden" name="province" value="">
+                    <input type="hidden" name="provinceCode" value="">
+                    <input type="hidden" name="ward" value="">
+                    <input type="hidden" name="wardCode" value="">
+                  </div>
                   <small class="field-error-msg"></small>
                 </div>
                 <div class="field">
