@@ -220,6 +220,28 @@ router.get('/catalog', asyncHandler(async (req, res, next) => {
 
   const data = await productService.list(filters, {});
   const categories = await Category.find({ isDeleted: false }).sort({ order: 1, name: 1 }).lean();
+
+  const rootCategories = categories.filter(function (c) { return !c.parentId; });
+  const categoriesById = new Map(categories.map(function (c) { return [c._id.toString(), c]; }));
+  const categoryParam = filters.category;
+  const currentCategory = categoryParam
+    ? (categories.find(function (c) {
+        return c.slug === categoryParam || c._id.toString() === categoryParam;
+      }) || null)
+    : null;
+  let rootCategory = currentCategory;
+  while (rootCategory && rootCategory.parentId && categoriesById.has(rootCategory.parentId.toString())) {
+    rootCategory = categoriesById.get(rootCategory.parentId.toString());
+  }
+  const childCategories = rootCategory
+    ? categories
+        .filter(function (c) {
+          return c.parentId && c.parentId.toString() === rootCategory._id.toString();
+        })
+        .sort(function (a, b) { return (a.order || 0) - (b.order || 0); })
+    : [];
+  const catalogTitle = currentCategory ? 'Thời trang ' + currentCategory.name : 'Danh sách sản phẩm';
+
   const allProducts = await Product.find({ isDeleted: false, isActive: true }).select('variants basePrice').lean();
   const sizes = [...new Set(allProducts.flatMap((p) => (p.variants || []).map((v) => v.size)).filter(Boolean))].sort();
   const colors = [...new Set(allProducts.flatMap((p) => (p.variants || []).map((v) => v.color)).filter(Boolean))].sort();
@@ -238,8 +260,12 @@ router.get('/catalog', asyncHandler(async (req, res, next) => {
 
   const flash = typeof getFlash === 'function' ? getFlash(req) : [];
   res.render('pages/catalog', {
-    title: 'Danh sách sản phẩm',
+    title: catalogTitle,
     categories,
+    rootCategories,
+    currentCategory,
+    rootCategory,
+    childCategories,
     sizes,
     colors,
     products: data.items,

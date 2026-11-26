@@ -34,6 +34,22 @@ const resolveCategoryFilter = async (category) => {
   return { categoryId: found._id, found: true };
 };
 
+const resolveCategoryIds = async (categoryId) => {
+  const ids = [categoryId];
+  const queue = [categoryId];
+  while (queue.length) {
+    const current = queue.shift();
+    const children = await Category.find({ parentId: current, isDeleted: false })
+      .select('_id')
+      .lean();
+    for (const child of children) {
+      ids.push(child._id);
+      queue.push(child._id);
+    }
+  }
+  return ids;
+};
+
 const buildVisibilityFilter = ({
   includeInactive = false,
   includeDeleted = false,
@@ -84,16 +100,10 @@ module.exports = {
       filters.category,
     );
 
-    // Slug không tồn tại: vẫn validate các tham số còn lại, rồi trả rỗng
-    // thay vì 404 vì đây là endpoint list.
-    const filterSource = found
-      ? filters
-      : Object.fromEntries(
-          Object.entries(filters).filter(([key]) => key !== 'category'),
-        );
+    const { category: _categoryParam, ...filterSource } = filters;
     const filter = {
       ...buildVisibilityFilter(options),
-      ...buildFilter(filterSource, { categoryId }),
+      ...buildFilter(filterSource, {}),
     };
 
     if (!found) {
@@ -101,6 +111,10 @@ module.exports = {
         items: [],
         pagination: { page, limit, total: 0, totalPages: 0, itemCount: 0 },
       };
+    }
+
+    if (categoryId) {
+      filter.category = { $in: await resolveCategoryIds(categoryId) };
     }
 
     const countQuery = Product.countDocuments(filter);

@@ -46,6 +46,7 @@ app.use(cookieParser());
 app.use('/api', apiRoutes);
 // Middleware nhận biết người dùng hiện tại chỉ cho route trang (EJS), không áp cho /api
 app.use(currentUser);
+app.use(require('./middleware/navCategories').navCategories);
 app.use('/', routes);
 
 // Smoke check: server còn sống

@@ -12,98 +12,44 @@
       duration = type === 'error' ? 6000 : 4000
     } = options;
 
-    // Lazy create container
+    // Create toast element — all sizing/colors come from app.css
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    toast.setAttribute('role', type === 'error' ? 'alert' : 'status');
+
+    const icons = {
+      success: '<path d="M20 6L9 17l-5-5"/>',
+      error: '<path d="M12 8v5"/><path d="M12 17h.01"/><circle cx="12" cy="12" r="9"/>',
+      info: '<path d="M12 16v-5"/><path d="M12 8h.01"/><circle cx="12" cy="12" r="9"/>'
+    };
+    const icon = document.createElement('span');
+    icon.className = 'toast-icon';
+    icon.setAttribute('aria-hidden', 'true');
+    icon.innerHTML = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' + (icons[type] || icons.info) + '</svg>';
+    toast.appendChild(icon);
+
+    const toastText = document.createElement('span');
+    toastText.className = 'toast-text';
+    toastText.textContent = message;
+    toast.appendChild(toastText);
+
+    const closeBtn = document.createElement('button');
+    closeBtn.type = 'button';
+    closeBtn.className = 'toast-close';
+    closeBtn.setAttribute('aria-label', 'Đóng thông báo');
+    closeBtn.textContent = '×';
+    closeBtn.addEventListener('click', function () { dismissToast(); });
+    toast.appendChild(closeBtn);
+
     if (!toastRegion) {
       toastRegion = document.createElement('div');
       toastRegion.id = 'toast-region';
       toastRegion.setAttribute('role', 'region');
       toastRegion.setAttribute('aria-label', 'Thông báo');
-      toastRegion.style.display = 'none';
       document.body.appendChild(toastRegion);
     }
-
-    // Create toast element
-    const toast = document.createElement('div');
-    toast.className = `toast toast-${type}`;
-    toast.setAttribute('role', type === 'error' ? 'alert' : 'status');
-    toast.style.display = 'flex';
-    toast.style.alignItems = 'flex-start';
-    toast.style.gap = '10px';
-    toast.style.padding = '12px 14px';
-    toast.style.background = 'var(--surface)';
-    toast.style.border = '1px var(--line) solid';
-    toast.style.borderRadius = 'var(--r-md)';
-    toast.style.boxShadow = 'var(--shadow-toast, 0 8px 24px rgba(42,47,54,.12))';
-    toast.style.color = 'var(--ink-strong)';
-    toast.style.fontSize = '13px';
-    toast.style.lineHeight = '1.45';
-    toast.style.transition = 'opacity .2s, transform .2s';
-    toast.style.pointerEvents = 'auto';
-
-    // Variant colors
-    const theme = {
-      success: { borderLeftColor: 'var(--accent-deep)', background: 'var(--mint)' },
-      error: { borderLeftColor: 'var(--danger)', background: 'var(--peach)', color: 'var(--danger)' },
-      info: { borderLeftColor: 'var(--accent)', background: 'var(--sky)' }
-    };
-
-    const t = theme[type] || theme.info;
-    toast.style.borderLeft = `4px solid ${t.borderLeftColor}`;
-    if (t.background) toast.style.background = t.background;
-    if (t.color && type !== 'info') toast.style.color = t.color;
-
-    const toastText = document.createElement('span');
-    toastText.className = 'toast-text';
-    toastText.style.flex = '1';
-    toastText.style.lineHeight = '1.45';
-    toastText.textContent = message;
-    toast.appendChild(toastText);
-
-    // Close button
-    const closeBtn = document.createElement('button');
-    closeBtn.type = 'button';
-    closeBtn.className = 'toast-close';
-    closeBtn.setAttribute('aria-label', 'Đóng thông báo');
-    closeBtn.style.width = '24px';
-    closeBtn.style.height = '24px';
-    closeBtn.style.border = 'none';
-    closeBtn.style.background = 'transparent';
-    closeBtn.style.color = 'var(--muted)';
-    closeBtn.style.fontSize = '18px';
-    closeBtn.style.lineHeight = '1';
-    closeBtn.style.cursor = 'pointer';
-    closeBtn.style.flexShrink = '0';
-    const closeText = document.createTextNode('×');
-closeBtn.appendChild(closeText);
-    closeBtn.style.transition = 'background .2s';
-    closeBtn.addEventListener('mouseover', () => { closeBtn.style.background = 'var(--line)'; });
-    closeBtn.addEventListener('mouseout', () => { closeBtn.style.background = 'transparent'; });
-    closeBtn.addEventListener('focus', () => { closeBtn.style.outline = '2px solid var(--accent-deep)'; });
-    closeBtn.addEventListener('blur', () => { closeBtn.style.outline = 'none'; });
-    closeBtn.addEventListener('click', dismissToast);
-    toast.appendChild(closeBtn);
-
-    // Add to region
-    toastRegion.style.display = 'flex';
-    toastRegion.style.flexDirection = 'column';
-    toastRegion.style.gap = '8px';
-    // Position based on screen size
-    if (window.matchMedia('(max-width: 767px)').matches) {
-      toastRegion.style.position = 'fixed';
-      toastRegion.style.left = '16px';
-      toastRegion.style.right = '16px';
-      toastRegion.style.bottom = '16px';
-      toastRegion.style.zIndex = '100';
-      toastRegion.style.width = 'auto';
-    } else {
-      toastRegion.style.position = 'fixed';
-      toastRegion.style.top = '16px';
-      toastRegion.style.right = '16px';
-      toastRegion.style.bottom = 'auto';
-      toastRegion.style.left = 'auto';
-      toastRegion.style.width = '360px';
-    }
     toastRegion.appendChild(toast);
+    toastRegion.style.display = 'flex';
 
     // Auto-dismiss
     let timer = setTimeout(dismissToast, duration);
@@ -193,16 +139,22 @@ closeBtn.appendChild(closeText);
 
   /** Wrap a button for async action, prevent double-click with locking */
   const withButtonLock = function (button, asyncFn) {
-    // Set loading state immediately to prevent double-click
+    if (!button || button.loadingStatus) return undefined;
     setButtonLoading(button, true);
+    let result;
     try {
-      return asyncFn();
+      result = asyncFn();
     } catch (error) {
-      throw error;
-    } finally {
-      // Always restore state after completion
       setButtonLoading(button, false);
+      throw error;
     }
+    if (result && typeof result.then === 'function') {
+      return result.finally(function () {
+        setButtonLoading(button, false);
+      });
+    }
+    setButtonLoading(button, false);
+    return result;
   };
 
   /** Loading of buttons */

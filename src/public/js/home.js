@@ -279,95 +279,82 @@
   }
 
   function initCarousels() {
-    // Find all elements with [data-carousel]
     const carousels = document.querySelectorAll('[data-carousel]');
+    const reduceMq = window.matchMedia('(prefers-reduced-motion: reduce)');
+
     carousels.forEach(function (carouselContainer) {
-      // Find the actual scroll element (.carousel-track preferred, then .carousel)
       const track = carouselContainer.querySelector('.carousel-track') || carouselContainer.querySelector('.carousel');
       if (!track) return;
 
-      // Get visible width
+      const prevBtn = carouselContainer.querySelector('[data-carousel-prev]');
+      const nextBtn = carouselContainer.querySelector('[data-carousel-next]');
+
       function getVisibleWidth() {
         return track.clientWidth;
       }
 
-      // Scroll amount
-      function scrollBy(delta, useSmooth) {
-        const behavior = useSmooth ? 'smooth' : 'auto';
+      function scrollBy(delta) {
+        const behavior = reduceMq.matches ? 'auto' : 'smooth';
         track.scrollBy({ left: delta, behavior: behavior });
       }
 
-      // Check if content can be scrolled
-      const canScroll = track.scrollWidth > track.clientWidth;
-
-      // Prev button
-      const prevBtn = carouselContainer.querySelector('[data-carousel-prev]');
-      // Next button
-      const nextBtn = carouselContainer.querySelector('[data-carousel-next]');
-
-      // Update button states
       function updateButtons() {
         const scrollLeft = track.scrollLeft;
         const width = track.clientWidth;
         const scrollWidth = track.scrollWidth;
+        const canScroll = scrollWidth > width + 2;
 
         if (prevBtn) {
-          if (scrollLeft <= 2) {
+          if (!canScroll || scrollLeft <= 2) {
             prevBtn.disabled = true;
             prevBtn.setAttribute('aria-disabled', 'true');
           } else {
             prevBtn.disabled = false;
             prevBtn.removeAttribute('aria-disabled');
           }
+          prevBtn.hidden = !canScroll;
         }
 
         if (nextBtn) {
-          if (scrollLeft + width >= scrollWidth - 2) {
+          if (!canScroll || scrollLeft + width >= scrollWidth - 2) {
             nextBtn.disabled = true;
             nextBtn.setAttribute('aria-disabled', 'true');
           } else {
             nextBtn.disabled = false;
             nextBtn.removeAttribute('aria-disabled');
           }
-        }
-
-        // If content doesn't scroll, hide both buttons
-        if (!canScroll) {
-          if (prevBtn) { prevBtn.hidden = true; prevBtn.disabled = true; }
-          if (nextBtn) { nextBtn.hidden = true; nextBtn.disabled = true; }
-        } else {
-          if (prevBtn) { prevBtn.hidden = false; }
-          if (nextBtn) { nextBtn.hidden = false; }
+          nextBtn.hidden = !canScroll;
         }
       }
 
-      // Click handler for prev
       if (prevBtn) {
         prevBtn.addEventListener('click', function (e) {
           e.preventDefault();
-          scrollBy(-getVisibleWidth() * 0.85, true);
+          scrollBy(-getVisibleWidth() * 0.85);
         });
       }
 
-      // Click handler for next
       if (nextBtn) {
         nextBtn.addEventListener('click', function (e) {
           e.preventDefault();
-          scrollBy(getVisibleWidth() * 0.85, true);
+          scrollBy(getVisibleWidth() * 0.85);
         });
       }
 
-      // Update on scroll
-      track.addEventListener('scroll', updateButtons);
+      track.addEventListener('scroll', updateButtons, { passive: true });
+      window.addEventListener('resize', updateButtons);
+      window.addEventListener('load', updateButtons);
 
-      // Update on resize (debounced)
-      let resizeTimeout;
-      window.addEventListener('resize', function () {
-        clearTimeout(resizeTimeout);
-        resizeTimeout = setTimeout(updateButtons, 100);
+      const images = track.querySelectorAll('img');
+      images.forEach(function (img) {
+        if (img.complete) {
+          updateButtons();
+        } else {
+          img.addEventListener('load', updateButtons);
+          img.addEventListener('error', updateButtons);
+        }
       });
 
-      // Initial update
       updateButtons();
     });
   }
@@ -376,11 +363,18 @@
     var buttons = document.querySelectorAll('[data-code].voucher-copy');
     for (var i = 0; i < buttons.length; i++) {
       (function (button) {
+        var copyLabel = button.textContent;
         button.addEventListener('click', function () {
           var code = button.getAttribute('data-code') || '';
           if (!code) return;
 
           function notify(ok) {
+            if (ok) {
+              button.textContent = 'Đã sao chép';
+              setTimeout(function () {
+                button.textContent = copyLabel;
+              }, 1800);
+            }
             var toast = window.ABMT && window.ABMT.toast;
             if (!toast) return;
             var message = ok ? 'Đã sao chép mã ' + code : 'Không thể sao chép mã. Vui lòng thử lại.';

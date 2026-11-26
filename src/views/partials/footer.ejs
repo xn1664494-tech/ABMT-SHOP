@@ -1,40 +1,87 @@
-﻿<footer class="site-footer" id="site-footer">
+<footer class="site-footer" id="site-footer">
   <div class="container footer-inner">
+    <%
+      var footerNav = (locals.navCategories && Array.isArray(locals.navCategories)) ? locals.navCategories : [];
+      var footerNam = footerNav.find(function (r) { return r.name === 'Nam'; });
+      var footerNu = footerNav.find(function (r) { return r.name === 'Nữ'; });
+      function footerCatHref(root, fallback) {
+        return root ? '/catalog?category=' + encodeURIComponent(root.slug) : fallback;
+      }
+    %>
     <div class="footer-col footer-brand">
       <h3 class="footer-title">ABMT SHOP</h3>
       <p class="footer-text">Thời trang nam &amp; nữ tối giản, hiện đại. Cập nhật xu hướng mỗi ngày.</p>
+      <div class="footer-social" aria-label="Mạng xã hội">
+        <a href="#" aria-label="Facebook">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 9h3V5h-3c-2.2 0-4 1.8-4 4v2H7v4h3v7h4v-7h3l1-4h-4V9.5c0-.3.2-.5.5-.5H14z"/></svg>
+        </a>
+        <a href="#" aria-label="Instagram">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h10a4 4 0 014 4v10a4 4 0 01-4 4H7a4 4 0 01-4-4V7a4 4 0 014-4zm0 2a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2H7zm5 3a4 4 0 110 8 4 4 0 010-8zm0 2a2 2 0 100 4 2 2 0 000-4zm5-2.5a1 1 0 110 2 1 1 0 010-2z"/></svg>
+        </a>
+        <a href="#" aria-label="YouTube">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21.6 7.2a2.5 2.5 0 00-1.8-1.8C18.2 5 12 5 12 5s-6.2 0-7.8.4A2.5 2.5 0 002.4 7.2 26 26 0 002 12a26 26 0 00.4 4.8 2.5 2.5 0 001.8 1.8C5.8 19 12 19 12 19s6.2 0 7.8-.4a2.5 2.5 0 001.8-1.8A26 26 0 0022 12a26 26 0 00-.4-4.8zM10 15V9l5 3-5 3z"/></svg>
+        </a>
+      </div>
     </div>
     <div class="footer-col">
       <h4 class="footer-heading">Mua sắm</h4>
       <ul class="footer-list">
-        <li><a href="/#section-new-men">Nam</a></li>
-        <li><a href="/#section-new-women">Nữ</a></li>
+        <li><a href="<%= footerCatHref(footerNam, '/#section-new-men') %>">Thời trang nam</a></li>
+        <li><a href="<%= footerCatHref(footerNu, '/#section-new-women') %>">Thời trang nữ</a></li>
         <li><a href="/catalog?sort=newest">Sản phẩm mới</a></li>
         <li><a href="/#section-sale">Giảm giá</a></li>
       </ul>
     </div>
     <div class="footer-col">
-      <h4 class="footer-heading">Hỗ trợ</h4>
+      <h4 class="footer-heading">Hỗ trợ khách hàng</h4>
       <ul class="footer-list">
+        <li><a href="#">Hướng dẫn mua hàng</a></li>
         <li><a href="#">Hướng dẫn chọn size</a></li>
-        <li><a href="#">Chính sách đổi trả</a></li>
-        <li><a href="#">Chính sách vận chuyển</a></li>
-        <li><a href="#">Câu hỏi thường gặp</a></li>
+        <li><a href="#">Chính sách giao hàng</a></li>
+        <li><a href="#">Chính sách thanh toán</a></li>
+        <li><a href="#">Chính sách hủy đơn</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4 class="footer-heading">Tài khoản</h4>
+      <ul class="footer-list">
+        <li><a href="/account">Đơn hàng của tôi</a></li>
+        <li><a href="/cart">Giỏ hàng</a></li>
+        <li><a href="/profile">Thông tin cá nhân</a></li>
+        <% if (locals.currentUser) { %>
+          <li><a href="/logout">Đăng xuất</a></li>
+        <% } %>
       </ul>
     </div>
     <div class="footer-col">
       <h4 class="footer-heading">Liên hệ</h4>
       <ul class="footer-list footer-contact">
-        <li>Hotline: 1900 0000</li>
-        <li>Email: support@abmtshop.vn</li>
-        <li>Địa chỉ: 123 Đường ABC, Quận 1, TP. HCM</li>
-        <li>Giờ làm việc: 08:00 - 21:00</li>
+        <li>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a7 7 0 00-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 00-7-7zm0 9.5A2.5 2.5 0 1112 6a2.5 2.5 0 010 5.5z"/></svg>
+          <span>Địa chỉ: 123 Đường ABC, Quận 1, TP. HCM</span>
+        </li>
+        <li>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.6 3h3l1.5 4-2 1.5a13 13 0 006.4 6.4l1.5-2 4 1.5v3c0 1.1-.9 2-2 2A17 17 0 014 5c0-1.1.9-2 2-2z"/></svg>
+          <span>Hotline: 1900 0000</span>
+        </li>
+        <li>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h18v14H3V5zm2 2v.2l7 4.8 7-4.8V7H5zm14 2.8l-7 4.8-7-4.8V17h14V9.8z"/></svg>
+          <span>Email: support@abmtshop.vn</span>
+        </li>
+        <li>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a10 10 0 100 20 10 10 0 000-20zm0 18a8 8 0 110-16 8 8 0 010 16zm1-13h-2v6l5 3 1-1.7-4-2.3V7z"/></svg>
+          <span>Giờ làm việc: 08:00 - 21:00</span>
+        </li>
       </ul>
     </div>
   </div>
   <div class="footer-bottom">
     <div class="container">
-      <p>© 2026 ABMT SHOP. All rights reserved.</p>
+      <p>© 2026 ABMT SHOP</p>
+      <nav class="footer-legal" aria-label="Thông tin pháp lý">
+        <a href="#">Điều khoản sử dụng</a>
+        <a href="#">Chính sách bảo mật</a>
+      </nav>
     </div>
   </div>
 </footer>
