@@ -1,0 +1,408 @@
+{
+  "info": {
+    "name": "T5-1-3 Admin Users API",
+    "description": "Collection kiem thu API Admin nguoi dung: GET /api/admin/users (phan trang, validate, khong lo du lieu nhay cam) va PATCH /api/admin/users/:userId/role (chi admin + CSRF, chan tu ha quyen, chan field ngoai pham vi).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_postman_id": "t5-1-3-admin-users-api"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3099", "type": "string" },
+    { "key": "adminToken", "value": "", "type": "string" },
+    { "key": "customerToken", "value": "", "type": "string" },
+    { "key": "csrfToken", "value": "", "type": "string" },
+    { "key": "runId", "value": "", "type": "string" },
+    { "key": "targetUserId", "value": "", "type": "string" },
+    { "key": "targetEmail", "value": "", "type": "string" },
+    { "key": "adminUserId", "value": "", "type": "string" }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "if (!['GET', 'HEAD', 'OPTIONS'].includes(pm.request.method)) {",
+          "  var token = pm.collectionVariables.get('csrfToken');",
+          "  if (token && !pm.request.headers.get('X-CSRF-Token')) {",
+          "    pm.request.headers.add({ key: 'X-CSRF-Token', value: token });",
+          "  }",
+          "}"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "AdminUsers - Lay CSRF token",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/auth/csrf"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status la 200', function () { pm.response.to.have.status(200); });",
+              "pm.test('Luu csrf token, runId va email muc tieu', function () {",
+              "  pm.collectionVariables.set('csrfToken', pm.response.json().data.csrfToken);",
+              "  var runId = String(Date.now());",
+              "  pm.collectionVariables.set('runId', runId);",
+              "  pm.collectionVariables.set('targetEmail', 'adminuser.' + runId + '@example.com');",
+              "  pm.expect(pm.collectionVariables.get('csrfToken')).to.not.be.empty;",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "AdminUsers - Tao user muc tieu (dang ky cong khai)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"name\": \"Admin User Target\", \"email\": \"{{targetEmail}}\", \"password\": \"Secret123\"}"
+        },
+        "url": "{{baseUrl}}/api/auth/register"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status la 201', function () { pm.response.to.have.status(201); });",
+              "pm.test('Luu id user muc tieu, role customer', function () {",
+              "  var user = pm.response.json().data.user;",
+              "  pm.expect(user.id).to.not.be.empty;",
+              "  pm.expect(user.role).to.equal('customer');",
+              "  pm.collectionVariables.set('targetUserId', user.id);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "AdminUsers - Guest xem danh sach (nho 401)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/admin/users"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status la 401', function () { pm.response.to.have.status(401); });",
+              "pm.test('Khong thanh cong', function () { pm.expect(pm.response.json().success).to.equal(false); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "AdminUsers - Customer xem danh sach (nho 403)",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{customerToken}}" }],
+        "url": "{{baseUrl}}/api/admin/users"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status la 403', function () { pm.response.to.have.status(403); });",
+              "pm.test('Khong thanh cong', function () { pm.expect(pm.response.json().success).to.equal(false); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "AdminUsers - Admin xem danh sach (200, khong lo du lieu nhay cam)",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+        "url": "{{baseUrl}}/api/admin/users?page=1&limit=20"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status la 200 va co items', function () {",
+              "  pm.response.to.have.status(200);",
+              "  pm.expect(pm.response.json().success).to.equal(true);",
+              "  pm.expect(pm.response.json().data.items).to.be.an('array');",
+              "});",
+              "pm.test('Co pagination hop le', function () {",
+              "  var pagination = pm.response.json().data.pagination;",
+              "  pm.expect(pagination.page).to.equal(1);",
+              "  pm.expect(pagination.limit).to.equal(20);",
+              "  pm.expect(pagination).to.have.property('total');",
+              "  pm.expect(pagination).to.have.property('totalPages');",
+              "});",
+              "pm.test('Khong lo password/token noi bo', function () {",
+              "  var body = JSON.stringify(pm.response.json());",
+              "  pm.expect(body).to.not.include('password');",
+              "  pm.expect(body).to.not.include('tokenVersion');",
+              "  pm.expect(body).to.not.include('resetPassword');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "AdminUsers - Phan trang sai (nho 400)",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+        "url": "{{baseUrl}}/api/admin/users?page=0&limit=abc"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status la 400', function () { pm.response.to.have.status(400); });",
+              "pm.test('Co details validate', function () {",
+              "  pm.expect(pm.response.json().success).to.equal(false);",
+              "  pm.expect(pm.response.json().details).to.be.an('array');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "AdminUsers - Guest doi role (nho 401)",
+      "request": {
+        "method": "PATCH",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\"role\": \"admin\"}" },
+        "url": "{{baseUrl}}/api/admin/users/{{targetUserId}}/role"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status la 401', function () { pm.response.to.have.status(401); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "AdminUsers - Customer doi role (nho 403)",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{customerToken}}" }
+        ],
+        "body": { "mode": "raw", "raw": "{\"role\": \"admin\"}" },
+        "url": "{{baseUrl}}/api/admin/users/{{targetUserId}}/role"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status la 403', function () { pm.response.to.have.status(403); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "AdminUsers - Doi role thieu CSRF (nho 403)",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{adminToken}}" },
+          { "key": "X-CSRF-Token", "value": "sai-token" }
+        ],
+        "body": { "mode": "raw", "raw": "{\"role\": \"admin\"}" },
+        "url": "{{baseUrl}}/api/admin/users/{{targetUserId}}/role"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status la 403', function () { pm.response.to.have.status(403); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "AdminUsers - Role khong hop le (nho 400)",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+        ],
+        "body": { "mode": "raw", "raw": "{\"role\": \"superadmin\"}" },
+        "url": "{{baseUrl}}/api/admin/users/{{targetUserId}}/role"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status la 400', function () { pm.response.to.have.status(400); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "AdminUsers - Field ngoai pham vi (nho 400)",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"role\": \"admin\", \"email\": \"hacker@example.com\", \"status\": \"blocked\"}"
+        },
+        "url": "{{baseUrl}}/api/admin/users/{{targetUserId}}/role"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status la 400', function () { pm.response.to.have.status(400); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "AdminUsers - Lay id admin hien tai",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+        "url": "{{baseUrl}}/api/admin/access-check"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Luu id admin hien tai', function () {",
+              "  pm.response.to.have.status(200);",
+              "  pm.collectionVariables.set('adminUserId', pm.response.json().data.user.id);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "AdminUsers - Admin tu ha quyen (nho 403)",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+        ],
+        "body": { "mode": "raw", "raw": "{\"role\": \"customer\"}" },
+        "url": "{{baseUrl}}/api/admin/users/{{adminUserId}}/role"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status la 403', function () { pm.response.to.have.status(403); });",
+              "pm.test('Khong thanh cong', function () { pm.expect(pm.response.json().success).to.equal(false); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "AdminUsers - Admin doi role user khac (200)",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+        ],
+        "body": { "mode": "raw", "raw": "{\"role\": \"admin\"}" },
+        "url": "{{baseUrl}}/api/admin/users/{{targetUserId}}/role"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status la 200, changed=true', function () {",
+              "  pm.response.to.have.status(200);",
+              "  pm.expect(pm.response.json().data.changed).to.equal(true);",
+              "  pm.expect(pm.response.json().data.user.role).to.equal('admin');",
+              "});",
+              "pm.test('Khong lo password hash', function () {",
+              "  pm.expect(JSON.stringify(pm.response.json())).to.not.include('password');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "AdminUsers - Doi lai role cu (200, changed=false)",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+        ],
+        "body": { "mode": "raw", "raw": "{\"role\": \"admin\"}" },
+        "url": "{{baseUrl}}/api/admin/users/{{targetUserId}}/role"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status la 200, changed=false', function () {",
+              "  pm.response.to.have.status(200);",
+              "  pm.expect(pm.response.json().data.changed).to.equal(false);",
+              "});"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
