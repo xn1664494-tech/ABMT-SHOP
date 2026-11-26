@@ -11,6 +11,7 @@
   <div data-flash data-type="info" hidden></div>
   <%
     var L = (locals && locals.locals) ? locals.locals : (locals || {});
+    var active = L.active || 'dashboard';
     var stats = (L && L.stats) ? L.stats : {};
     var recentOrders = Array.isArray(L.recentOrders) ? L.recentOrders : [];
     var lowStockProducts = Array.isArray(L.lowStockProducts) ? L.lowStockProducts : [];
@@ -63,16 +64,7 @@
 
       <div class="admin-layout">
         <aside class="admin-sidebar" id="sb" aria-label="Điều hướng quản trị">
-          <div class="admin-side-head">
-            <span class="admin-side-title">ABMT ADMIN</span>
-            <button type="button" class="admin-side-close" aria-label="Đóng menu">×</button>
-          </div>
-          <nav class="admin-nav">
-            <a href="/admin" class="is-active" aria-current="page">Tổng quan</a>
-            <a href="/admin/products/new">Thêm sản phẩm</a>
-            <a href="/catalog">Xem cửa hàng</a>
-            <a href="/account">Tài khoản</a>
-          </nav>
+          <%- include('../partials/admin-sidebar', { active: active }) %>
         </aside>
 
         <div class="admin-main">

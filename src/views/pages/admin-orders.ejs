@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title %></title>
+  <link rel="stylesheet" href="/css/app.css">
+  <style>
+    .admin-table { width: 100%; border-collapse: collapse; }
+    .admin-table th, .admin-table td { padding: 12px 10px; text-align: left; border-bottom: 1px solid var(--line); }
+    .admin-table th { color: var(--ink-strong); font-weight: 600; white-space: nowrap; }
+    .admin-table td { color: var(--ink); vertical-align: middle; }
+    .admin-table tbody tr:last-child td { border-bottom: none; }
+    .admin-code { color: var(--ink-strong); font-weight: 600; text-decoration: none; }
+    .admin-code:hover { text-decoration: underline; }
+    .admin-actions { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
+    .status-tabs { display: flex; gap: 8px; flex-wrap: wrap; margin: 0 0 18px; }
+    .status-tab { display: inline-flex; align-items: center; gap: 6px; padding: 8px 12px; border-radius: 999px; border: 1px solid var(--line); color: var(--ink); font-size: 14px; text-decoration: none; }
+    .status-tab:hover { border-color: var(--accent); }
+    .status-tab.is-active { background: var(--ink-strong); color: #fff; border-color: var(--ink-strong); }
+    .status-count { font-size: 12px; opacity: .75; }
+    @media (max-width: 575.98px) { .admin-actions { flex-direction: column; align-items: stretch; } }
+  </style>
+</head>
+<body>
+  <%- include('../partials/header') %>
+  <%- include('../partials/flash') %>
+  <%
+    const L = (locals && locals.locals) ? locals.locals : (locals || {});
+    const active = L.active || 'orders';
+    const orders = Array.isArray(L.orders) ? L.orders : [];
+    const statusTabs = Array.isArray(L.statusTabs) ? L.statusTabs : [];
+  %>
+  <main id="main-content" class="main-content">
+    <div class="container admin-shell">
+      <div class="admin-topbar">
+        <button type="button" id="tg" class="admin-menu-btn" aria-label="Mở menu quản trị" aria-controls="sb" aria-expanded="false">☰</button>
+        <span class="admin-brand">ABMT ADMIN</span>
+      </div>
+      <div class="admin-scrim" id="scrim"></div>
+      <div class="admin-layout">
+        <aside class="admin-sidebar" id="sb" aria-label="Điều hướng quản trị">
+          <%- include('../partials/admin-sidebar', { active: active }) %>
+        </aside>
+        <div class="admin-main">
+          <nav class="breadcrumb" aria-label="Breadcrumb">
+            <a href="/">Trang chủ</a>
+            <span class="sep">/</span>
+            <a href="/admin">Quản trị</a>
+            <span class="sep">/</span>
+            <span aria-current="page">Đơn hàng</span>
+          </nav>
+
+          <div class="page-head">
+            <div>
+              <h1 class="page-title">Quản lý đơn hàng</h1>
+              <p class="page-sub">Theo dõi trạng thái đơn và hủy đơn khi còn hợp lệ</p>
+            </div>
+            <a href="/admin" class="btn btn-ghost btn-sm">Tổng quan</a>
+          </div>
+
+          <nav class="status-tabs" aria-label="Lọc theo trạng thái">
+            <% statusTabs.forEach(function (tab) { %>
+              <a
+                href="/admin/orders?status=<%= encodeURIComponent(tab.value) %>"
+                class="status-tab<%= tab.isActive ? ' is-active' : '' %>"
+                <%- tab.isActive ? 'aria-current="page"' : '' %>
+              >
+                <%= tab.label %>
+                <span class="status-count"><%= tab.count %></span>
+              </a>
+            <% }) %>
+          </nav>
+
+          <% if (orders.length === 0) { %>
+            <div class="empty-state">
+              <p class="empty-state-title">Không có đơn hàng nào</p>
+              <p class="empty-state-text">Chưa có đơn hàng nào khớp với trạng thái đang chọn.</p>
+            </div>
+          <% } else { %>
+            <section class="card" style="padding: 0; overflow: hidden;" aria-label="Danh sách đơn hàng quản trị">
+              <div style="overflow-x: auto;">
+                <table class="admin-table">
+                  <thead>
+                    <tr>
+                      <th>Mã đơn</th>
+                      <th>Ngày đặt</th>
+                      <th>Tổng tiền</th>
+                      <th>Trạng thái</th>
+                      <th>Thao tác</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <% orders.forEach(function (order) { %>
+                      <tr data-order-id="<%= order.id %>" data-order-status="<%= order.status %>">
+                        <td><a class="admin-code" href="/orders/<%= encodeURIComponent(order.id) %>"><%= order.code %></a></td>
+                        <td><%= order.createdAtLabel %></td>
+                        <td><%= order.totalLabel %></td>
+                        <td><span class="badge <%= order.statusClass %>" data-status-label="<%= order.status %>"><%= order.statusLabel %></span></td>
+                        <td>
+                          <div class="admin-actions">
+                            <a href="/orders/<%= encodeURIComponent(order.id) %>" class="btn btn-ghost btn-sm">Chi tiết</a>
+                            <% if (order.canCancel) { %>
+                              <button type="button" class="btn btn-danger btn-sm" data-action="cancel-order" data-order-id="<%= order.id %>">Hủy</button>
+                            <% } %>
+                          </div>
+                        </td>
+                      </tr>
+                    <% }) %>
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          <% } %>
+        </div>
+      </div>
+    </div>
+  </main>
+  <%- include('../partials/footer') %>
+  <script src="/js/api.js"></script>
+  <script src="/js/ui.js"></script>
+  <script src="/js/admin.js"></script>
+  <script src="/js/orders.js"></script>
+</body>
+</html>

@@ -1,0 +1,14 @@
+<% var navActive = typeof active === 'string' ? active : ''; %>
+<div class="admin-side-head">
+  <span class="admin-side-title">ABMT ADMIN</span>
+  <button type="button" class="admin-side-close" aria-label="Đóng menu">×</button>
+</div>
+<nav class="admin-nav" aria-label="Điều hướng quản trị">
+  <a href="/admin"<%- navActive === 'dashboard' ? ' class="is-active" aria-current="page"' : '' %>>Tổng quan</a>
+  <a href="/admin/products/new"<%- navActive === 'products' ? ' class="is-active" aria-current="page"' : '' %>>Thêm sản phẩm</a>
+  <a href="/admin/categories"<%- navActive === 'categories' ? ' class="is-active" aria-current="page"' : '' %>>Danh mục</a>
+  <a href="/admin/orders"<%- navActive === 'orders' ? ' class="is-active" aria-current="page"' : '' %>>Đơn hàng</a>
+  <a href="/admin/users"<%- navActive === 'users' ? ' class="is-active" aria-current="page"' : '' %>>Người dùng</a>
+  <a href="/catalog">Xem cửa hàng</a>
+  <a href="/account">Tài khoản</a>
+</nav>

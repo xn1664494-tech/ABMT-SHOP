@@ -11,28 +11,39 @@
   <div data-flash data-type="info" hidden></div>
   <%
     var L = (locals && locals.locals) ? locals.locals : (locals || {});
+    var active = L.active || 'products';
     var categories = Array.isArray(L.categories) ? L.categories : [];
     var colorOptions = Array.isArray(L.colors) ? L.colors : ['Đen', 'Trắng', 'Xanh', 'Đỏ', 'Xanh dương', 'Hồng', 'Tím', 'Nâu'];
   %>
   <main id="main-content" class="main-content admin-form-page">
-    <div class="container page-shell">
-      <nav class="breadcrumb" aria-label="Breadcrumb">
-        <a href="/">Trang chủ</a>
-        <span class="sep">/</span>
-        <a href="/admin">Quản trị</a>
-        <span class="sep">/</span>
-        <span aria-current="page">Thêm sản phẩm</span>
-      </nav>
-
-      <div class="page-head">
-        <div>
-          <h1 class="page-title">Thêm sản phẩm</h1>
-          <p class="page-sub">Nhập thông tin sản phẩm và các biến thể Size/Màu</p>
-        </div>
-        <a href="/admin" class="page-back">Quay lại quản trị</a>
+    <div class="container admin-shell">
+      <div class="admin-topbar">
+        <button type="button" id="tg" class="admin-menu-btn" aria-label="Mở menu quản trị" aria-controls="sb" aria-expanded="false">☰</button>
+        <span class="admin-brand">ABMT ADMIN</span>
       </div>
+      <div class="admin-scrim" id="scrim"></div>
+      <div class="admin-layout">
+        <aside class="admin-sidebar" id="sb" aria-label="Điều hướng quản trị">
+          <%- include('../partials/admin-sidebar', { active: active }) %>
+        </aside>
+        <div class="admin-main">
+          <nav class="breadcrumb" aria-label="Breadcrumb">
+            <a href="/">Trang chủ</a>
+            <span class="sep">/</span>
+            <a href="/admin">Quản trị</a>
+            <span class="sep">/</span>
+            <span aria-current="page">Thêm sản phẩm</span>
+          </nav>
 
-      <form id="pForm" class="admin-form-card" data-api="json" autocomplete="off">
+          <div class="page-head">
+            <div>
+              <h1 class="page-title">Thêm sản phẩm</h1>
+              <p class="page-sub">Nhập thông tin sản phẩm và các biến thể Size/Màu</p>
+            </div>
+            <a href="/admin" class="page-back">Quay lại quản trị</a>
+          </div>
+
+          <form id="pForm" class="admin-form-card" data-api="json" autocomplete="off">
         <div class="admin-form-grid two">
           <div class="field span-two">
             <label class="label" for="p-name">Tên sản phẩm</label>
@@ -149,7 +160,9 @@
           <button type="submit" class="btn btn-primary">Lưu sản phẩm</button>
           <a href="/admin" class="btn btn-ghost">Hủy</a>
         </div>
-      </form>
+          </form>
+        </div>
+      </div>
     </div>
   </main>
   <%- include('../partials/footer') %>

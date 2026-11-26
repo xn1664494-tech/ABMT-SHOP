@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title %></title>
+  <link rel="stylesheet" href="/css/app.css">
+  <style>
+    .admin-table { width: 100%; border-collapse: collapse; }
+    .admin-table th, .admin-table td { padding: 12px 10px; text-align: left; border-bottom: 1px solid var(--line); }
+    .admin-table th { color: var(--ink-strong); font-weight: 600; white-space: nowrap; }
+    .admin-table td { color: var(--ink); vertical-align: middle; }
+    .admin-table tbody tr:last-child td { border-bottom: none; }
+    .admin-search { display: flex; gap: 8px; margin: 0 0 18px; max-width: 520px; }
+    .admin-search input { flex: 1; min-width: 0; }
+    .admin-pagination { display: flex; gap: 8px; align-items: center; justify-content: flex-end; margin-top: 18px; flex-wrap: wrap; }
+    .admin-pagination a { padding: 7px 11px; border: 1px solid var(--line); border-radius: 8px; text-decoration: none; color: var(--ink); }
+    .admin-pagination a[aria-current="page"] { background: var(--ink-strong); border-color: var(--ink-strong); color: #fff; }
+    .admin-pagination span { color: var(--muted); font-size: 14px; }
+  </style>
+</head>
+<body>
+  <%- include('../partials/header') %>
+  <%- include('../partials/flash') %>
+  <%
+    const L = (locals && locals.locals) ? locals.locals : (locals || {});
+    const active = L.active || 'users';
+    const users = Array.isArray(L.users) ? L.users : [];
+    const pagination = L.pagination || { page: 1, limit: 20, total: 0, totalPages: 0 };
+    const q = typeof L.q === 'string' ? L.q : '';
+    const currentUserId = L.currentUserId ? String(L.currentUserId) : '';
+    const queryPart = q ? 'q=' + encodeURIComponent(q) + '&' : '';
+    const formatDate = function (value) {
+      if (!value) return '—';
+      const date = new Date(value);
+      return Number.isNaN(date.getTime()) ? '—' : date.toLocaleDateString('vi-VN');
+    };
+  %>
+  <main id="main-content" class="main-content">
+    <div class="container admin-shell">
+      <div class="admin-topbar">
+        <button type="button" id="tg" class="admin-menu-btn" aria-label="Mở menu quản trị" aria-controls="sb" aria-expanded="false">☰</button>
+        <span class="admin-brand">ABMT ADMIN</span>
+      </div>
+      <div class="admin-scrim" id="scrim"></div>
+      <div class="admin-layout">
+        <aside class="admin-sidebar" id="sb" aria-label="Điều hướng quản trị">
+          <%- include('../partials/admin-sidebar', { active: active }) %>
+        </aside>
+        <div class="admin-main">
+          <nav class="breadcrumb" aria-label="Breadcrumb">
+            <a href="/">Trang chủ</a>
+            <span class="sep">/</span>
+            <a href="/admin">Quản trị</a>
+            <span class="sep">/</span>
+            <span aria-current="page">Người dùng</span>
+          </nav>
+
+          <div class="page-head">
+            <div>
+              <h1 class="page-title">Quản lý người dùng</h1>
+              <p class="page-sub">Tìm kiếm người dùng và cập nhật quyền truy cập</p>
+            </div>
+            <span class="badge badge-soft"><%= pagination.total %> người dùng</span>
+          </div>
+
+          <form id="userSearchForm" class="admin-search" role="search">
+            <input id="userSearch" type="search" name="q" value="<%= q %>" placeholder="Tìm theo tên hoặc email" aria-label="Tìm người dùng">
+            <button type="submit" class="btn btn-primary btn-sm">Tìm</button>
+          </form>
+
+          <% if (users.length === 0) { %>
+            <div class="empty-state">
+              <p class="empty-state-title">Không tìm thấy người dùng</p>
+              <p class="empty-state-text">Thử thay đổi từ khóa tìm kiếm.</p>
+            </div>
+          <% } else { %>
+            <section class="card" style="padding: 0; overflow: hidden;" aria-label="Danh sách người dùng">
+              <div style="overflow-x: auto;">
+                <table id="userList" class="admin-table" data-current-user-id="<%= currentUserId %>">
+                  <thead>
+                    <tr>
+                      <th>Họ tên</th>
+                      <th>Email</th>
+                      <th>Trạng thái</th>
+                      <th>Ngày tham gia</th>
+                      <th>Quyền</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <% users.forEach(function (user) { %>
+                      <% var isSelf = String(user.id) === currentUserId; %>
+                      <tr data-user-id="<%= user.id %>">
+                        <td><%= user.name %></td>
+                        <td><%= user.email %></td>
+                        <td>
+                          <span class="badge <%= user.status === 'active' ? 'badge-soft' : 'badge-danger' %>">
+                            <%= user.status === 'active' ? 'Hoạt động' : 'Bị khóa' %>
+                          </span>
+                        </td>
+                        <td><%= formatDate(user.createdAt) %></td>
+                        <td>
+                          <select class="user-role" data-user-id="<%= user.id %>"<%= isSelf ? ' disabled' : '' %> aria-label="Quyền của <%= user.name %>">
+                            <option value="customer"<%= user.role === 'customer' ? ' selected' : '' %>>Khách hàng</option>
+                            <option value="admin"<%= user.role === 'admin' ? ' selected' : '' %>>Quản trị viên</option>
+                          </select>
+                          <% if (isSelf) { %><span class="muted-text"> (bạn)</span><% } %>
+                        </td>
+                      </tr>
+                    <% }) %>
+                  </tbody>
+                </table>
+              </div>
+            </section>
+
+            <% if (pagination.totalPages > 1) { %>
+              <nav class="admin-pagination" aria-label="Phân trang người dùng">
+                <% if (pagination.page > 1) { %>
+                  <a href="?<%= queryPart %>page=<%= pagination.page - 1 %>">Trước</a>
+                <% } %>
+                <% for (var page = 1; page <= pagination.totalPages; page += 1) { %>
+                  <a href="?<%= queryPart %>page=<%= page %>"<%= page === pagination.page ? ' aria-current="page"' : '' %>><%= page %></a>
+                <% } %>
+                <% if (pagination.page < pagination.totalPages) { %>
+                  <a href="?<%= queryPart %>page=<%= pagination.page + 1 %>">Sau</a>
+                <% } %>
+              </nav>
+            <% } %>
+          <% } %>
+        </div>
+      </div>
+    </div>
+  </main>
+  <%- include('../partials/footer') %>
+  <script src="/js/api.js"></script>
+  <script src="/js/ui.js"></script>
+  <script src="/js/admin.js"></script>
+</body>
+</html>

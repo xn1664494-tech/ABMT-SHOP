@@ -501,7 +501,160 @@
     });
   }
 
+  function reloadWithToast(message, type) {
+    if (window.ABMT && window.ABMT.toast && window.ABMT.toast[type]) {
+      window.ABMT.toast[type](message);
+    }
+    window.setTimeout(function () {
+      window.location.reload();
+    }, 350);
+  }
+
+  function initCategories() {
+    var form = document.getElementById('categoryForm');
+    var list = document.getElementById('categoryList');
+    if (!form || !list) return;
+
+    var nameEl = document.getElementById('categoryName');
+    var parentEl = document.getElementById('categoryParent');
+    var orderEl = document.getElementById('categoryOrder');
+    var submitEl = document.getElementById('categorySubmit');
+    var cancelEl = document.getElementById('categoryCancel');
+    var editingId = '';
+
+    function resetForm() {
+      editingId = '';
+      form.reset();
+      if (orderEl) orderEl.value = '0';
+      if (submitEl) submitEl.textContent = 'Thêm mới';
+      if (cancelEl) cancelEl.hidden = true;
+      Array.prototype.forEach.call(parentEl.options, function (option) {
+        option.disabled = false;
+      });
+    }
+
+    if (cancelEl) {
+      cancelEl.addEventListener('click', resetForm);
+    }
+
+    form.addEventListener('submit', function (event) {
+      event.preventDefault();
+      if (!nameEl || !nameEl.value.trim()) {
+        if (window.ABMT && window.ABMT.toast) {
+          window.ABMT.toast.error('Vui lòng nhập tên danh mục.');
+        }
+        return;
+      }
+
+      var payload = {
+        name: nameEl.value.trim(),
+        parentId: parentEl && parentEl.value ? parentEl.value : null,
+        order: orderEl ? Number(orderEl.value) || 0 : 0,
+      };
+      var request = editingId
+        ? window.ABMT.api.put('/api/categories/' + encodeURIComponent(editingId), payload)
+        : window.ABMT.api.post('/api/categories', payload);
+
+      Promise.resolve(request)
+        .then(function () {
+          reloadWithToast(editingId ? 'Đã cập nhật danh mục.' : 'Đã thêm danh mục.', 'success');
+        })
+        .catch(function (error) {
+          if (window.ABMT && window.ABMT.toast) {
+            window.ABMT.toast.fromError(error);
+          }
+        });
+    });
+
+    list.addEventListener('click', function (event) {
+      var editButton = event.target.closest('[data-action="edit-category"]');
+      if (editButton) {
+        var row = editButton.closest('tr');
+        if (!row) return;
+        editingId = row.getAttribute('data-id') || '';
+        if (nameEl) nameEl.value = row.getAttribute('data-name') || '';
+        if (orderEl) orderEl.value = row.getAttribute('data-order') || '0';
+        if (parentEl) {
+          var parentId = row.getAttribute('data-parent-id') || '';
+          parentEl.value = parentId;
+          Array.prototype.forEach.call(parentEl.options, function (option) {
+            option.disabled = option.value === editingId;
+          });
+        }
+        if (submitEl) submitEl.textContent = 'Cập nhật';
+        if (cancelEl) cancelEl.hidden = false;
+        if (nameEl) nameEl.focus();
+        return;
+      }
+
+      var deleteButton = event.target.closest('[data-action="delete-category"]');
+      if (!deleteButton) return;
+      if (!window.confirm('Xóa danh mục này?')) return;
+      var id = deleteButton.getAttribute('data-id') || '';
+      Promise.resolve(window.ABMT.api.delete('/api/categories/' + encodeURIComponent(id)))
+        .then(function () {
+          reloadWithToast('Đã xóa danh mục.', 'success');
+        })
+        .catch(function (error) {
+          if (window.ABMT && window.ABMT.toast) {
+            window.ABMT.toast.fromError(error);
+          }
+        });
+    });
+  }
+
+  function initUsers() {
+    var list = document.getElementById('userList');
+    if (!list) return;
+
+    var searchForm = document.getElementById('userSearchForm');
+    if (searchForm) {
+      searchForm.addEventListener('submit', function (event) {
+        event.preventDefault();
+        var input = document.getElementById('userSearch');
+        var keyword = input ? input.value.trim() : '';
+        var params = new URLSearchParams();
+        if (keyword) params.set('q', keyword);
+        window.location.href = '/admin/users' + (params.toString() ? '?' + params.toString() : '');
+      });
+    }
+
+    Array.prototype.forEach.call(list.querySelectorAll('.user-role'), function (select) {
+      select.setAttribute('data-previous-role', select.value);
+    });
+
+    list.addEventListener('change', function (event) {
+      var select = event.target.closest('.user-role');
+      if (!select || select.disabled) return;
+      var id = select.getAttribute('data-user-id') || '';
+      var role = select.value;
+      var previousRole = select.getAttribute('data-previous-role') || 'customer';
+      select.disabled = true;
+
+      Promise.resolve(
+        window.ABMT.api.patch('/api/admin/users/' + encodeURIComponent(id) + '/role', { role: role })
+      )
+        .then(function () {
+          select.setAttribute('data-previous-role', role);
+          if (window.ABMT && window.ABMT.toast) {
+            window.ABMT.toast.success('Đã cập nhật quyền người dùng.');
+          }
+        })
+        .catch(function (error) {
+          select.value = previousRole;
+          if (window.ABMT && window.ABMT.toast) {
+            window.ABMT.toast.fromError(error);
+          }
+        })
+        .then(function () {
+          select.disabled = false;
+        });
+    });
+  }
+
   initSidebar();
   initCharts();
   initVariants();
+  initCategories();
+  initUsers();
 })();
