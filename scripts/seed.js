@@ -200,7 +200,7 @@ const run = async () => {
     // Tao admin.
     const passwordHash = await bcrypt.hash(SEED_ADMIN_PASSWORD, 10);
     const admin = await User.create({
-      name: 'Admin Seed',
+      name: 'admin',
       email: SEED_EMAILS[0],
       password: passwordHash,
       role: 'admin',

@@ -5,161 +5,427 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title><%= title %></title>
   <link rel="stylesheet" href="/css/app.css">
-  <style>
-    /* TODO: chuyển vào app.css */
-    .account-layout { display: grid; grid-template-columns: 250px 1fr; gap: 24px; align-items: start; }
-    .account-nav { position: sticky; top: 16px; }
-    .account-menu { display: flex; flex-direction: column; gap: 8px; padding: 0; margin: 0; list-style: none; }
-    .account-link, .account-btn {
-      display: block; width: 100%; text-align: left; padding: 10px 14px;
-      border: 1px solid var(--line); border-radius: var(--r-md);
-      background: var(--surface); color: var(--ink); font-size: 14px;
-      font: inherit; text-decoration: none;
-    }
-    .account-link:hover, .account-btn:hover { background: var(--mint); color: var(--accent-deep); border-color: var(--line-strong); cursor: pointer; }
-    .account-link--active { background: var(--accent); color: var(--canvas); border-color: var(--accent-deep); }
-    .account-link--block { display: block; text-align: center; }
-    .account-btn { cursor: pointer; }
-
-    .account-content { min-width: 0; }
-    .account-card { margin-bottom: 20px; }
-    .account-section-head { font-size: 18px; font-weight: 600; color: var(--ink-strong); margin: 0 0 16px; padding: 0; }
-    .account-welcome h2 { margin: 0; }
-
-    .account-profile-list { margin: 0; padding: 0; }
-    .account-profile-row { display: grid; grid-template-columns: 150px 1fr; gap: 8px 16px; border-bottom: 1px solid var(--line); padding: 10px 0; }
-    .account-profile-row:last-child { border-bottom: none; }
-    .account-profile-label { font-size: 13px; color: var(--muted); margin: 0; }
-    .account-profile-value { font-size: 13px; color: var(--ink); margin: 0; }
-
-    .account-empty { font-size: 13px; color: var(--muted); margin: 0; }
-
-    @media (max-width: 767.98px) {
-      .account-layout { grid-template-columns: 1fr; }
-      .account-nav { position: static; margin-bottom: 16px; }
-      .account-menu { flex-direction: row; gap: 6px; overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
-      .account-menu::-webkit-scrollbar { display: none; }
-      .account-link, .account-btn { text-wrap: nowrap; padding: 8px 12px; font-size: 13px; flex-shrink: 0; }
-      .account-profile-row { grid-template-columns: 1fr; gap: 4px; }
-      .account-profile-row:last-child { border-bottom: none; }
-    }
-  </style>
+  <link rel="stylesheet" href="/css/shop.css">
 </head>
-<body>
+<body class="shop">
   <%- include('../partials/header') %>
+  <div data-flash data-type="info" hidden></div>
+  <%
+    var L = (locals && locals.locals) ? locals.locals : (locals || {});
+    var accountUser = L.user || {};
+    var tab = L.tab || 'overview';
+    var status = L.status || '';
+    var q = L.q || '';
+    var counts = L.counts || {};
+    var totalOrders = Number(L.totalOrders) || 0;
+    var processingCount = Number(L.processingCount) || 0;
+    var orders = Array.isArray(L.orders) ? L.orders : [];
+    var recentOrders = Array.isArray(L.recentOrders) ? L.recentOrders : [];
+    var addresses = Array.isArray(L.addresses)
+      ? L.addresses
+      : (Array.isArray(accountUser.addresses) ? accountUser.addresses : []);
+    var defaultAddress = L.defaultAddress || null;
+    var pagination = L.pagination || null;
+
+    var STATUS_LABELS = {
+      pending: 'Chờ xử lý',
+      confirmed: 'Đã xác nhận',
+      shipping: 'Đang giao',
+      delivered: 'Đã giao',
+      cancelled: 'Đã hủy'
+    };
+    var STATUS_ORDER = ['pending', 'confirmed', 'shipping', 'delivered', 'cancelled'];
+    var EMPTY_TITLES = {
+      '': 'Bạn chưa có đơn hàng nào',
+      pending: 'Không có đơn hàng chờ xử lý',
+      confirmed: 'Không có đơn hàng đã xác nhận',
+      shipping: 'Không có đơn hàng đang giao',
+      delivered: 'Không có đơn hàng đã giao',
+      cancelled: 'Không có đơn hàng đã hủy'
+    };
+
+    function money(value) {
+      return (Number(value) || 0).toLocaleString('vi-VN') + 'đ';
+    }
+    function pad2(value) {
+      return String(value).padStart(2, '0');
+    }
+    function fmtDate(value) {
+      if (!value) return '—';
+      var date = new Date(value);
+      if (isNaN(date.getTime())) return '—';
+      return pad2(date.getDate()) + '/' + pad2(date.getMonth() + 1) + '/' + date.getFullYear()
+        + ' ' + pad2(date.getHours()) + ':' + pad2(date.getMinutes());
+    }
+    function statusLabel(value) {
+      return STATUS_LABELS[value] || value || '—';
+    }
+    function statusClass(value) {
+      return 'acc-badge acc-badge--' + (STATUS_LABELS[value] ? value : 'muted');
+    }
+    function hasImage(url) {
+      return typeof url === 'string' && /^(\/|https?:\/\/)/i.test(url);
+    }
+    function addressFull(addr) {
+      if (!addr) return '';
+      return [addr.street, addr.ward, addr.district, addr.city].filter(Boolean).join(', ');
+    }
+    function qs(params) {
+      return Object.keys(params).filter(function (key) {
+        return params[key] !== undefined && params[key] !== null && String(params[key]) !== '';
+      }).map(function (key) {
+        return encodeURIComponent(key) + '=' + encodeURIComponent(String(params[key]));
+      }).join('&');
+    }
+    function tabHref(nextStatus) {
+      var params = { tab: 'orders' };
+      if (nextStatus) params.status = nextStatus;
+      if (q) params.q = q;
+      return '/account?' + qs(params);
+    }
+    function pageHref(nextPage) {
+      var params = { tab: 'orders' };
+      if (status) params.status = status;
+      if (q) params.q = q;
+      params.page = nextPage;
+      return '/account?' + qs(params);
+    }
+    function orderHref(code) {
+      return '/account/orders/' + encodeURIComponent(String(code || ''));
+    }
+  %>
   <main id="main-content" class="main-content">
-    <div class="container">
-      <h1 class="section-title" style="margin-bottom: 24px;">Tài khoản của tôi</h1>
+    <div class="wrap page-shell">
+      <nav class="bc" aria-label="Breadcrumb">
+        <a href="/">Trang chủ</a>
+        <span class="sep">/</span>
+        <span aria-current="page">Tài khoản</span>
+      </nav>
 
-      <% const user = locals.user || {}; %>
-      <% const orders = locals.orders || []; %>
-      <% const STATUS_LABELS = { pending: 'Chờ xử lý', confirmed: 'Đã xác nhận', shipping: 'Đang giao', delivered: 'Đã giao', cancelled: 'Đã hủy' }; %>
+      <div class="acc-layout">
+        <%- include('../partials/account-sidebar', { user: accountUser, tab: tab, processingCount: processingCount }) %>
 
-      <div class="account-layout" role="region" aria-label="Tùy chọn tài khoản">
-        <nav class="account-nav" aria-label="Điều hướng tài khoản">
-          <ul class="account-menu">
-            <li><a href="/profile" class="account-link account-link--active">Thông tin</a></li>
-            <li><a href="#addresses" class="account-link">Địa chỉ</a></li>
-            <li><a href="/orders" class="account-link">Đơn hàng</a></li>
-            <% if (user.role === 'admin') { %>
-            <li><a href="/admin" class="account-link">Vào trang quản trị</a></li>
-            <% } %>
-            <li><button type="button" class="account-link account-btn" data-action="logout">Đăng xuất</button></li>
-          </ul>
-        </nav>
+        <div class="acc-content">
+          <% if (tab === 'overview') { %>
+            <section class="acc-hero">
+              <h1 class="acc-hero-title">Xin chào, <%= accountUser.name || 'bạn' %></h1>
+              <p class="acc-hero-sub">Theo dõi đơn hàng và quản lý thông tin tài khoản của bạn.</p>
+            </section>
 
-        <div class="account-content">
-          <%# Xin chào %>
-          <div class="account-welcome" style="margin-bottom: 24px;">
-            <h2 class="section-title" style="margin: 0 0 4px;">Xin chào, <%= (user.name || 'bạn') %></h2>
-            <p style="font-size: 13px; color: var(--muted); margin: 0;">Tài khoản <% if (user.role === 'admin') { %>Quản trị<% } else { %>Khách hàng<% } %></p>
-          </div>
+            <div class="acc-stats">
+              <%
+                var statCards = [
+                  { key: 'pending', label: 'Chờ xử lý' },
+                  { key: 'confirmed', label: 'Đã xác nhận' },
+                  { key: 'shipping', label: 'Đang giao' },
+                  { key: 'delivered', label: 'Đã giao' }
+                ];
+              %>
+              <% statCards.forEach(function (card) { %>
+                <a class="acc-stat acc-stat--<%= card.key %>" href="<%= tabHref(card.key) %>">
+                  <span class="acc-stat-count"><%= Number(counts[card.key]) || 0 %></span>
+                  <span class="acc-stat-label"><%= card.label %></span>
+                </a>
+              <% }) %>
+            </div>
 
-          <%# 1. Thông tin cá nhân %>
-          <section id="profile" class="card account-card" aria-labelledby="h-profile">
-            <h2 id="h-profile" class="account-section-head">Thông tin cá nhân</h2>
-            <dl class="account-profile-list">
-              <div class="account-profile-row">
-                <dt class="account-profile-label">Họ và tên</dt>
-                <dd class="account-profile-value"><%= user.name || 'Chưa có' %></dd>
-              </div>
-              <div class="account-profile-row">
-                <dt class="account-profile-label">Email</dt>
-                <dd class="account-profile-value"><%= user.email || 'Chưa có' %></dd>
-              </div>
-              <% if (user.phone) { %>
-              <div class="account-profile-row">
-                <dt class="account-profile-label">Số điện thoại</dt>
-                <dd class="account-profile-value"><%= user.phone %></dd>
-              </div>
-              <% } %>
-            </dl>
-          </section>
-
-          <%# 2. Sổ địa chỉ %>
-          <section id="addresses" class="card account-card" aria-labelledby="h-addresses">
-            <h2 id="h-addresses" class="account-section-head">Sổ địa chỉ</h2>
-            <% const addresses = user.addresses || []; %>
-            <% if (addresses.length === 0) { %>
-              <p class="account-empty" style="text-align: center; color: var(--muted); padding: 24px 0;">Bạn chưa lưu địa chỉ nào</p>
-            <% } else { %>
-              <div class="account-address-list" style="display: grid; gap: 12px;">
-                <% addresses.forEach(function (addr) { %>
-                <div class="account-address-card" style="border: 1px solid var(--line); border-radius: var(--r-md); padding: 16px; background: var(--surface);">
-                  <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; margin-bottom: 8px;">
-                    <div style="font-size: 14px; font-weight: 600; color: var(--ink-strong);"><%= addr.recipient || addr.label || 'Người nhận' %></div>
-                    <% if (addr.isDefault) { %>
-                      <span class="badge badge-soft" style="font-size: 11px;">Mặc định</span>
-                    <% } %>
-                  </div>
-                  <p style="font-size: 13px; color: var(--ink); margin: 0 0 4px; line-height: 1.5;"><%= [addr.street, addr.ward, addr.district, addr.city].filter(Boolean).join(', ') %></p>
-                  <% if (addr.phone) { %>
-                  <p style="font-size: 13px; color: var(--muted); margin: 0;"><%= addr.phone %></p>
-                  <% } %>
+            <div class="acc-overview-grid">
+              <section class="acc-panel" aria-labelledby="acc-default-address-title">
+                <div class="acc-panel-head">
+                  <h2 class="acc-panel-title" id="acc-default-address-title">Địa chỉ mặc định</h2>
+                  <a class="acc-panel-link" href="/account?tab=addresses">Sổ địa chỉ</a>
                 </div>
-                <% }) %>
-              </div>
-            <% } %>
-            <% if (addresses.length < 3) { %>
-              <p style="margin-top: 16px;"><a href="/address/new" class="account-link--block">Thêm địa chỉ</a></p>
-            <% } else { %>
-              <p style="margin-top: 16px; font-size: 13px; color: var(--muted);">Đã đạt tối đa 3 địa chỉ</p>
-            <% } %>
-          </section>
+                <% if (defaultAddress) { %>
+                  <div class="acc-address-card">
+                    <div class="acc-address-head">
+                      <p class="acc-address-name"><%= defaultAddress.recipient || defaultAddress.label || 'Người nhận' %></p>
+                      <% if (defaultAddress.isDefault) { %>
+                        <span class="acc-badge acc-badge--default">Mặc định</span>
+                      <% } %>
+                    </div>
+                    <p class="acc-address-text"><%= defaultAddress.phone || '—' %></p>
+                    <p class="acc-address-text"><%= addressFull(defaultAddress) %></p>
+                  </div>
+                <% } else { %>
+                  <div class="acc-empty">
+                    <p class="acc-empty-title">Chưa có địa chỉ giao hàng</p>
+                    <p class="acc-empty-text">Thêm địa chỉ để thanh toán nhanh hơn ở lần mua tiếp theo.</p>
+                    <a class="btn btn-primary btn-sm" href="/address/new">Thêm địa chỉ mới</a>
+                  </div>
+                <% } %>
+              </section>
 
-          <%# 3. Đơn hàng của tôi %>
-          <section id="orders" class="card account-card" aria-labelledby="h-orders">
-            <h2 id="h-orders" class="account-section-head">Đơn hàng của tôi</h2>
-            <% if (orders.length === 0) { %>
-              <div class="account-empty" style="text-align: center; padding: 32px 0;">
-                <p style="font-size: 13px; color: var(--muted); margin-bottom: 12px;">Bạn chưa có đơn hàng nào</p>
-                <a href="/catalog" class="btn btn-primary btn-block">Mua ngay</a>
-              </div>
-            <% } else { %>
-              <div class="account-table-wrap" style="overflow-x: auto;">
-                <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
-                  <thead>
-                    <tr style="text-align: left; color: var(--ink-strong); border-bottom: 1px solid var(--line);">
-                      <th style="padding: 12px 8px; font-weight: 600;">Mã đơn</th>
-                      <th style="padding: 12px 8px; font-weight: 600;">Ngày đặt</th>
-                      <th style="padding: 12px 8px; font-weight: 600; text-align: right;">Tổng tiền</th>
-                      <th style="padding: 12px 8px; font-weight: 600;">Trạng thái</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <% orders.forEach(function (o) { %>
-                    <tr style="border-bottom: 1px solid var(--line);">
-                      <td style="padding: 12px 8px; color: var(--ink);"><%= o.code || '-' %></td>
-                      <td style="padding: 12px 8px; color: var(--muted);"><%= new Date(o.createdAt || Date.now()).toLocaleDateString('vi-VN') %></td>
-                      <td style="padding: 12px 8px; text-align: right; color: var(--ink);"><%= (o.total || 0).toLocaleString('vi-VN') %>₫</td>
-                      <td style="padding: 12px 8px;"><span class="badge" style="background: var(--mint); color: var(--accent-deep); border: 1px solid var(--line-strong); font-size: 11px;"><%= STATUS_LABELS[o.status] || o.status %></span></td>
-                    </tr>
+              <section class="acc-panel" aria-labelledby="acc-recent-orders-title">
+                <div class="acc-panel-head">
+                  <h2 class="acc-panel-title" id="acc-recent-orders-title">Đơn hàng gần đây</h2>
+                  <a class="acc-panel-link" href="/account?tab=orders">Xem tất cả</a>
+                </div>
+                <% if (recentOrders.length === 0) { %>
+                  <div class="acc-empty">
+                    <p class="acc-empty-title">Chưa có đơn hàng</p>
+                    <p class="acc-empty-text">Các đơn hàng mới nhất của bạn sẽ hiển thị tại đây.</p>
+                    <a class="btn btn-primary btn-sm" href="/catalog">Mua sắm ngay</a>
+                  </div>
+                <% } else { %>
+                  <div class="acc-recent-list">
+                    <% recentOrders.forEach(function (order) { %>
+                      <div class="acc-recent-item">
+                        <div class="acc-recent-main">
+                          <p class="acc-recent-code"><%= order.code || '—' %></p>
+                          <p class="acc-recent-date"><%= fmtDate(order.createdAt) %></p>
+                        </div>
+                        <div class="acc-recent-side">
+                          <span class="<%= statusClass(order.status) %>"><%= statusLabel(order.status) %></span>
+                          <span class="acc-recent-total"><%= money(order.total) %></span>
+                          <a class="acc-panel-link" href="<%= orderHref(order.code) %>">Chi tiết</a>
+                        </div>
+                      </div>
                     <% }) %>
-                  </tbody>
-                </table>
+                  </div>
+                <% } %>
+              </section>
+            </div>
+          <% } %>
+
+          <% if (tab === 'orders') { %>
+            <section class="acc-panel" aria-labelledby="acc-orders-title">
+              <div class="acc-panel-head">
+                <h2 class="acc-panel-title" id="acc-orders-title">Đơn hàng của tôi</h2>
+                <span class="acc-panel-link"><%= totalOrders %> đơn</span>
               </div>
-            <% } %>
-          </section>
+
+              <nav class="acc-tabs" aria-label="Lọc đơn hàng theo trạng thái">
+                <a class="acc-tab<%= status === '' ? ' is-active' : '' %>" href="<%= tabHref('') %>" <%= status === '' ? 'aria-current="page"' : '' %>>
+                  Tất cả <span class="acc-tab-count"><%= totalOrders %></span>
+                </a>
+                <% STATUS_ORDER.forEach(function (key) { %>
+                  <a class="acc-tab<%= status === key ? ' is-active' : '' %>" href="<%= tabHref(key) %>" <%= status === key ? 'aria-current="page"' : '' %>>
+                    <%= STATUS_LABELS[key] %> <span class="acc-tab-count"><%= Number(counts[key]) || 0 %></span>
+                  </a>
+                <% }) %>
+              </nav>
+
+              <form class="acc-search" method="GET" action="/account" role="search">
+                <input type="hidden" name="tab" value="orders">
+                <% if (status) { %><input type="hidden" name="status" value="<%= status %>"><% } %>
+                <div class="acc-search-field">
+                  <input
+                    class="acc-search-input"
+                    type="search"
+                    name="q"
+                    value="<%= q %>"
+                    placeholder="Tìm theo mã đơn hoặc tên sản phẩm"
+                    aria-label="Tìm đơn hàng"
+                    autocomplete="off"
+                  >
+                </div>
+                <button type="submit" class="btn btn-primary btn-sm">Tìm kiếm</button>
+                <% if (q) { %>
+                  <a class="acc-search-clear" href="<%= tabHref(status) %>">Xóa lọc</a>
+                <% } %>
+              </form>
+
+              <% if (orders.length === 0) { %>
+                <div class="acc-empty">
+                  <p class="acc-empty-title"><%= EMPTY_TITLES[status] || EMPTY_TITLES[''] %></p>
+                  <p class="acc-empty-text">
+                    <% if (q) { %>
+                      Không tìm thấy đơn hàng phù hợp với từ khóa “<%= q %>”.
+                    <% } else { %>
+                      Khi có đơn hàng, thông tin sẽ hiển thị tại đây.
+                    <% } %>
+                  </p>
+                  <a class="btn btn-primary" href="/catalog">Mua sắm ngay</a>
+                </div>
+              <% } else { %>
+                <div class="acc-order-list">
+                  <% orders.forEach(function (order) {
+                    var items = Array.isArray(order.items) ? order.items : [];
+                    var shown = items.slice(0, 3);
+                    var rest = Math.max(0, items.length - shown.length);
+                  %>
+                    <article class="acc-order-card">
+                      <header class="acc-order-head">
+                        <div>
+                          <p class="acc-order-code"><%= order.code || '—' %></p>
+                          <p class="acc-order-date"><%= fmtDate(order.createdAt) %></p>
+                        </div>
+                        <span class="<%= statusClass(order.status) %>"><%= statusLabel(order.status) %></span>
+                      </header>
+
+                      <div class="acc-order-items">
+                        <% shown.forEach(function (item) { %>
+                          <div class="acc-order-item">
+                            <span class="acc-thumb">
+                              <% if (hasImage(item.image)) { %>
+                                <img src="<%= item.image %>" alt="<%= item.name || 'Sản phẩm' %>" loading="lazy" decoding="async">
+                              <% } else { %>
+                                <span class="acc-thumb-fallback" aria-hidden="true"><%= String(item.name || '?').trim().charAt(0).toUpperCase() || '?' %></span>
+                              <% } %>
+                            </span>
+                            <div class="acc-order-item-main">
+                              <p class="acc-order-item-name"><%= item.name || 'Sản phẩm' %></p>
+                              <p class="acc-order-item-meta">
+                                <% if (item.color) { %><span>Màu: <%= item.color %></span><% } %>
+                                <% if (item.size) { %><span>Size: <%= item.size %></span><% } %>
+                                <span>x<%= Number(item.qty) || 1 %></span>
+                              </p>
+                            </div>
+                          </div>
+                        <% }) %>
+                      </div>
+                      <% if (rest > 0) { %>
+                        <p class="acc-order-more">và <%= rest %> sản phẩm khác</p>
+                      <% } %>
+
+                      <footer class="acc-order-foot">
+                        <p class="acc-order-total">Tổng tiền <strong><%= money(order.total) %></strong></p>
+                        <a class="btn btn-primary btn-sm" href="<%= orderHref(order.code) %>">Xem chi tiết</a>
+                      </footer>
+                    </article>
+                  <% }) %>
+                </div>
+
+                <% if (pagination && pagination.totalPages > 1) {
+                  var currentPage = pagination.page;
+                  var totalPages = pagination.totalPages;
+                  var startPage = Math.max(1, currentPage - 2);
+                  var endPage = Math.min(totalPages, currentPage + 2);
+                %>
+                  <nav class="acc-pagination" aria-label="Phân trang đơn hàng">
+                    <a class="acc-pg<%= currentPage <= 1 ? ' is-disabled' : '' %>" href="<%= currentPage <= 1 ? '#' : pageHref(currentPage - 1) %>" <%= currentPage <= 1 ? 'aria-disabled="true" tabindex="-1"' : '' %>>Trước</a>
+                    <% if (startPage > 1) { %>
+                      <a class="acc-pg" href="<%= pageHref(1) %>">1</a>
+                      <% if (startPage > 2) { %><span class="acc-pg-ellipsis">…</span><% } %>
+                    <% } %>
+                    <% for (var pageNo = startPage; pageNo <= endPage; pageNo += 1) { %>
+                      <a class="acc-pg<%= pageNo === currentPage ? ' is-current' : '' %>" href="<%= pageHref(pageNo) %>" <%= pageNo === currentPage ? 'aria-current="page"' : '' %>><%= pageNo %></a>
+                    <% } %>
+                    <% if (endPage < totalPages) { %>
+                      <% if (endPage < totalPages - 1) { %><span class="acc-pg-ellipsis">…</span><% } %>
+                      <a class="acc-pg" href="<%= pageHref(totalPages) %>"><%= totalPages %></a>
+                    <% } %>
+                    <a class="acc-pg<%= currentPage >= totalPages ? ' is-disabled' : '' %>" href="<%= currentPage >= totalPages ? '#' : pageHref(currentPage + 1) %>" <%= currentPage >= totalPages ? 'aria-disabled="true" tabindex="-1"' : '' %>>Sau</a>
+                  </nav>
+                <% } %>
+              <% } %>
+            </section>
+          <% } %>
+
+          <% if (tab === 'addresses') { %>
+            <section class="acc-panel" aria-labelledby="acc-addresses-title">
+              <div class="acc-panel-head">
+                <h2 class="acc-panel-title" id="acc-addresses-title">Sổ địa chỉ</h2>
+                <a class="btn btn-primary btn-sm" href="/address/new">Thêm địa chỉ mới</a>
+              </div>
+
+              <% if (addresses.length === 0) { %>
+                <div class="acc-empty">
+                  <p class="acc-empty-title">Chưa có địa chỉ nào</p>
+                  <p class="acc-empty-text">Lưu địa chỉ giao hàng để thanh toán nhanh hơn.</p>
+                  <a class="btn btn-primary" href="/address/new">Thêm địa chỉ mới</a>
+                </div>
+              <% } else { %>
+                <div class="acc-address-list">
+                  <% addresses.forEach(function (addr) {
+                    var addressId = addr && addr._id ? String(addr._id) : '';
+                    var recipient = (addr && (addr.recipient || addr.label)) || 'Người nhận';
+                  %>
+                    <article
+                      class="acc-address-card"
+                      data-acc-address
+                      data-id="<%= addressId %>"
+                      data-recipient="<%= recipient %>"
+                      data-phone="<%= (addr && addr.phone) || '' %>"
+                      data-city="<%= (addr && addr.city) || '' %>"
+                      data-district="<%= (addr && addr.district) || '' %>"
+                      data-ward="<%= (addr && addr.ward) || '' %>"
+                      data-street="<%= (addr && addr.street) || '' %>"
+                    >
+                      <div class="acc-address-head">
+                        <p class="acc-address-name"><%= recipient %></p>
+                        <% if (addr && addr.isDefault) { %>
+                          <span class="acc-badge acc-badge--default">Mặc định</span>
+                        <% } %>
+                      </div>
+                      <p class="acc-address-text"><%= (addr && addr.phone) || '—' %></p>
+                      <p class="acc-address-text"><%= addressFull(addr) %></p>
+                      <div class="acc-address-actions">
+                        <button type="button" class="btn btn-sm btn-ghost" data-acc-edit>Sửa</button>
+                        <button type="button" class="btn btn-sm btn-danger" data-acc-delete>Xóa</button>
+                      </div>
+                    </article>
+                  <% }) %>
+                </div>
+                <p class="acc-address-note">Bạn có thể lưu tối đa 3 địa chỉ.</p>
+
+                <dialog id="accAddressDialog" class="acc-dialog" aria-labelledby="accAddressDialogTitle">
+                  <form id="accAddressForm" class="acc-dialog-form" novalidate>
+                    <h2 class="acc-dialog-title" id="accAddressDialogTitle">Sửa địa chỉ</h2>
+                    <input type="hidden" name="id" value="">
+                    <div class="acc-field">
+                      <label for="acc-edit-name">Họ và tên</label>
+                      <input class="input" type="text" id="acc-edit-name" name="fullName" maxlength="80" required>
+                    </div>
+                    <div class="acc-field">
+                      <label for="acc-edit-phone">Số điện thoại</label>
+                      <input class="input" type="tel" id="acc-edit-phone" name="phone" maxlength="12" required>
+                    </div>
+                    <div class="acc-field">
+                      <label for="acc-edit-province">Tỉnh/Thành phố</label>
+                      <input class="input" type="text" id="acc-edit-province" name="province" maxlength="100" required>
+                    </div>
+                    <div class="acc-field">
+                      <label for="acc-edit-district">Quận/Huyện</label>
+                      <input class="input" type="text" id="acc-edit-district" name="district" maxlength="100">
+                    </div>
+                    <div class="acc-field">
+                      <label for="acc-edit-ward">Phường/Xã</label>
+                      <input class="input" type="text" id="acc-edit-ward" name="ward" maxlength="100" required>
+                    </div>
+                    <div class="acc-field">
+                      <label for="acc-edit-detail">Địa chỉ cụ thể</label>
+                      <input class="input" type="text" id="acc-edit-detail" name="detail" maxlength="200" required>
+                    </div>
+                    <div class="acc-dialog-actions">
+                      <button type="button" class="btn btn-ghost" data-acc-cancel>Hủy</button>
+                      <button type="submit" class="btn btn-primary">Lưu thay đổi</button>
+                    </div>
+                  </form>
+                </dialog>
+              <% } %>
+            </section>
+          <% } %>
+
+          <% if (tab === 'profile') { %>
+            <section class="acc-panel" aria-labelledby="acc-profile-title">
+              <div class="acc-panel-head">
+                <h2 class="acc-panel-title" id="acc-profile-title">Hồ sơ &amp; mật khẩu</h2>
+              </div>
+              <dl class="acc-profile-list">
+                <div class="acc-profile-row">
+                  <dt class="acc-profile-label">Họ và tên</dt>
+                  <dd class="acc-profile-value"><%= accountUser.name || '—' %></dd>
+                </div>
+                <div class="acc-profile-row">
+                  <dt class="acc-profile-label">Email</dt>
+                  <dd class="acc-profile-value"><%= accountUser.email || '—' %></dd>
+                </div>
+                <div class="acc-profile-row">
+                  <dt class="acc-profile-label">Số điện thoại</dt>
+                  <dd class="acc-profile-value"><%= accountUser.phone || 'Chưa có' %></dd>
+                </div>
+                <div class="acc-profile-row">
+                  <dt class="acc-profile-label">Ngày tham gia</dt>
+                  <dd class="acc-profile-value"><%= fmtDate(accountUser.createdAt) %></dd>
+                </div>
+              </dl>
+              <div class="acc-profile-actions">
+                <a class="btn btn-primary" href="/profile">Chỉnh sửa hồ sơ</a>
+                <a class="btn btn-ghost" href="/profile#h-password-form">Đổi mật khẩu</a>
+              </div>
+            </section>
+          <% } %>
         </div>
       </div>
     </div>
@@ -168,5 +434,6 @@
   <script src="/js/api.js"></script>
   <script src="/js/ui.js"></script>
   <script src="/js/account.js"></script>
+  <script src="/js/account-page.js"></script>
 </body>
 </html>

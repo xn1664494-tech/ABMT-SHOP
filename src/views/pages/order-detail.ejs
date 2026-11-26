@@ -5,139 +5,225 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title><%= title %></title>
   <link rel="stylesheet" href="/css/app.css">
-  <style>
-    .order-detail-grid { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 20px; align-items: start; }
-    .order-detail-card { margin-bottom: 20px; }
-    .order-detail-card > h2 { font-size: 16px; margin: 0 0 14px; color: var(--ink-strong); }
-    .order-detail-row { display: grid; grid-template-columns: 140px 1fr; gap: 8px 16px; padding: 8px 0; border-bottom: 1px solid var(--line); font-size: 13px; }
-    .order-detail-row:last-child { border-bottom: none; }
-    .order-detail-label { color: var(--muted); }
-    .order-detail-value { color: var(--ink); }
-    .order-detail-item { display: flex; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--line); }
-    .order-detail-item:last-child { border-bottom: none; }
-    .order-detail-item img { width: 56px; height: 56px; object-fit: cover; border-radius: var(--r-sm); border: 1px solid var(--line); }
-    .order-detail-item-body { flex: 1; min-width: 0; }
-    .order-detail-item-name { font-size: 14px; font-weight: 600; color: var(--ink-strong); margin: 0 0 4px; }
-    .order-detail-item-meta { font-size: 12px; color: var(--muted); margin: 0 0 6px; }
-    .order-detail-item-price { font-size: 13px; color: var(--ink); }
-    .order-detail-total { display: flex; justify-content: space-between; padding: 6px 0; font-size: 13px; }
-    .order-detail-total strong { color: var(--ink-strong); font-size: 15px; }
-    .order-history { margin: 0; padding: 0 0 0 18px; list-style: none; }
-    .order-history li { position: relative; padding: 0 0 14px 14px; border-left: 1px solid var(--line); font-size: 13px; }
-    .order-history li:last-child { border-left-color: transparent; padding-bottom: 0; }
-    .order-history li::before { content: ''; position: absolute; left: -5px; top: 4px; width: 9px; height: 9px; border-radius: 50%; background: var(--accent); }
-    .order-history-note { color: var(--muted); font-size: 12px; margin: 4px 0 0; }
-    @media (max-width: 991.98px) { .order-detail-grid { grid-template-columns: 1fr; } }
-    @media (max-width: 575.98px) { .order-detail-row { grid-template-columns: 1fr; gap: 2px; } }
-  </style>
+  <link rel="stylesheet" href="/css/shop.css">
 </head>
-<body>
+<body class="shop">
   <%- include('../partials/header') %>
-  <%- include('../partials/flash') %>
+  <div data-flash data-type="info" hidden></div>
   <%
-    const L = (locals && locals.locals) ? locals.locals : (locals || {});
-    const order = L.order || {};
-    const items = Array.isArray(order.items) ? order.items : [];
-    const history = Array.isArray(order.statusHistory) ? order.statusHistory : [];
+    var L = (locals && locals.locals) ? locals.locals : (locals || {});
+    var order = L.order || {};
+    var items = Array.isArray(order.items) ? order.items : [];
+    var shipping = order.shippingAddress || {};
+
+    var STATUS_LABELS = {
+      pending: 'Chờ xử lý',
+      confirmed: 'Đã xác nhận',
+      shipping: 'Đang giao',
+      delivered: 'Đã giao',
+      cancelled: 'Đã hủy'
+    };
+    var PAYMENT_METHOD_LABELS = {
+      cod: 'Thanh toán khi nhận hàng (COD)',
+      bank_transfer: 'Chuyển khoản ngân hàng'
+    };
+    var PAYMENT_STATUS_LABELS = {
+      unpaid: 'Chưa thanh toán',
+      paid: 'Đã thanh toán',
+      refunded: 'Đã hoàn tiền'
+    };
+
+    function money(value) {
+      return (Number(value) || 0).toLocaleString('vi-VN') + 'đ';
+    }
+    function pad2(value) {
+      return String(value).padStart(2, '0');
+    }
+    function fmtDate(value) {
+      if (!value) return '—';
+      var date = new Date(value);
+      if (isNaN(date.getTime())) return '—';
+      return pad2(date.getDate()) + '/' + pad2(date.getMonth() + 1) + '/' + date.getFullYear()
+        + ' ' + pad2(date.getHours()) + ':' + pad2(date.getMinutes());
+    }
+    function statusLabel(value) {
+      return STATUS_LABELS[value] || value || '—';
+    }
+    function statusClass(value) {
+      return 'acc-badge acc-badge--' + (STATUS_LABELS[value] ? value : 'muted');
+    }
+    function paymentStatusLabel(value) {
+      return PAYMENT_STATUS_LABELS[value] || value || '—';
+    }
+    function paymentStatusClass(value) {
+      return 'acc-badge acc-badge--' + (PAYMENT_STATUS_LABELS[value] ? value : 'muted');
+    }
+    function hasImage(url) {
+      return typeof url === 'string' && /^(\/|https?:\/\/)/i.test(url);
+    }
+    function lineTotal(item) {
+      if (item && item.lineTotal !== undefined && item.lineTotal !== null) {
+        return Number(item.lineTotal) || 0;
+      }
+      return (Number(item && item.unitPrice) || 0) * (Number(item && item.qty) || 0);
+    }
+
+    var history = Array.isArray(order.statusHistory) ? order.statusHistory.slice() : [];
+    history.sort(function (a, b) {
+      return (new Date((a && a.at) || 0).getTime() || 0) - (new Date((b && b.at) || 0).getTime() || 0);
+    });
+    if (history.length === 0) {
+      history = [{ status: order.status, at: order.createdAt, note: '' }];
+    }
+
+    var shippingFull = [shipping.detail, shipping.ward, shipping.district, shipping.province]
+      .filter(Boolean)
+      .join(', ');
+    var discount = Number(order.discount) || 0;
   %>
   <main id="main-content" class="main-content">
-    <div class="container page-shell">
-      <nav class="breadcrumb" aria-label="Breadcrumb">
+    <div class="wrap page-shell">
+      <nav class="bc" aria-label="Breadcrumb">
         <a href="/">Trang chủ</a>
         <span class="sep">/</span>
-        <a href="/orders">Đơn hàng của tôi</a>
+        <a href="/account?tab=orders">Đơn hàng</a>
         <span class="sep">/</span>
-        <span aria-current="page">Chi tiết đơn hàng</span>
+        <span aria-current="page"><%= order.code || 'Chi tiết đơn hàng' %></span>
       </nav>
 
-      <div class="page-head">
+      <div class="acc-detail-head">
         <div>
-          <h1 class="page-title">Chi tiết đơn hàng</h1>
-          <p class="page-sub"><%= order.code %></p>
+          <h1 class="acc-detail-code">Đơn hàng <%= order.code || '—' %></h1>
+          <p class="acc-detail-date">Ngày đặt: <%= fmtDate(order.createdAt) %></p>
         </div>
-        <a href="/orders" class="btn btn-ghost btn-sm">Quay lại danh sách</a>
+        <span class="<%= statusClass(order.status) %>"><%= statusLabel(order.status) %></span>
       </div>
 
-      <div class="order-detail-grid">
-        <div>
-          <section class="card order-detail-card" aria-labelledby="order-status-heading">
-            <h2 id="order-status-heading">Trạng thái đơn hàng</h2>
-            <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
-              <span class="badge <%= order.statusClass %>" data-status-label="<%= order.status %>"><%= order.statusLabel %></span>
-              <span style="font-size: 13px; color: var(--muted);">Cập nhật lúc <%= order.updatedAtLabel %></span>
+      <div class="acc-detail-grid">
+        <div class="acc-detail-col">
+          <section class="acc-panel" aria-labelledby="acc-timeline-title">
+            <div class="acc-panel-head">
+              <h2 class="acc-panel-title" id="acc-timeline-title">Trạng thái đơn hàng</h2>
             </div>
-            <% if (order.canCancel) { %>
-              <p style="margin: 14px 0 0;">
-                <button type="button" class="btn btn-danger btn-sm" data-action="cancel-order" data-order-id="<%= order.id %>">Hủy đơn</button>
-              </p>
-            <% } %>
-          </section>
-
-          <section class="card order-detail-card" aria-labelledby="order-items-heading">
-            <h2 id="order-items-heading">Sản phẩm</h2>
-            <% items.forEach(function (item) { %>
-              <div class="order-detail-item">
-                <% if (item.image) { %>
-                  <img src="<%= item.image %>" alt="" loading="lazy">
-                <% } %>
-                <div class="order-detail-item-body">
-                  <p class="order-detail-item-name"><%= item.name %></p>
-                  <p class="order-detail-item-meta">SKU: <%= item.sku %> · Size: <%= item.size %> · Màu: <%= item.color %></p>
-                  <p class="order-detail-item-price"><%= item.qty %> × <%= item.unitPriceLabel %> = <%= item.lineTotalLabel %></p>
-                </div>
-              </div>
-            <% }) %>
-          </section>
-
-          <section class="card order-detail-card" aria-labelledby="order-history-heading">
-            <h2 id="order-history-heading">Lịch sử trạng thái</h2>
-            <ul class="order-history">
-              <% history.forEach(function (entry) { %>
-                <li data-history-status="<%= entry.status %>">
-                  <strong><%= entry.statusLabel %></strong>
-                  <span style="color: var(--muted);">— <%= entry.atLabel %></span>
-                  <% if (entry.note) { %><p class="order-history-note"><%= entry.note %></p><% } %>
+            <ol class="acc-timeline">
+              <% history.forEach(function (entry, index) { %>
+                <li class="acc-timeline-item<%= index === history.length - 1 ? ' is-current' : '' %>">
+                  <span class="acc-timeline-dot" aria-hidden="true"></span>
+                  <div>
+                    <p class="acc-timeline-status"><%= statusLabel(entry.status) %></p>
+                    <p class="acc-timeline-date"><%= fmtDate(entry.at) %></p>
+                    <% if (entry.note) { %>
+                      <p class="acc-timeline-note"><%= entry.note %></p>
+                    <% } %>
+                  </div>
                 </li>
               <% }) %>
-            </ul>
-          </section>
-        </div>
-
-        <div>
-          <section class="card order-detail-card" aria-labelledby="order-info-heading">
-            <h2 id="order-info-heading">Thông tin đơn hàng</h2>
-            <div class="order-detail-row"><span class="order-detail-label">Mã đơn</span><span class="order-detail-value"><%= order.code %></span></div>
-            <div class="order-detail-row"><span class="order-detail-label">Ngày đặt</span><span class="order-detail-value"><%= order.createdAtLabel %></span></div>
-            <div class="order-detail-row"><span class="order-detail-label">Thanh toán</span><span class="order-detail-value"><%= order.paymentStatusLabel %></span></div>
-            <div class="order-detail-row"><span class="order-detail-label">Phương thức</span><span class="order-detail-value"><%= order.paymentMethodLabel %></span></div>
+            </ol>
           </section>
 
-          <section class="card order-detail-card" aria-labelledby="order-shipping-heading">
-            <h2 id="order-shipping-heading">Địa chỉ giao hàng</h2>
-            <div class="order-detail-row"><span class="order-detail-label">Người nhận</span><span class="order-detail-value"><%= order.shipping.fullName %></span></div>
-            <div class="order-detail-row"><span class="order-detail-label">Điện thoại</span><span class="order-detail-value"><%= order.shipping.phone %></span></div>
-            <div class="order-detail-row"><span class="order-detail-label">Địa chỉ</span><span class="order-detail-value"><%= order.shipping.address %></span></div>
-            <% if (order.note) { %>
-              <div class="order-detail-row"><span class="order-detail-label">Ghi chú</span><span class="order-detail-value"><%= order.note %></span></div>
-            <% } %>
-          </section>
-
-          <section class="card order-detail-card" aria-labelledby="order-total-heading">
-            <h2 id="order-total-heading">Tổng tiền</h2>
-            <div class="order-detail-total"><span>Tạm tính</span><span><%= order.subtotalLabel %></span></div>
-            <div class="order-detail-total"><span>Phí vận chuyển</span><span><%= order.shippingFeeLabel %></span></div>
-            <div class="order-detail-total"><span>Giảm giá</span><span><%= order.discountLabel %></span></div>
-            <div class="order-detail-total" style="border-top: 1px solid var(--line); margin-top: 8px; padding-top: 12px;">
-              <strong>Tổng cộng</strong><strong><%= order.totalLabel %></strong>
+          <section class="acc-panel" aria-labelledby="acc-items-title">
+            <div class="acc-panel-head">
+              <h2 class="acc-panel-title" id="acc-items-title">Sản phẩm</h2>
+              <span class="acc-panel-link"><%= items.length %> sản phẩm</span>
+            </div>
+            <div class="acc-detail-items">
+              <% items.forEach(function (item) { %>
+                <div class="acc-detail-item">
+                  <span class="acc-thumb">
+                    <% if (hasImage(item.image)) { %>
+                      <img src="<%= item.image %>" alt="<%= item.name || 'Sản phẩm' %>" loading="lazy" decoding="async">
+                    <% } else { %>
+                      <span class="acc-thumb-fallback" aria-hidden="true"><%= String(item.name || '?').trim().charAt(0).toUpperCase() || '?' %></span>
+                    <% } %>
+                  </span>
+                  <div class="acc-detail-item-main">
+                    <p class="acc-detail-item-name"><%= item.name || 'Sản phẩm' %></p>
+                    <p class="acc-detail-item-meta">
+                      <% if (item.color) { %><span>Màu: <%= item.color %></span><% } %>
+                      <% if (item.size) { %><span> · Size: <%= item.size %></span><% } %>
+                      <% if (item.sku) { %><span> · SKU: <%= item.sku %></span><% } %>
+                    </p>
+                    <p class="acc-detail-item-price">
+                      Đơn giá: <%= money(item.unitPrice) %> × <%= Number(item.qty) || 1 %>
+                    </p>
+                  </div>
+                  <p class="acc-detail-item-total"><%= money(lineTotal(item)) %></p>
+                </div>
+              <% }) %>
             </div>
           </section>
         </div>
+
+        <div class="acc-detail-col">
+          <section class="acc-panel" aria-labelledby="acc-shipping-title">
+            <div class="acc-panel-head">
+              <h2 class="acc-panel-title" id="acc-shipping-title">Địa chỉ giao hàng</h2>
+            </div>
+            <div class="acc-info-list">
+              <div class="acc-info-row">
+                <span class="acc-info-label">Người nhận</span>
+                <span class="acc-info-value"><strong><%= shipping.fullName || '—' %></strong></span>
+              </div>
+              <div class="acc-info-row">
+                <span class="acc-info-label">Số điện thoại</span>
+                <span class="acc-info-value"><%= shipping.phone || '—' %></span>
+              </div>
+              <div class="acc-info-row">
+                <span class="acc-info-label">Địa chỉ</span>
+                <span class="acc-info-value"><%= shippingFull || '—' %></span>
+              </div>
+            </div>
+          </section>
+
+          <section class="acc-panel" aria-labelledby="acc-payment-title">
+            <div class="acc-panel-head">
+              <h2 class="acc-panel-title" id="acc-payment-title">Thanh toán</h2>
+              <span class="<%= paymentStatusClass(order.paymentStatus) %>"><%= paymentStatusLabel(order.paymentStatus) %></span>
+            </div>
+            <div class="acc-info-list">
+              <div class="acc-info-row">
+                <span class="acc-info-label">Phương thức</span>
+                <span class="acc-info-value"><%= PAYMENT_METHOD_LABELS[order.paymentMethod] || order.paymentMethod || '—' %></span>
+              </div>
+              <div class="acc-info-row">
+                <span class="acc-info-label">Trạng thái</span>
+                <span class="acc-info-value"><%= paymentStatusLabel(order.paymentStatus) %></span>
+              </div>
+            </div>
+          </section>
+
+          <section class="acc-panel" aria-labelledby="acc-summary-title">
+            <div class="acc-panel-head">
+              <h2 class="acc-panel-title" id="acc-summary-title">Tóm tắt</h2>
+            </div>
+            <dl class="acc-summary">
+              <div class="acc-summary-row">
+                <dt>Tạm tính</dt>
+                <dd><%= money(order.subtotal) %></dd>
+              </div>
+              <div class="acc-summary-row">
+                <dt>Phí vận chuyển</dt>
+                <dd><%= money(order.shippingFee) %></dd>
+              </div>
+              <div class="acc-summary-row">
+                <dt>Giảm giá</dt>
+                <dd><%= discount > 0 ? '-' + money(discount) : '0đ' %></dd>
+              </div>
+              <div class="acc-summary-row is-total">
+                <dt>Tổng cộng</dt>
+                <dd><%= money(order.total) %></dd>
+              </div>
+            </dl>
+          </section>
+        </div>
+      </div>
+
+      <div class="acc-detail-actions">
+        <a class="btn btn-ghost" href="/account?tab=orders">Quay lại danh sách</a>
+        <a class="btn btn-primary" href="/catalog">Tiếp tục mua sắm</a>
       </div>
     </div>
   </main>
   <%- include('../partials/footer') %>
-  <script src="/js/api.js"></script>
-  <script src="/js/ui.js"></script>
-  <script src="/js/orders.js"></script>
 </body>
 </html>
