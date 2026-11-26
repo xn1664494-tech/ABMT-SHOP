@@ -218,7 +218,6 @@ router.get('/catalog', asyncHandler(async (req, res, next) => {
     sort: q('sort'),
   };
 
-  const data = await productService.list(filters, {});
   const categories = await Category.find({ isDeleted: false }).sort({ order: 1, name: 1 }).lean();
 
   const rootCategories = categories.filter(function (c) { return !c.parentId; });
@@ -229,6 +228,12 @@ router.get('/catalog', asyncHandler(async (req, res, next) => {
         return c.slug === categoryParam || c._id.toString() === categoryParam;
       }) || null)
     : null;
+
+  if (categoryParam && !currentCategory) {
+    return res.redirect(302, '/catalog');
+  }
+
+  const data = await productService.list(filters, {});
   let rootCategory = currentCategory;
   while (rootCategory && rootCategory.parentId && categoriesById.has(rootCategory.parentId.toString())) {
     rootCategory = categoriesById.get(rootCategory.parentId.toString());

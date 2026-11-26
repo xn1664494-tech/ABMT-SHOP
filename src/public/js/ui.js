@@ -9,13 +9,15 @@
   function showToast(message, options = {}) {
     const {
       type = 'info',
-      duration = type === 'error' ? 6000 : 4000
+      duration = 4000
     } = options;
 
     // Create toast element — all sizing/colors come from app.css
     const toast = document.createElement('div');
     toast.className = `toast toast-${type}`;
     toast.setAttribute('role', type === 'error' ? 'alert' : 'status');
+    toast.setAttribute('aria-live', type === 'error' ? 'assertive' : 'polite');
+    toast.setAttribute('aria-atomic', 'true');
 
     const icons = {
       success: '<path d="M20 6L9 17l-5-5"/>',
@@ -56,17 +58,19 @@
     let paused = false;
     let mouseOver = false;
 
-    function dismissToast(skipAnimation = false) {
-      clearTimeout(timer);
-      const index = activeToasts.indexOf(toast);
+    function dismissToast(skipAnimation = false, target = toast) {
+      if (target === toast) clearTimeout(timer);
+      const index = activeToasts.indexOf(target);
       if (index > -1) activeToasts.splice(index, 1);
-      if (toastRegion && toastRegion.contains(toast)) {
+      if (toastRegion && toastRegion.contains(target)) {
         if (skipAnimation || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-          toastRegion.removeChild(toast);
+          toastRegion.removeChild(target);
         } else {
-          toast.classList.add('is-leaving');
-          toast.addEventListener('transitionend', () => {
-            toastRegion.removeChild(toast);
+          target.classList.add('is-leaving');
+          target.addEventListener('transitionend', () => {
+            if (toastRegion && toastRegion.contains(target)) {
+              toastRegion.removeChild(target);
+            }
           }, { once: true });
         }
       }
@@ -104,7 +108,7 @@
     if (activeToasts.length > 3) {
       // Remove oldest
       const old = activeToasts.shift();
-      dismissToast(true);
+      dismissToast(true, old);
     }
 
     return dismissToast;
