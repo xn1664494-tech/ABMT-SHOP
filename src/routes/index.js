@@ -10,6 +10,7 @@ const { calculateShippingFee } = require('../model/Order');
 const asyncHandler = require('../utils/asyncHandler');
 const ErrorResponse = require('../utils/appError');
 const { getFlash } = require('../utils/flash');
+const { ensureCartItemIds } = require('../utils/cartItems');
 
 const router = express.Router();
 
