@@ -92,11 +92,13 @@ const buildOrderDetail = (order, role, isOwner) => {
     note: order.note || '',
     subtotalLabel: orderPresentation.formatCurrency(order.subtotal),
     shippingFeeLabel: orderPresentation.formatCurrency(order.shippingFee),
+    discount: Number(order.discount) || 0,
     discountLabel: orderPresentation.formatCurrency(order.discount),
     totalLabel: orderPresentation.formatCurrency(order.total),
     statusHistory: (order.statusHistory || []).map((entry) => ({
       status: entry.status || 'pending',
       statusLabel: orderPresentation.getStatusLabel(entry.status),
+      at: entry.at,
       atLabel: orderPresentation.formatDate(entry.at),
       note: entry.note || '',
     })),
@@ -259,7 +261,13 @@ router.get('/account/orders/:code', asyncHandler(async (req, res, next) => {
   res.set('Cache-Control', 'no-store');
   res.render('pages/order-detail', {
     title: 'Đơn hàng ' + order.code,
-    order,
+    flash: getFlash(req),
+    locals: {
+      order: buildOrderDetail(order, res.locals.currentUser.role, true),
+      isOwner: true,
+      isAdmin: res.locals.currentUser.role === 'admin',
+      flash: getFlash(req),
+    },
   });
 }));
 
