@@ -175,7 +175,7 @@
     setBusy(line, true);
 
     window.ABMT.api
-      .patch('/api/cart/items/' + encodeURIComponent(itemId), { quantity: qty })
+      .put('/api/cart/items/' + encodeURIComponent(itemId), { qty })
       .then(function (response) {
         renderFromResponse(unwrap(response));
       })

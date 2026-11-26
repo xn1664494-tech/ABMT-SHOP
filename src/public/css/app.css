@@ -1122,6 +1122,8 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 .cart-thumb img { width: 100%; height: 100%; object-fit: cover; }
 .cart-line-main { display: grid; gap: 6px; min-width: 0; }
 .cart-line-name { font-size: 14px; font-weight: 600; color: var(--ink-strong); overflow-wrap: anywhere; }
+.cart-line-name a { color: inherit; text-decoration: none; }
+.cart-line-name a:hover { text-decoration: underline; }
 .cart-line-meta { display: flex; flex-wrap: wrap; gap: 8px; font-size: 12px; color: var(--muted); }
 .cart-line-unit { font-size: 13px; color: var(--ink); }
 .cart-line-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
@@ -1294,5 +1296,107 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 .chart-box canvas { height: 240px !important; }
 @media (min-width: 1024px) {
   .admin-sidebar { bottom: auto; left: auto; }
+}
+
+/* address autocomplete: khung */
+.addr-combo { position: relative; display: block; width: 100%; }
+
+/* address autocomplete: danh sách gợi ý */
+.addr-list {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  z-index: 30;
+  margin: 0;
+  padding: 6px;
+  list-style: none;
+  max-height: 280px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow-toast);
+}
+
+/* address autocomplete: một lựa chọn */
+.addr-option {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  min-height: 44px;
+  padding: 8px 10px;
+  border-radius: var(--r-sm);
+  font-size: 14px;
+  color: var(--ink-strong);
+  cursor: pointer;
+}
+.addr-option:hover,
+.addr-option[aria-selected="true"] { background: var(--mint); }
+.addr-option small { font-size: 12px; color: var(--muted); }
+
+/* address autocomplete: trạng thái */
+.addr-empty,
+.addr-loading {
+  padding: 12px 10px;
+  font-size: 13px;
+  color: var(--muted);
+  text-align: center;
+}
+
+/* address autocomplete: chip đã chọn */
+.addr-chip {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  max-width: 100%;
+  margin-top: 8px;
+  padding: 6px 6px 6px 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-pill);
+  background: var(--mint);
+  color: var(--ink-strong);
+  font-size: 13px;
+}
+.addr-chip-label { min-width: 0; overflow-wrap: anywhere; }
+.addr-chip-change {
+  min-height: 32px;
+  padding: 4px 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-pill);
+  background: var(--surface);
+  color: var(--accent-deep);
+  font-size: 12px;
+  font-weight: 600;
+}
+.addr-chip-change:hover { background: var(--canvas); }
+
+/* address autocomplete: focus rõ ràng */
+.addr-option:focus-visible,
+.addr-chip-change:focus-visible {
+  outline: 2px solid var(--accent-deep);
+  outline-offset: 2px;
+}
+
+/* product card frame: nền token + tỉ lệ ổn định (bổ sung) */
+.product-thumb {
+  position: relative;
+  background: var(--sand);
+}
+.product-thumb img { display: block; }
+
+/* carousel product card: bề rộng cố định theo breakpoint (bổ sung) */
+#section-sale .carousel .carousel-track .product-card,
+#section-bestseller .carousel .carousel-track .product-card {
+  flex: 0 0 160px;
+}
+@media (min-width: 768px) {
+  #section-sale .carousel .carousel-track .product-card,
+  #section-bestseller .carousel .carousel-track .product-card {
+    flex: 0 0 220px;
+  }
 }
 

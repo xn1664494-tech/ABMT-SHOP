@@ -185,10 +185,20 @@
           .then((response) => {
             const count = response && response.data ? response.data.count : undefined;
             if (count !== undefined) {
-              const badge = document.querySelector('#cart-count, [data-cart-badge], .cart-badge, #badge');
-              if (badge) {
+              const link = document.querySelector('.header-cart');
+              let badge = link ? link.querySelector('.header-cart-badge') : null;
+
+              if (count > 0 && !badge && link) {
+                badge = document.createElement('span');
+                badge.className = 'header-cart-badge';
+                badge.setAttribute('aria-hidden', 'true');
+                link.appendChild(badge);
+              }
+
+              if (count > 0 && badge) {
                 badge.textContent = count > 99 ? '99+' : String(count);
-                badge.style.display = 'inline-flex';
+              } else if (count <= 0 && badge) {
+                badge.parentNode.removeChild(badge);
               }
             }
             ABMT.toast.success('Thêm vào giỏ thành công');

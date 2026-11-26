@@ -13,7 +13,7 @@
   var payInfo = document.getElementById('payInfo');
   var payContainer = document.getElementById('oPay') || document;
   var submitting = false;
-  var cascadeReady = false;
+  var autocompleteReady = false;
 
   function getAddressRadios() {
     return aList.querySelectorAll('input[name="addressId"]');
@@ -31,15 +31,12 @@
     return !radio || radio.value === '' || radio.value === 'new';
   }
 
-  function ensureCascade() {
-    if (cascadeReady || !addressForm) return;
-    cascadeReady = true;
-    if (window.ABMT && window.ABMT.address && window.ABMT.address.initCascade) {
-      window.ABMT.address.initCascade(
-        addressForm.querySelector('[name="province"]'),
-        addressForm.querySelector('[name="district"]'),
-        addressForm.querySelector('[name="ward"]')
-      );
+  function ensureAutocomplete() {
+    if (autocompleteReady || !addressForm) return;
+    autocompleteReady = true;
+    if (window.ABMT && window.ABMT.address && window.ABMT.address.initAutocomplete) {
+      var combo = addressForm.querySelector('[data-addr-combo]');
+      if (combo) window.ABMT.address.initAutocomplete(combo);
     }
   }
 
@@ -47,7 +44,7 @@
     var selected = getSelectedAddress();
     var useNew = isNewAddress(selected);
     if (addressForm) addressForm.hidden = !useNew;
-    if (useNew) ensureCascade();
+    if (useNew) ensureAutocomplete();
   }
 
   function updateNoteCount() {

@@ -1,148 +1,7 @@
 (function () {
   'use strict';
 
-  var cachedData = null;
-  var loadingPromise = null;
   var errorSeq = 0;
-
-  /** Tải dữ liệu địa chỉ một lần và cache lại. */
-  function loadAddressData() {
-    if (cachedData) {
-      return Promise.resolve(cachedData);
-    }
-    if (!loadingPromise) {
-      loadingPromise = fetch('/data/vietnam-address.json', {
-        credentials: 'same-origin',
-        headers: { Accept: 'application/json' },
-      })
-        .then(function (response) {
-          if (!response.ok) {
-            throw new Error('Không tải được dữ liệu địa chỉ');
-          }
-          return response.json();
-        })
-        .then(function (json) {
-          if (json && Array.isArray(json.provinces)) {
-            cachedData = json;
-          } else {
-            cachedData = { provinces: [] };
-          }
-          return cachedData;
-        })
-        .catch(function () {
-          cachedData = { provinces: [] };
-          return cachedData;
-        });
-    }
-    return loadingPromise;
-  }
-
-  function clearSelect(select, placeholder) {
-    if (!select) return;
-    while (select.firstChild) {
-      select.removeChild(select.firstChild);
-    }
-    var option = document.createElement('option');
-    option.value = '';
-    option.textContent = placeholder;
-    select.appendChild(option);
-  }
-
-  function fillSelect(select, items, placeholder) {
-    if (!select) return;
-    clearSelect(select, placeholder);
-    (items || []).forEach(function (item) {
-      if (!item) return;
-      var option = document.createElement('option');
-      option.value = item.code;
-      option.textContent = item.name;
-      select.appendChild(option);
-    });
-  }
-
-  function findProvince(provinces, code) {
-    for (var i = 0; i < provinces.length; i += 1) {
-      if (provinces[i].code === code) return provinces[i];
-    }
-    return null;
-  }
-
-  function findDistrict(province, code) {
-    if (!province || !Array.isArray(province.districts)) return null;
-    for (var i = 0; i < province.districts.length; i += 1) {
-      if (province.districts[i].code === code) return province.districts[i];
-    }
-    return null;
-  }
-
-  /**
-   * Khởi tạo chuỗi Tỉnh/Thành -> Quận/Huyện -> Phường/Xã.
-   * Quận/Huyện không bắt buộc: nếu tỉnh không có quận/huyện thì bỏ qua cấp này.
-   */
-  function initCascade(provSelect, distSelect, wardSelect) {
-    if (!provSelect) return;
-    if (provSelect.dataset.abmtCascade === '1') return;
-    provSelect.dataset.abmtCascade = '1';
-
-    if (distSelect) distSelect.disabled = true;
-    if (wardSelect) wardSelect.disabled = true;
-
-    loadAddressData().then(function (data) {
-      var provinces = data.provinces || [];
-
-      fillSelect(provSelect, provinces, '-- Chọn Tỉnh/Thành --');
-
-      function onProvinceChange() {
-        var province = findProvince(provinces, provSelect.value);
-        if (distSelect) {
-          clearSelect(distSelect, '-- Chọn Quận/Huyện --');
-          distSelect.disabled = true;
-        }
-        if (wardSelect) {
-          clearSelect(wardSelect, '-- Chọn Phường/Xã --');
-          wardSelect.disabled = true;
-        }
-        if (!province) return;
-
-        if (Array.isArray(province.districts) && province.districts.length > 0) {
-          fillSelect(distSelect, province.districts, '-- Chọn Quận/Huyện --');
-          if (distSelect) distSelect.disabled = false;
-          if (province.districts.length === 1) {
-            distSelect.value = province.districts[0].code;
-            onDistrictChange();
-          }
-          return;
-        }
-
-        // Hỗ trợ cấu trúc 2 cấp trong tương lai: tỉnh -> phường/xã.
-        if (Array.isArray(province.wards) && province.wards.length > 0) {
-          fillSelect(wardSelect, province.wards, '-- Chọn Phường/Xã --');
-          if (wardSelect) wardSelect.disabled = false;
-        }
-      }
-
-      function onDistrictChange() {
-        if (!distSelect || !wardSelect) return;
-        var province = findProvince(provinces, provSelect.value);
-        var district = findDistrict(province, distSelect.value);
-        clearSelect(wardSelect, '-- Chọn Phường/Xã --');
-        wardSelect.disabled = true;
-        if (!district) return;
-        if (Array.isArray(district.wards) && district.wards.length > 0) {
-          fillSelect(wardSelect, district.wards, '-- Chọn Phường/Xã --');
-          wardSelect.disabled = false;
-        }
-      }
-
-      provSelect.addEventListener('change', onProvinceChange);
-      if (distSelect) {
-        distSelect.addEventListener('change', onDistrictChange);
-      }
-      if (provSelect.value) {
-        onProvinceChange();
-      }
-    });
-  }
 
   function getField(form, name) {
     if (!form) return null;
@@ -205,18 +64,17 @@
 
     var phoneField = getField(form, 'phone');
     var phoneValue = phoneField ? phoneField.value.replace(/\s+/g, '') : '';
-    if (!phoneField || !/^(0|\+84)\d{9}$/.test(phoneValue)) {
+    if (!phoneField || !/^(0|\+84)[0-9]{9,10}$/.test(phoneValue)) {
       mark(phoneField, 'Số điện thoại không hợp lệ (bắt đầu bằng 0 hoặc +84).');
     }
 
-    var provinceField = getField(form, 'province');
-    if (!provinceField || !provinceField.value) {
-      mark(provinceField, 'Vui lòng chọn Tỉnh/Thành.');
-    }
-
-    var wardField = getField(form, 'ward');
-    if (!wardField || !wardField.value) {
-      mark(wardField, 'Vui lòng chọn Phường/Xã.');
+    var wardCodeField = getField(form, 'wardCode');
+    var searchField = form.querySelector('[data-addr-search]');
+    if (!wardCodeField || !wardCodeField.value) {
+      mark(
+        searchField || wardCodeField,
+        'Vui lòng chọn phường/xã từ danh sách gợi ý'
+      );
     }
 
     var streetField = getField(form, 'street');
@@ -230,41 +88,301 @@
     return !firstError;
   }
 
-  function selectedText(select) {
-    if (!select || select.selectedIndex < 0) return '';
-    var option = select.options[select.selectedIndex];
-    return option ? option.textContent.trim() : '';
-  }
-
   function buildAddressPayload(form) {
     var nameField = getField(form, 'name');
     var phoneField = getField(form, 'phone');
     var provinceField = getField(form, 'province');
-    var districtField = getField(form, 'district');
+    var provinceCodeField = getField(form, 'provinceCode');
     var wardField = getField(form, 'ward');
+    var wardCodeField = getField(form, 'wardCode');
     var streetField = getField(form, 'street');
-    var defaultField = getField(form, 'isDefault');
 
     return {
       fullName: nameField ? nameField.value.trim() : '',
       phone: phoneField ? phoneField.value.replace(/\s+/g, '') : '',
-      province: selectedText(provinceField),
-      district: selectedText(districtField),
-      ward: selectedText(wardField),
+      province: provinceField ? provinceField.value.trim() : '',
+      provinceCode: provinceCodeField ? provinceCodeField.value.trim() : '',
+      ward: wardField ? wardField.value.trim() : '',
+      wardCode: wardCodeField ? wardCodeField.value.trim() : '',
       detail: streetField ? streetField.value.trim() : '',
-      isDefault: Boolean(defaultField && defaultField.checked),
     };
+  }
+
+  var autocompleteSeq = 0;
+
+  function initAutocomplete(root) {
+    if (!root) return;
+    if (root.dataset && root.dataset.abmtAutocomplete === '1') return;
+
+    var search = root.querySelector('[data-addr-search]');
+    var list = root.querySelector('[data-addr-list]');
+    if (!search || !list) return;
+
+    if (root.dataset) root.dataset.abmtAutocomplete = '1';
+
+    var chip = root.querySelector('[data-addr-chip]');
+    var chipLabel = root.querySelector('[data-addr-chip-label]');
+    var changeBtn = root.querySelector('[data-addr-change]');
+    var provinceField = root.querySelector('[name="province"]');
+    var provinceCodeField = root.querySelector('[name="provinceCode"]');
+    var wardField = root.querySelector('[name="ward"]');
+    var wardCodeField = root.querySelector('[name="wardCode"]');
+
+    autocompleteSeq += 1;
+    var uid = 'addr-' + autocompleteSeq;
+
+    var items = [];
+    var activeIndex = -1;
+    var controller = null;
+    var debounceTimer = null;
+    var requestSeq = 0;
+
+    if (!list.id) list.id = uid + '-list';
+    list.setAttribute('role', 'listbox');
+    search.setAttribute('role', 'combobox');
+    search.setAttribute('aria-autocomplete', 'list');
+    search.setAttribute('aria-controls', list.id);
+    search.setAttribute('aria-expanded', 'false');
+
+    function setExpanded(open) {
+      search.setAttribute('aria-expanded', open ? 'true' : 'false');
+    }
+
+    function clearActive() {
+      for (var i = 0; i < list.children.length; i += 1) {
+        var node = list.children[i];
+        if (node && node.getAttribute) node.setAttribute('aria-selected', 'false');
+      }
+      search.removeAttribute('aria-activedescendant');
+      activeIndex = -1;
+    }
+
+    function closeList() {
+      list.hidden = true;
+      setExpanded(false);
+      clearActive();
+    }
+
+    function openList() {
+      list.hidden = false;
+      setExpanded(true);
+    }
+
+    function clearList() {
+      while (list.firstChild) list.removeChild(list.firstChild);
+      items = [];
+      clearActive();
+    }
+
+    function clearSelection() {
+      if (provinceField) provinceField.value = '';
+      if (provinceCodeField) provinceCodeField.value = '';
+      if (wardField) wardField.value = '';
+      if (wardCodeField) wardCodeField.value = '';
+      if (chip) chip.hidden = true;
+      if (chipLabel) chipLabel.textContent = '';
+    }
+
+    function setActive(index) {
+      if (index < 0 || index >= items.length) return;
+      activeIndex = index;
+      for (var i = 0; i < list.children.length; i += 1) {
+        var node = list.children[i];
+        if (!node || !node.getAttribute) continue;
+        node.setAttribute('aria-selected', i === index ? 'true' : 'false');
+      }
+      var activeNode = list.children[index];
+      if (activeNode && activeNode.id) {
+        search.setAttribute('aria-activedescendant', activeNode.id);
+        if (activeNode.scrollIntoView) {
+          activeNode.scrollIntoView({ block: 'nearest' });
+        }
+      }
+    }
+
+    function selectItem(index) {
+      var item = items[index];
+      if (!item) return;
+
+      if (provinceField) provinceField.value = item.provinceName || '';
+      if (provinceCodeField) provinceCodeField.value = item.provinceCode || '';
+      if (wardField) wardField.value = item.wardName || '';
+      if (wardCodeField) wardCodeField.value = item.wardCode || '';
+
+      if (chipLabel) {
+        chipLabel.textContent = item.label || item.wardName + ', ' + item.provinceName;
+      }
+      if (chip) chip.hidden = false;
+
+      search.value = item.wardName || item.label || '';
+      setFieldError(search, '');
+      clearList();
+      closeList();
+    }
+
+    function makeOption(item, index) {
+      var li = document.createElement('li');
+      li.className = 'addr-option';
+      li.id = uid + '-opt-' + index;
+      li.setAttribute('role', 'option');
+      li.setAttribute('aria-selected', 'false');
+
+      var main = document.createElement('span');
+      main.textContent = item.label || item.wardName + ', ' + item.provinceName;
+      li.appendChild(main);
+
+      if (item.matchedOld) {
+        var sub = document.createElement('small');
+        sub.textContent = 'trước đây: ' + item.matchedOld;
+        li.appendChild(sub);
+      }
+
+      function choose(event) {
+        if (event) event.preventDefault();
+        selectItem(index);
+      }
+
+      li.addEventListener('pointerdown', choose);
+      li.addEventListener('click', choose);
+
+      return li;
+    }
+
+    function renderMessage(text, className) {
+      clearList();
+      var node = document.createElement('li');
+      node.className = className;
+      node.textContent = text;
+      list.appendChild(node);
+      openList();
+    }
+
+    function renderItems(nextItems) {
+      clearList();
+      items = nextItems || [];
+      if (items.length === 0) {
+        renderMessage(
+          'Không tìm thấy, thử gõ tên phường/xã hoặc tên tỉnh',
+          'addr-empty'
+        );
+        return;
+      }
+      for (var i = 0; i < items.length; i += 1) {
+        list.appendChild(makeOption(items[i], i));
+      }
+      openList();
+    }
+
+    function fetchSuggestions(query) {
+      if (!window.ABMT || !window.ABMT.api || !window.ABMT.api.get) return;
+
+      if (controller) controller.abort();
+      controller = new AbortController();
+      var currentController = controller;
+      requestSeq += 1;
+      var seq = requestSeq;
+
+      renderMessage('Đang tìm...', 'addr-loading');
+
+      window.ABMT.api
+        .get('/api/address/suggest?q=' + encodeURIComponent(query) + '&limit=8', {
+          signal: currentController.signal,
+        })
+        .then(function (response) {
+          if (seq !== requestSeq || currentController.signal.aborted) return;
+          var suggestions =
+            response && response.data && Array.isArray(response.data.suggestions)
+              ? response.data.suggestions
+              : [];
+          renderItems(suggestions);
+        })
+        .catch(function () {
+          if (seq !== requestSeq || currentController.signal.aborted) return;
+          renderMessage(
+            'Không tìm thấy, thử gõ tên phường/xã hoặc tên tỉnh',
+            'addr-empty'
+          );
+        });
+    }
+
+    function onInput() {
+      if (wardCodeField && wardCodeField.value) {
+        clearSelection();
+      }
+
+      var query = search.value.trim();
+      if (debounceTimer) {
+        window.clearTimeout(debounceTimer);
+        debounceTimer = null;
+      }
+
+      if (query.length < 2) {
+        if (controller) controller.abort();
+        clearList();
+        closeList();
+        return;
+      }
+
+      debounceTimer = window.setTimeout(function () {
+        fetchSuggestions(query);
+      }, 200);
+    }
+
+    function onKeyDown(event) {
+      if (event.key === 'ArrowDown') {
+        event.preventDefault();
+        if (list.hidden) {
+          if (search.value.trim().length >= 2) onInput();
+          return;
+        }
+        if (items.length === 0) return;
+        setActive(activeIndex + 1 >= items.length ? 0 : activeIndex + 1);
+      } else if (event.key === 'ArrowUp') {
+        event.preventDefault();
+        if (list.hidden || items.length === 0) return;
+        setActive(activeIndex - 1 < 0 ? items.length - 1 : activeIndex - 1);
+      } else if (event.key === 'Enter') {
+        if (!list.hidden && activeIndex >= 0 && items[activeIndex]) {
+          event.preventDefault();
+          selectItem(activeIndex);
+        }
+      } else if (event.key === 'Escape') {
+        closeList();
+      } else if (event.key === 'Tab') {
+        closeList();
+      }
+    }
+
+    function onDocumentPointerDown(event) {
+      if (!root.contains(event.target)) closeList();
+    }
+
+    search.addEventListener('input', onInput);
+    search.addEventListener('keydown', onKeyDown);
+    search.addEventListener('focus', function () {
+      if (search.value.trim().length >= 2 && items.length > 0 && list.hidden) {
+        openList();
+      }
+    });
+    document.addEventListener('pointerdown', onDocumentPointerDown);
+
+    if (changeBtn) {
+      changeBtn.addEventListener('click', function (event) {
+        event.preventDefault();
+        clearSelection();
+        search.value = '';
+        closeList();
+        search.focus();
+      });
+    }
   }
 
   function initForm() {
     var form = document.getElementById('aForm');
     if (!form) return;
 
-    initCascade(
-      getField(form, 'province'),
-      getField(form, 'district'),
-      getField(form, 'ward')
-    );
+    var combo = form.querySelector('[data-addr-combo]');
+    if (combo) initAutocomplete(combo);
 
     // Trang checkout có #aList: việc đặt hàng do checkout.js xử lý.
     if (document.getElementById('aList')) return;
@@ -280,7 +398,7 @@
       submitting = true;
 
       var request = function () {
-        return window.ABMT.api.post('/api/addresses', payload);
+        return window.ABMT.api.post('/api/profile/addresses', payload);
       };
       var run = function () {
         if (window.ABMT && window.ABMT.withButtonLock && submitBtn) {
@@ -316,9 +434,8 @@
     window.ABMT = {};
   }
   window.ABMT.address = {
-    initCascade: initCascade,
+    initAutocomplete: initAutocomplete,
     validate: validate,
-    loadAddressData: loadAddressData,
     buildAddressPayload: buildAddressPayload,
   };
 

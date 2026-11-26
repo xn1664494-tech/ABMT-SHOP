@@ -248,8 +248,36 @@ closeBtn.appendChild(closeText);
     }
   };
 
+  /** Fallback cho ảnh sản phẩm lỗi (không dùng inline onerror) */
+  function applyImageFallback(img) {
+    if (!img || img.dataset.fallbackApplied === '1') return;
+    const fallback = img.getAttribute('data-fallback');
+    if (!fallback) return;
+    img.dataset.fallbackApplied = '1';
+    img.src = fallback;
+  }
+
+  function scanFailedImages() {
+    const images = document.querySelectorAll('img[data-fallback]');
+    images.forEach(function (img) {
+      if (img.complete && img.naturalWidth === 0) {
+        applyImageFallback(img);
+      }
+    });
+  }
+
+  // Sự kiện error không bubble nên bắt ở pha capture trên document.
+  document.addEventListener('error', function (event) {
+    const target = event.target;
+    if (target && target.tagName === 'IMG' && target.hasAttribute('data-fallback')) {
+      applyImageFallback(target);
+    }
+  }, true);
+
   /** Initialize on DOM ready */
   function init() {
+    scanFailedImages();
+
     // Process flash elements
     const flashElements = document.querySelectorAll('[data-flash]');
     flashElements.forEach(el => {

@@ -52,7 +52,6 @@ const shippingAddressSchema = new mongoose.Schema(
     },
     district: {
       type: String,
-      required: [true, 'Quận/huyện là bắt buộc'],
       trim: true,
       maxlength: [100, 'Quận/huyện tối đa 100 ký tự'],
     },
@@ -62,6 +61,8 @@ const shippingAddressSchema = new mongoose.Schema(
       trim: true,
       maxlength: [100, 'Phường/xã tối đa 100 ký tự'],
     },
+    provinceCode: { type: String, trim: true, maxlength: 20 },
+    wardCode: { type: String, trim: true, maxlength: 20 },
     detail: {
       type: String,
       required: [true, 'Địa chỉ chi tiết là bắt buộc'],

@@ -44,24 +44,40 @@
           <div id="lines" class="cart-lines">
             <% items.forEach(function (item) {
               var itemId = item._id ? String(item._id) : (item.sku || '');
+              var product = item.product || {};
+              var productName = product.name || item.sku || 'Sản phẩm';
+              var productSlug = product.slug || '';
+              var productImage = Array.isArray(product.images) && product.images[0]
+                ? product.images[0]
+                : '/images/placeholder/product.svg';
+              var variants = Array.isArray(product.variants) ? product.variants : [];
+              var variant = variants.find(function (v) { return v.sku === item.sku; });
+              var maxStock = variant ? Number(variant.stock) || 0 : 0;
               var unitPrice = Number(item.unitPrice) || 0;
               var qty = Number(item.qty) || 1;
             %>
-              <article class="cart-line" data-item-id="<%= itemId %>">
+              <article class="cart-line" data-item-id="<%= itemId %>" data-sku="<%= item.sku %>">
                 <div class="cart-thumb">
-                  <img src="/images/placeholder/product.svg" alt="<%= item.sku || 'Sản phẩm' %>" width="150" height="200" loading="lazy" decoding="async">
+                  <img src="<%= productImage %>" alt="<%= productName %>" width="150" height="200" loading="lazy" decoding="async">
                 </div>
                 <div class="cart-line-main">
-                  <h2 class="cart-line-name"><%= item.sku || 'Sản phẩm' %></h2>
+                  <h2 class="cart-line-name">
+                    <% if (productSlug) { %>
+                      <a href="/products/<%= productSlug %>"><%= productName %></a>
+                    <% } else { %>
+                      <%= productName %>
+                    <% } %>
+                  </h2>
                   <div class="cart-line-meta">
+                    <span>SKU: <%= item.sku %></span>
                     <span>Kích cỡ: <%= item.size || '—' %></span>
                     <span>Màu: <%= item.color || '—' %></span>
                   </div>
                   <div class="cart-line-unit">Đơn giá: <span data-unit-price><%= unitPrice.toLocaleString('vi-VN') %>₫</span></div>
                   <div class="cart-line-controls">
-                    <div class="qty-control" role="group" aria-label="Số lượng <%= item.sku || 'sản phẩm' %>">
+                    <div class="qty-control" role="group" aria-label="Số lượng <%= productName %>">
                       <button type="button" class="qty-btn" data-action="dec" aria-label="Giảm số lượng">−</button>
-                      <input type="number" class="qty-field" value="<%= qty %>" min="1" data-saved="<%= qty %>" inputmode="numeric" aria-label="Số lượng <%= item.sku || 'sản phẩm' %>">
+                      <input type="number" class="qty-field" value="<%= qty %>" min="1" max="<%= maxStock || qty %>" data-saved="<%= qty %>" inputmode="numeric" aria-label="Số lượng <%= productName %>">
                       <button type="button" class="qty-btn" data-action="inc" aria-label="Tăng số lượng">+</button>
                     </div>
                     <button type="button" class="btn btn-ghost btn-sm" data-action="remove">Xóa</button>

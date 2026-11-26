@@ -136,6 +136,7 @@ router.get('/profile', (req, res) => {
 
 // Trang giỏ hàng (HTML)
 router.get('/cart', asyncHandler(async (req, res, next) => {
+  res.set('Cache-Control', 'no-store');
   const cartId = getCartId(req);
   let cart = await Cart.findOne({ sessionId: cartId });
 
@@ -148,7 +149,7 @@ router.get('/cart', asyncHandler(async (req, res, next) => {
           { sessionId: cartId },
           { $set: { user: res.locals.currentUser.id, sessionId: null, expiresAt: null } }
         );
-        cart = await Cart.findOne({ sessionId: cartId });
+        cart = await Cart.findOne({ user: res.locals.currentUser.id });
       } else {
         // Gộp items từ guest cart vào user cart
         const existingSkus = new Set((userCart.items || []).map((i) => i.sku));
@@ -165,7 +166,14 @@ router.get('/cart', asyncHandler(async (req, res, next) => {
     cart = userCart || cart;
   }
 
-  const items = cart ? cart.items : [];
+  if (cart && ensureCartItemIds(cart)) {
+    await cart.save();
+  }
+
+  const viewCart = cart
+    ? await Cart.findOne({ _id: cart._id }).populate('items.product', 'name slug images variants')
+    : null;
+  const items = viewCart ? viewCart.items : [];
   const { subtotal, shippingFee, total, count } = calcCartSummary(items);
 
   res.render('pages/cart', {
@@ -225,7 +233,7 @@ router.get('/catalog', asyncHandler(async (req, res, next) => {
     }
   }
 
-  const flash = getFlash(req);
+  const flash = typeof getFlash === 'function' ? getFlash(req) : [];
   res.render('pages/catalog', {
     title: 'Danh sách sản phẩm',
     categories,
@@ -293,7 +301,7 @@ router.get('/products/:slug', asyncHandler(async (req, res, next) => {
     }
   }
 
-  const flash = getFlash(req);
+  const flash = typeof getFlash === 'function' ? getFlash(req) : [];
   res.render('pages/product-detail', {
     title: product.name,
     flash,
@@ -361,15 +369,6 @@ router.get('/checkout', asyncHandler(async (req, res, next) => {
 
   const paymentMethods = ['cod', 'bank_transfer'];
 
-  // Danh sách tỉnh/thành (đọc từ file tĩnh nếu có)
-  let provinces = [];
-  try {
-    const addressData = require('../public/data/vietnam-address.json');
-    provinces = addressData.provinces || [];
-  } catch (e) {
-    provinces = [];
-  }
-
   res.set('Cache-Control', 'no-store');
   res.render('pages/checkout', {
     title: 'Thanh toán',
@@ -380,7 +379,6 @@ router.get('/checkout', asyncHandler(async (req, res, next) => {
       total,
       savedAddresses,
       paymentMethods,
-      provinces,
     },
     cartCount: count,
   });
@@ -393,17 +391,8 @@ router.get('/address/new', asyncHandler(async (req, res, next) => {
     return res.redirect(302, '/login?next=/address/new');
   }
 
-  let provinces = [];
-  try {
-    const addressData = require('../public/data/vietnam-address.json');
-    provinces = addressData.provinces || [];
-  } catch (e) {
-    provinces = [];
-  }
-
   res.render('pages/address-new', {
     title: 'Thêm địa chỉ mới',
-    locals: { provinces },
   });
 }));
 

@@ -15,6 +15,8 @@ const addressSchema = new mongoose.Schema(
     ward: { type: String, trim: true, maxlength: 100 },
     district: { type: String, trim: true, maxlength: 100 },
     city: { type: String, trim: true, maxlength: 100 },
+    provinceCode: { type: String, trim: true, maxlength: 20 },
+    wardCode: { type: String, trim: true, maxlength: 20 },
     isDefault: { type: Boolean, default: false },
   },
   { _id: true },
