@@ -12,6 +12,7 @@ const ErrorResponse = require('../utils/appError');
 const { calculateShippingFee } = require('../model/Order');
 const addressService = require('../services/addressService');
 const { createOrder } = require('../services/CheckoutService');
+const { cancelOrder } = require('../services/OrderCancellationService');
 
 const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id);
 
@@ -194,6 +195,45 @@ router.post(
         code: order.code,
         total: order.total,
         status: order.status,
+      },
+    });
+  })
+);
+
+/**
+ * POST /api/orders/:id/cancel - Hủy đơn và hoàn kho (yêu cầu đăng nhập + CSRF)
+ */
+router.post(
+  '/:id/cancel',
+  authenticate,
+  csrfProtection,
+  asyncHandler(async (req, res, next) => {
+    if (!isValidObjectId(req.params.id)) {
+      return next(new ErrorResponse('Id đơn hàng không hợp lệ', 400));
+    }
+
+    const userId = req.user._id || req.user.id;
+    const order = await Order.findById(req.params.id).select('user').lean();
+    if (!order) {
+      return next(new ErrorResponse('Đơn hàng không tồn tại', 404));
+    }
+
+    const cancelled = await cancelOrder({
+      orderId: req.params.id,
+      actorRole: req.user.role,
+      actorId: userId,
+      isOwner: String(order.user) === String(userId),
+      note: req.body && req.body.note ? String(req.body.note).slice(0, 500) : '',
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: 'Hủy đơn thành công',
+      data: {
+        id: String(cancelled._id),
+        code: cancelled.code,
+        status: cancelled.status,
+        stockRestoredAt: cancelled.stockRestoredAt,
       },
     });
   })
