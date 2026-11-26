@@ -53,14 +53,14 @@
         <span aria-current="page"><%= cc ? cc.name : 'Sản phẩm' %></span>
       </nav>
 
-      <div class="page-head">
+      <div class="page-head sh">
         <div>
           <h1 class="page-title"><%= cc ? 'Thời trang ' + cc.name : 'Danh sách sản phẩm' %></h1>
           <p class="page-sub"><%= Number(pg.total) || 0 %> sản phẩm</p>
         </div>
       </div>
 
-      <div class="catalog-chips" role="group" aria-label="Chọn danh mục">
+      <div class="catalog-chips chips" role="group" aria-label="Chọn danh mục">
         <% if (!rc) { %>
           <a class="catalog-chip<%= !cc ? ' is-current' : '' %>" href="<%= chipHref('') %>">Tất cả</a>
           <% rootCats.forEach(function (cat) { %>
@@ -165,7 +165,7 @@
 
           <div class="catalog-results">
             <% if (items.length > 0) { %>
-              <div class="catalog-grid">
+              <div class="catalog-grid grid">
                 <% items.forEach(function (item) {
                   var cardProduct = {
                     name: item.name,
@@ -209,7 +209,11 @@
               <div class="empty-state">
                 <p class="empty-state-title">Không tìm thấy sản phẩm</p>
                 <p class="empty-state-text">Thử bỏ bớt bộ lọc hoặc khám phá toàn bộ danh mục của chúng tôi.</p>
-                <a href="/catalog" class="btn btn-primary">Xem tất cả sản phẩm</a>
+                <% if (rc) { %>
+                  <a href="<%= chipHref(rc.slug) %>" class="btn btn-primary">Tất cả đồ <%= rc.name %></a>
+                <% } else { %>
+                  <a href="<%= chipHref('') %>" class="btn btn-primary">Xem tất cả sản phẩm</a>
+                <% } %>
               </div>
             <% } %>
           </div>

@@ -240,12 +240,14 @@
       const type = el.getAttribute('data-type') || 'info';
       let message = el.getAttribute('data-message');
       if (!message) {
-        message = el.textContent || '';
+        message = (el.textContent || '').trim();
       }
       // Hide the flash element
       el.hidden = true;
-      // Show as toast
-      toast.show(message, { type });
+      // Show as toast when there is an actual message
+      if (message) {
+        toast.show(message, { type });
+      }
     });
   }
 

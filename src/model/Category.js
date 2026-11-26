@@ -36,6 +36,10 @@ const categorySchema = new mongoose.Schema(
         message: 'Thứ tự phải là số nguyên',
       },
     },
+    isVisible: {
+      type: Boolean,
+      default: true,
+    },
     isDeleted: {
       type: Boolean,
       default: false,

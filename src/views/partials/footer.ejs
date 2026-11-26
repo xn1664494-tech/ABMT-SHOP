@@ -1,7 +1,12 @@
 <footer class="site-footer" id="site-footer">
   <div class="container footer-inner">
     <%
-      var footerNav = (locals.navCategories && Array.isArray(locals.navCategories)) ? locals.navCategories : [];
+      var nestedFooter = (locals && locals.locals) ? locals.locals : {};
+      var footerNav = (typeof navCategories !== 'undefined' && Array.isArray(navCategories) && navCategories.length)
+        ? navCategories
+        : ((locals && Array.isArray(locals.navCategories) && locals.navCategories.length)
+          ? locals.navCategories
+          : ((Array.isArray(nestedFooter.navCategories) && nestedFooter.navCategories.length) ? nestedFooter.navCategories : []));
       var footerNam = footerNav.find(function (r) { return r.name === 'Nam'; });
       var footerNu = footerNav.find(function (r) { return r.name === 'Nữ'; });
       function footerCatHref(root, fallback) {

@@ -218,7 +218,7 @@ router.get('/catalog', asyncHandler(async (req, res, next) => {
     sort: q('sort'),
   };
 
-  const categories = await Category.find({ isDeleted: false }).sort({ order: 1, name: 1 }).lean();
+  const categories = await Category.find({ isDeleted: false, isVisible: { $ne: false } }).sort({ order: 1, name: 1 }).lean();
 
   const rootCategories = categories.filter(function (c) { return !c.parentId; });
   const categoriesById = new Map(categories.map(function (c) { return [c._id.toString(), c]; }));
@@ -230,7 +230,11 @@ router.get('/catalog', asyncHandler(async (req, res, next) => {
     : null;
 
   if (categoryParam && !currentCategory) {
-    return res.redirect(302, '/catalog');
+    return res.status(404).render('error', {
+      title: 'Danh mục không tồn tại',
+      statusCode: 404,
+      message: 'Danh mục bạn tìm không tồn tại hoặc đã bị ẩn.',
+    });
   }
 
   const data = await productService.list(filters, {});

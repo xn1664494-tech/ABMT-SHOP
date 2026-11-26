@@ -10,9 +10,9 @@ async function loadNavCategories() {
   const now = Date.now();
   if (cached && now - cachedAt < CACHE_TTL) return cached;
 
-  const all = await Category.find({ isDeleted: false })
+  const all = await Category.find({ isDeleted: false, isVisible: { $ne: false } })
     .sort({ order: 1, name: 1 })
-    .select('name slug parentId order')
+    .select('name slug parentId order isVisible')
     .lean();
 
   const byParent = new Map();
