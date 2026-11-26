@@ -91,6 +91,55 @@ const ensureCategoryValid = async (categoryId) => {
   return category;
 };
 
+/**
+ * Trừ kho điều kiện cho danh sách dòng hàng.
+ * items: Array<{ productId, variantSku, qty }>
+ * Dùng CAS variant (stock >= qty) để tránh oversell.
+ * Trả về { ok: true } nếu tất cả đều trừ thành công.
+ * Nếu bất kỳ dòng nào thiếu stock → ném ErrorResponse để caller có thể gọi restoreStock.
+ */
+async function decrementStock(items) {
+  for (const item of items || []) {
+    const updateResult = await Product.updateOne(
+      {
+        _id: item.productId,
+        'variants.sku': item.variantSku,
+        'variants.stock': { $gte: item.qty },
+      },
+      { $inc: { 'variants.$.stock': -item.qty } }
+    );
+    if (updateResult.modifiedCount === 0) {
+      // Hoàn các dòng đã trừ trước đó trước khi ném lỗi
+      for (const done of items) {
+        await Product.updateOne(
+          { _id: done.productId, 'variants.sku': done.variantSku },
+          { $inc: { 'variants.$.stock': done.qty } }
+        );
+      }
+      throw new ErrorResponse(
+        `Không đủ tồn kho cho SKU ${item.variantSku}`,
+        409
+      );
+    }
+  }
+  return { ok: true };
+}
+
+/**
+ * Hoàn kho cho danh sách dòng hàng.
+ * items: Array<{ productId, variantSku, qty }>
+ * Dùng khi hủy đơn hoặc rollback tạo đơn thất bại.
+ */
+async function restoreStock(items) {
+  for (const item of items || []) {
+    await Product.updateOne(
+      { _id: item.productId, 'variants.sku': item.variantSku },
+      { $inc: { 'variants.$.stock': item.qty } }
+    );
+  }
+  return { ok: true };
+}
+
 module.exports = {
   async list(filters = {}, options = {}) {
     // Validate toàn bộ tham số trước, kể cả khi slug danh mục không tồn tại.
@@ -215,4 +264,7 @@ module.exports = {
     await product.save();
     return product.toJSON();
   },
+
+  decrementStock,
+  restoreStock,
 };
