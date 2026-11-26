@@ -210,7 +210,7 @@
     const fallback = img.getAttribute('data-fallback');
     if (!fallback) return;
     img.dataset.fallbackApplied = '1';
-    img.src = fallback;
+    img.hidden = true;
   }
 
   function scanFailedImages() {

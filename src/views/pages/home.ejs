@@ -58,7 +58,7 @@
             </div>
           </div>
           <div class="hero-side">
-            <a class="hero-promo hero-promo--lilac" href="#section-new-men">
+            <a class="hero-promo hero-promo--lilac" href="/catalog?sort=newest&amp;new=1">
               <svg class="hero-promo-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3z"/></svg>
               <b>Sản phẩm mới</b>
               <span>Vừa lên kệ, xem ngay</span>
@@ -82,7 +82,7 @@
     <section id="section-shortcuts" class="section shortcuts-section" aria-label="Lối tắt">
       <div class="container">
         <div class="shortcuts-grid">
-          <a href="/catalog?sort=newest" class="shortcut-card">
+          <a href="/catalog?sort=newest&amp;new=1" class="shortcut-card">
             <span class="shortcut-icon">
               <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3z"/>
@@ -169,11 +169,11 @@
         <div class="container">
           <div class="section-head">
             <h2 class="section-title">Sản phẩm mới cho nam</h2>
-            <a href="<%= menCategory ? '/catalog?category=' + encodeURIComponent(menCategory.slug) + '&sort=newest' : '/catalog?sort=newest' %>" class="section-link">Xem tất cả ›</a>
+            <a href="<%= menCategory ? '/catalog?category=' + encodeURIComponent(menCategory.slug) + '&amp;sort=newest&amp;new=1' : '/catalog?sort=newest&amp;new=1' %>" class="section-link">Xem tất cả ›</a>
           </div>
           <div class="product-grid">
-            <% productsNewMen.forEach(function (product) { %>
-              <%- include('../partials/product-card', { product: product, badge: 'Mới' }) %>
+            <% productsNewMen.forEach(function (product, index) { %>
+              <%- include('../partials/product-card', { product: product, index: index }) %>
             <% }) %>
           </div>
         </div>
@@ -186,11 +186,11 @@
         <div class="container">
           <div class="section-head">
             <h2 class="section-title">Sản phẩm mới cho nữ</h2>
-            <a href="<%= womenCategory ? '/catalog?category=' + encodeURIComponent(womenCategory.slug) + '&sort=newest' : '/catalog?sort=newest' %>" class="section-link">Xem tất cả ›</a>
+            <a href="<%= womenCategory ? '/catalog?category=' + encodeURIComponent(womenCategory.slug) + '&amp;sort=newest&amp;new=1' : '/catalog?sort=newest&amp;new=1' %>" class="section-link">Xem tất cả ›</a>
           </div>
           <div class="product-grid">
-            <% productsNewWomen.forEach(function (product) { %>
-              <%- include('../partials/product-card', { product: product, badge: 'Mới' }) %>
+            <% productsNewWomen.forEach(function (product, index) { %>
+              <%- include('../partials/product-card', { product: product, index: index }) %>
             <% }) %>
           </div>
         </div>
@@ -219,8 +219,8 @@
                 </svg>
               </button>
               <div class="carousel-track" id="carousel-sale">
-                <% productsSale.forEach(function (product) { %>
-                  <%- include('../partials/product-card', { product: product, badge: 'Giảm giá' }) %>
+                <% productsSale.forEach(function (product, index) { %>
+                  <%- include('../partials/product-card', { product: product, index: index }) %>
                 <% }) %>
               </div>
               <button type="button" class="carousel-arrow carousel-arrow--next" aria-label="Xem tiếp" data-carousel-next>

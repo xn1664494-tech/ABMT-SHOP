@@ -1,17 +1,21 @@
 const Category = require('../model/Category');
 const Product = require('../model/Products');
 
-const PLACEHOLDER = '/images/placeholder/product.svg';
+const presentation = require('../utils/productPresentation');
 
-const buildCard = (product) => {
+const buildCard = (product, categorySlug = '') => {
   const variants = Array.isArray(product.variants) ? product.variants : [];
   const totalStock = variants.reduce((sum, v) => sum + (Number(v.stock) || 0), 0);
+  const sellingPrice = presentation.getSellingPrice(product);
+  const listPrice = presentation.getListPrice(product);
   return {
     name: product.name,
     slug: product.slug,
-    image: (Array.isArray(product.images) && product.images[0]) || PLACEHOLDER,
-    price: Number(product.basePrice) || 0,
-    salePrice: null,
+    image: (Array.isArray(product.images) && product.images[0]) || '',
+    categorySlug,
+    price: listPrice,
+    salePrice: sellingPrice < listPrice ? sellingPrice : null,
+    isNew: presentation.isNewProduct(product),
     outOfStock: totalStock <= 0,
   };
 };
@@ -30,11 +34,11 @@ const getRootChildren = async (rootSlug) => {
 const getNewProducts = async (categoryIds, limit = 4) => {
   if (!categoryIds.length) return [];
   const products = await Product.find({ isDeleted: false, isActive: true, category: { $in: categoryIds } })
-    .select('name slug images basePrice variants')
+    .select('name slug images basePrice variants createdAt category')
     .sort({ createdAt: -1, _id: -1 })
     .limit(limit)
     .lean();
-  return products.map(buildCard);
+  return products.map((product) => buildCard(product, String(product.category || '')));
 };
 
 const getFallback = () => ({
@@ -58,11 +62,18 @@ const HomeController = {
         getRootChildren('nam'),
         getRootChildren('nu'),
         Product.find({ isDeleted: false, isActive: true })
-          .select('name slug images basePrice variants createdAt')
+          .select('name slug images basePrice variants createdAt category')
           .sort({ createdAt: -1, _id: -1 })
           .limit(8)
           .lean(),
       ]);
+      const saleProducts = await Product.find({ isDeleted: false, isActive: true })
+        .select('name slug images basePrice variants createdAt category')
+        .lean();
+      const saleCards = saleProducts
+        .filter((product) => presentation.isSaleProduct(product))
+        .slice(0, 8)
+        .map((product) => buildCard(product, String(product.category || '')));
 
       const [productsNewMen, productsNewWomen] = await Promise.all([
         getNewProducts(men.categoryIds, 4),
@@ -89,14 +100,14 @@ const HomeController = {
         });
       }
 
-      const bestCards = latest.map(buildCard);
+      const bestCards = latest.map((product) => buildCard(product, String(product.category || '')));
       res.render('pages/home', {
         title: 'ABMT SHOP - Trang chủ',
         vouchers: fallback.vouchers,
         categories,
         productsNewMen,
         productsNewWomen,
-        productsSale: [],
+        productsSale: saleCards,
         productsBestSeller: bestCards,
       });
     } catch (error) {

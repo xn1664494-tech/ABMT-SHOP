@@ -1,15 +1,18 @@
 ﻿<%
   const cardBadge = typeof badge !== 'undefined' ? badge : null;
   const cardRank = typeof rank !== 'undefined' ? rank : null;
+  const salePrice = product.salePrice ? Number(product.salePrice) : 0;
+  const displayBadge = salePrice ? 'Giảm giá' : (product.isNew ? 'Mới' : cardBadge);
+  const displayBadgeClass = displayBadge === 'Giảm giá' ? 'badge-sale' : 'badge-new';
 %>
 <article class="product-card pc" id="product-<%= product.slug %>">
   <a href="/products/<%= product.slug %>" class="product-link">
-    <div class="product-thumb im3<%= cardBadge || cardRank || product.outOfStock ? ' has-badge' : '' %>">
-      <img src="<%= product.image %>" alt="<%= product.name %>" loading="lazy" decoding="async" width="300" height="400" data-fallback="/images/placeholder/product.svg">
+    <div class="product-thumb im3<%= displayBadge || cardRank || product.outOfStock ? ' has-badge' : '' %>">
+      <%- include('./product-art', { product: product, index: typeof index !== 'undefined' ? index : 0 }) %>
       <% if (product.outOfStock) { %>
         <span class="badge badge-sale bd">Hết hàng</span>
-      <% } else if (cardBadge) { %>
-        <span class="badge <%= cardBadge === 'Giảm giá' ? 'badge-sale' : 'badge-new' %> bd"><%= cardBadge %></span>
+      <% } else if (displayBadge) { %>
+        <span class="badge <%= displayBadgeClass %> bd"><%= displayBadge %></span>
       <% } %>
       <% if (cardRank) { %>
         <span class="badge badge-count<%= cardRank <= 3 ? ' is-top' : '' %> bd"><%= cardRank %></span>
@@ -18,11 +21,11 @@
     <div class="product-info">
       <h3 class="product-name pt"><%= product.name %></h3>
       <div class="product-price pp">
-        <% if (product.salePrice) { %>
-          <span class="price-current"><%= product.salePrice.toLocaleString('vi-VN') %>₫</span>
-          <span class="price-old"><%= product.price.toLocaleString('vi-VN') %>₫</span>
+        <% if (salePrice) { %>
+          <span class="price-current"><%= salePrice.toLocaleString('vi-VN') %>₫</span>
+          <span class="price-old"><%= Number(product.price || 0).toLocaleString('vi-VN') %>₫</span>
         <% } else { %>
-          <span class="price-current"><%= product.price.toLocaleString('vi-VN') %>₫</span>
+          <span class="price-current"><%= Number(product.price || 0).toLocaleString('vi-VN') %>₫</span>
         <% } %>
       </div>
     </div>

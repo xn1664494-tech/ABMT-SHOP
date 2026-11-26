@@ -47,9 +47,7 @@
               var product = item.product || {};
               var productName = product.name || item.sku || 'Sản phẩm';
               var productSlug = product.slug || '';
-              var productImage = Array.isArray(product.images) && product.images[0]
-                ? product.images[0]
-                : '/images/placeholder/product.svg';
+              var productImage = Array.isArray(product.images) && product.images[0] ? product.images[0] : '';
               var variants = Array.isArray(product.variants) ? product.variants : [];
               var variant = variants.find(function (v) { return v.sku === item.sku; });
               var maxStock = variant ? Number(variant.stock) || 0 : 0;
@@ -58,7 +56,7 @@
             %>
               <article class="cart-line" data-item-id="<%= itemId %>" data-sku="<%= item.sku %>">
                 <div class="cart-thumb">
-                  <img src="<%= productImage %>" alt="<%= productName %>" width="150" height="200" loading="lazy" decoding="async">
+                  <%- include('../partials/product-art', { product: { name: productName, image: productImage, category: product.category }, index: 0 }) %>
                 </div>
                 <div class="cart-line-main">
                   <h2 class="cart-line-name">

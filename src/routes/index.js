@@ -9,6 +9,8 @@ const CartService = require('../services/CartService');
 const asyncHandler = require('../utils/asyncHandler');
 const ErrorResponse = require('../utils/appError');
 const { getFlash } = require('../utils/flash');
+const { ensureCartItemIds } = require('../utils/cartItems');
+const presentation = require('../utils/productPresentation');
 
 const router = express.Router();
 
@@ -176,10 +178,56 @@ router.get('/catalog', asyncHandler(async (req, res, next) => {
     limit: q('limit'),
     sort: q('sort'),
   };
+  const isNewPage = filters.sort === 'newest' || q('new') === '1';
+
+  const catalogProducts = await Product.find({ isDeleted: false, isActive: true })
+    .select('variants basePrice createdAt category')
+    .lean();
+  const sellingPrices = catalogProducts.map((item) => presentation.getSellingPrice(item));
+  const rawFloor = sellingPrices.length ? Math.min(...sellingPrices) : 0;
+  const rawCeil = sellingPrices.length ? Math.max(...sellingPrices) : 0;
+  const roundDown = (value) => Math.floor(value / 10000) * 10000;
+  const roundUp = (value) => Math.ceil(value / 10000) * 10000;
+  const priceBounds = { min: roundDown(rawFloor), max: roundUp(rawCeil) };
+
+  const parsePriceInput = (value, fallback) => {
+    if (value === '' || value === undefined) return fallback;
+    const number = Number(String(value).replace(/[^\d]/g, ''));
+    return Number.isFinite(number) ? number : fallback;
+  };
+  let requestedMin = parsePriceInput(filters.minPrice, null);
+  let requestedMax = parsePriceInput(filters.maxPrice, null);
+  if (requestedMin !== null && requestedMax !== null && requestedMin > requestedMax) {
+    const swap = requestedMin;
+    requestedMin = requestedMax;
+    requestedMax = swap;
+  }
+  filters.minPrice = requestedMin === null ? '' : String(requestedMin);
+  filters.maxPrice = requestedMax === null ? '' : String(requestedMax);
+
+  if (requestedMin !== null || requestedMax !== null) {
+    const matchedIds = catalogProducts
+      .filter((item) => {
+        const price = presentation.getSellingPrice(item);
+        return (requestedMin === null || price >= requestedMin)
+          && (requestedMax === null || price <= requestedMax);
+      })
+      .map((item) => item._id);
+    filters.priceIds = matchedIds;
+  }
 
   const categories = await Category.find({ isDeleted: false, isVisible: { $ne: false } }).sort({ order: 1, name: 1 }).lean();
 
-  const rootCategories = categories.filter(function (c) { return !c.parentId; });
+  const rootCategories = categories
+    .filter(function (c) { return !c.parentId; })
+    .map(function (c) {
+      return {
+        ...c,
+        children: categories.filter(function (child) {
+          return child.parentId && child.parentId.toString() === c._id.toString();
+        }),
+      };
+    });
   const categoriesById = new Map(categories.map(function (c) { return [c._id.toString(), c]; }));
   const categoryParam = filters.category;
   const currentCategory = categoryParam
@@ -208,11 +256,29 @@ router.get('/catalog', asyncHandler(async (req, res, next) => {
         })
         .sort(function (a, b) { return (a.order || 0) - (b.order || 0); })
     : [];
-  const catalogTitle = currentCategory ? 'Thời trang ' + currentCategory.name : 'Danh sách sản phẩm';
+  const catalogTitle = isNewPage
+    ? 'Sản phẩm mới'
+    : (currentCategory ? 'Thời trang ' + currentCategory.name : 'Danh sách sản phẩm');
 
-  const allProducts = await Product.find({ isDeleted: false, isActive: true }).select('variants basePrice').lean();
-  const sizes = [...new Set(allProducts.flatMap((p) => (p.variants || []).map((v) => v.size)).filter(Boolean))].sort();
-  const colors = [...new Set(allProducts.flatMap((p) => (p.variants || []).map((v) => v.color)).filter(Boolean))].sort();
+  const sizes = [...new Set(catalogProducts.flatMap((p) => (p.variants || []).map((v) => v.size)).filter(Boolean))].sort();
+  const colors = [...new Set(catalogProducts.flatMap((p) => (p.variants || []).map((v) => v.color)).filter(Boolean))].sort();
+  const categoryNameById = new Map(categories.map((c) => [c._id.toString(), c.slug]));
+  const cardProducts = data.items.map((item) => {
+    const sellingPrice = presentation.getSellingPrice(item);
+    const listPrice = presentation.getListPrice(item);
+    const salePrice = sellingPrice < listPrice ? sellingPrice : null;
+    return {
+      name: item.name,
+      slug: item.slug,
+      image: (item.images && item.images[0]) || '',
+      categorySlug: categoryNameById.get(String(item.category)) || '',
+      price: listPrice,
+      salePrice,
+      isNew: presentation.isNewProduct(item),
+      createdAt: item.createdAt,
+      outOfStock: item.inStock === false,
+    };
+  });
 
   let cartCount = 0;
   if (res.locals.currentUser) {
@@ -236,10 +302,12 @@ router.get('/catalog', asyncHandler(async (req, res, next) => {
     childCategories,
     sizes,
     colors,
-    products: data.items,
+    products: cardProducts,
     pagination: data.pagination,
     currentPage: data.pagination.page,
     totalPages: data.pagination.totalPages,
+    priceBounds,
+    isNewPage,
     flash,
     locals: {
       category: filters.category,
@@ -249,8 +317,9 @@ router.get('/catalog', asyncHandler(async (req, res, next) => {
       inStock: filters.inStock,
       keyword: filters.keyword,
       q: filters.keyword,
-      price_min: filters.minPrice,
-      price_max: filters.maxPrice,
+      price_min: requestedMin === null ? '' : String(requestedMin),
+      price_max: requestedMax === null ? '' : String(requestedMax),
+      new: q('new'),
       flash,
     },
     sortBy: filters.sort || 'newest',
