@@ -671,6 +671,112 @@ test('GET /api/products loc theo category, khoang gia, keyword, inStock', async 
   await otherCategory.deleteOne();
 });
 
+test('T4-2-2: phan trang, gioi han limit va sap xep qua API', async (t) => {
+  if (skipIfUnavailable(t)) return;
+
+  const totalToCreate = 23;
+  const docs = [];
+  for (let index = 0; index < totalToCreate; index += 1) {
+    docs.push({
+      name: `${MARKER} Pagination ${String(index).padStart(2, '0')}`,
+      description: 'San pham kiem thu phan trang',
+      category: categoryId,
+      basePrice: 100000 + index * 1000,
+      variants: [
+        {
+          size: 'M',
+          color: 'Đen',
+          sku: SKU(100 + index, 'M', 'DEN'),
+          stock: 5,
+        },
+      ],
+    });
+  }
+  await Product.insertMany(docs);
+
+  const keyword = `${MARKER} Pagination`;
+  const base = (query) =>
+    agent.get('/api/products').query({ keyword, category: categoryId, ...query });
+
+  const page1 = await base({ page: 1, limit: 5 });
+  assert.equal(page1.statusCode, 200);
+  const pg1 = page1.body.data.pagination;
+  assert.equal(pg1.page, 1);
+  assert.equal(pg1.limit, 5);
+  assert.equal(pg1.total, totalToCreate);
+  assert.equal(pg1.totalPages, Math.ceil(totalToCreate / 5));
+  assert.equal(page1.body.data.items.length, 5);
+
+  const page2 = await base({ page: 2, limit: 5 });
+  assert.equal(page2.statusCode, 200);
+  assert.equal(page2.body.data.items.length, 5);
+  const idsPage1 = page1.body.data.items.map((item) => item.id);
+  const idsPage2 = page2.body.data.items.map((item) => item.id);
+  assert.ok(
+    idsPage2.every((id) => !idsPage1.includes(id)),
+    'trang 2 khong duoc trung san pham voi trang 1',
+  );
+
+  const capped = await base({ limit: 999 });
+  assert.equal(capped.statusCode, 200);
+  assert.equal(capped.body.data.pagination.limit, 100);
+
+  const asc = await base({ sort: 'price_asc', limit: 100 });
+  const ascPrices = asc.body.data.items.map((item) => item.basePrice);
+  for (let i = 1; i < ascPrices.length; i += 1) {
+    assert.ok(ascPrices[i] >= ascPrices[i - 1], 'price_asc phai tang dan');
+  }
+
+  const desc = await base({ sort: 'price_desc', limit: 100 });
+  const descPrices = desc.body.data.items.map((item) => item.basePrice);
+  for (let i = 1; i < descPrices.length; i += 1) {
+    assert.ok(descPrices[i] <= descPrices[i - 1], 'price_desc phai giam dan');
+  }
+
+  const badPage = await base({ page: 0 });
+  assert.equal(badPage.statusCode, 400);
+  assert.equal(badPage.body.success, false);
+
+  const badSort = await base({ sort: 'khong_hop_le' });
+  assert.equal(badSort.statusCode, 400);
+  assert.equal(badSort.body.success, false);
+
+  await Product.deleteMany({ name: { $regex: `^${MARKER} Pagination` } });
+});
+
+test('GET /catalog render trang danh sach khong loi', async (t) => {
+  if (skipIfUnavailable(t)) return;
+
+  const res = await agent.get('/catalog');
+
+  assert.equal(res.statusCode, 200);
+  assert.match(res.text, /Danh sách sản phẩm/);
+});
+
+test('GET /products/:slug render trang chi tiet khong loi', async (t) => {
+  if (skipIfUnavailable(t)) return;
+
+  const doc = await Product.findById(productId).lean();
+  assert.ok(doc && doc.slug);
+
+  const res = await agent.get(`/products/${doc.slug}`);
+
+  assert.equal(res.statusCode, 200);
+  assert.ok(res.text.includes(doc.name));
+});
+
+test('T3-2-1: khong xoa duoc danh muc khi con san pham', async (t) => {
+  if (skipIfUnavailable(t)) return;
+
+  const res = await agent
+    .delete(`/api/categories/${categoryId}`)
+    .set(authHeader(adminToken))
+    .set(csrfHeader());
+
+  assert.equal(res.statusCode, 409);
+  assert.equal(res.body.success, false);
+});
+
 test('T4-4-3: DELETE /api/products/:id chua dang nhap tra 401', async (t) => {
   if (skipIfUnavailable(t)) return;
 

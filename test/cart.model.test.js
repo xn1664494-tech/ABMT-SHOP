@@ -161,6 +161,12 @@ test('T2-2-1: Cart co index unique partial va TTL 30 ngay', () => {
   );
 });
 
+test('T5-4-1: moi dong gio hang co _id de cap nhat/xoa', () => {
+  const doc = base();
+
+  assert.ok(doc.items[0]._id, 'thieu _id cho cart item');
+});
+
 test('T2-2-1: toJSON an _id, __v va giu du lieu gio hang', async () => {
   const doc = base();
   await doc.validate();

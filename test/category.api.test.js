@@ -209,6 +209,29 @@ test('GET /api/categories/tree tra cay danh muc', async (t) => {
   assert.ok(root.children.some((c) => c.id === childId));
 });
 
+test('GET /api/categories list/tree khong lo truong noi bo', async (t) => {
+  if (skipIfUnavailable(t)) return;
+
+  const list = await agent.get('/api/categories');
+  assert.equal(list.statusCode, 200);
+  const listRoot = list.body.data.find((c) => c.id === parentId);
+  assert.ok(listRoot);
+
+  const tree = await agent.get('/api/categories/tree');
+  assert.equal(tree.statusCode, 200);
+  const treeRoot = tree.body.data.find((c) => c.id === parentId);
+  assert.ok(treeRoot);
+  const treeChild = treeRoot.children.find((c) => c.id === childId);
+  assert.ok(treeChild);
+
+  for (const node of [listRoot, treeRoot, treeChild]) {
+    assert.ok(!('_id' in node), 'khong duoc lo _id');
+    assert.ok(!('isDeleted' in node), 'khong duoc lo isDeleted');
+    assert.ok(!('deletedAt' in node), 'khong duoc lo deletedAt');
+    assert.ok(!('__v' in node), 'khong duoc lo __v');
+  }
+});
+
 test('GET /api/categories/:id chi tiet', async (t) => {
   if (skipIfUnavailable(t)) return;
   const res = await agent.get(`/api/categories/${childId}`);
