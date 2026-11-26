@@ -111,3 +111,20 @@ Chạy dự kiến: `node --test test/cancel-overdue-orders.test.js` với fake 
 - T6-1-1 xong và có route/caller thật.
 - T5-1-2 có `assertTransition` chạy được.
 - Mục 6 được trả lời đủ; nếu chưa, chỉ giữ tài liệu này, không code job.
+
+---
+
+## 8. Dev 1 đã chốt (2026-11-26)
+
+| Chốt | Giá trị |
+|---|---|
+| TTL | **2 giờ = 7.200.000 ms** (`ORDER_PENDING_TTL_MS`) |
+| Điều kiện hủy | Chỉ `status='pending'` **và** `paymentStatus='unpaid'` và `expiresAt <= now` |
+| Paid/refunded | **Không bao giờ** tự hủy |
+| dryRun | Chỉ log, **không mutate**; scheduled job phải set rõ `DRY_RUN=false` |
+| Thời gian | UTC ISO; không dùng giờ local để so sánh |
+| Cron | **Ưu tiên external scheduler** gọi endpoint có secret (tránh thêm dep); nếu in-process `node-cron` thì cần phê duyệt dependency |
+| Actor | `system`/scheduler, đi qua `assertTransition` của T5-1-2 |
+| Chưa chốt | Đầu mối hoàn kho duy nhất (Dev 1 T6-1-3 vs Dev 2 T6-2-2), marker `stockRestoredAt`, auth của endpoint system, transaction hay CAS+retry |
+
+=> Chỉ giữ tài liệu này cho đến khi Dev 2 trả lời mục 6; Dev 1 không thêm dependency, không sửa CI, không đụng `Products.js`.
