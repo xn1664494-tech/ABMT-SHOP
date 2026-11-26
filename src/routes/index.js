@@ -9,6 +9,7 @@ const { ACCESS_COOKIE, verifyToken } = require('../services/tokenService');
 const { calculateShippingFee } = require('../model/Order');
 const asyncHandler = require('../utils/asyncHandler');
 const ErrorResponse = require('../utils/appError');
+const { ensureCartItemIds } = require('../utils/cartItems');
 
 const router = express.Router();
 
@@ -135,6 +136,7 @@ router.get('/profile', (req, res) => {
 
 // Trang giỏ hàng (HTML)
 router.get('/cart', asyncHandler(async (req, res, next) => {
+  res.set('Cache-Control', 'no-store');
   const cartId = getCartId(req);
   let cart = await Cart.findOne({ sessionId: cartId });
 
@@ -147,7 +149,7 @@ router.get('/cart', asyncHandler(async (req, res, next) => {
           { sessionId: cartId },
           { $set: { user: res.locals.currentUser.id, sessionId: null, expiresAt: null } }
         );
-        cart = await Cart.findOne({ sessionId: cartId });
+        cart = await Cart.findOne({ user: res.locals.currentUser.id });
       } else {
         // Gộp items từ guest cart vào user cart
         const existingSkus = new Set((userCart.items || []).map((i) => i.sku));
@@ -164,7 +166,14 @@ router.get('/cart', asyncHandler(async (req, res, next) => {
     cart = userCart || cart;
   }
 
-  const items = cart ? cart.items : [];
+  if (cart && ensureCartItemIds(cart)) {
+    await cart.save();
+  }
+
+  const viewCart = cart
+    ? await Cart.findOne({ _id: cart._id }).populate('items.product', 'name slug images variants')
+    : null;
+  const items = viewCart ? viewCart.items : [];
   const { subtotal, shippingFee, total, count } = calcCartSummary(items);
 
   res.render('pages/cart', {
