@@ -89,6 +89,8 @@ test('T5-4-1: cap nhat vuot ton kho bi tu choi', async () => {
 
   assert.equal(res.status, 409);
   assert.equal(res.body.success, false);
+  assert.match(res.body.error, /SP-AO-001-M-DEN/);
+  assert.match(res.body.error, /còn 5/);
 });
 
 test('T5-4-1: xoa dong gio hang bang item _id', async () => {
@@ -134,6 +136,8 @@ test('T5-4-3: them san pham vuot ton kho bi tu choi', async () => {
 
   assert.equal(res.status, 409);
   assert.equal(res.body.success, false);
+  assert.match(res.body.error, /SP-AO-001-M-DEN/);
+  assert.match(res.body.error, /còn 5/);
   assert.equal(cartModel.carts[0].items.length, 0);
 });
 

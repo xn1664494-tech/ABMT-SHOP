@@ -86,10 +86,19 @@ const refreshItemPrices = async (items = []) => {
 /**
  * Gộp giỏ khách (guest) vào giỏ user, cộng dồn số lượng theo SKU,
  * kiểm tra tồn kho và làm mới đơn giá từ DB. Sau khi gộp sẽ xóa giỏ guest.
- * Ném 409 nếu tổng số lượng vượt tồn kho.
+ * - onOverflow='throw' (mặc định): ném 409 khi vượt tồn kho (dùng cho API).
+ * - onOverflow='clamp': cắt số lượng về mức tồn kho tối đa và gắn cờ
+ *   userCart.mergeAdjusted để tầng web hiển thị flash (dùng cho trang HTML).
  */
-const mergeGuestIntoUser = async (userCart, guestCart, res) => {
+const mergeGuestIntoUser = async (
+  userCart,
+  guestCart,
+  res,
+  { onOverflow = 'throw' } = {},
+) => {
   if (!userCart || !guestCart) return userCart;
+
+  const clamp = onOverflow === 'clamp';
 
   for (const guestItem of guestCart.items || []) {
     const product = await Product.findById(guestItem.product);
@@ -98,34 +107,59 @@ const mergeGuestIntoUser = async (userCart, guestCart, res) => {
         ? (product.variants || []).find((v) => v.sku === guestItem.sku)
         : null;
 
+    // Bỏ qua dòng không còn bán được: sản phẩm/biến thể đã xóa hoặc ngừng bán.
+    if (!product || product.isDeleted || product.isActive === false || !variant) {
+      continue;
+    }
+
     const idx = (userCart.items || []).findIndex(
       (item) => item.sku === guestItem.sku,
     );
 
     if (idx >= 0) {
       const existingItem = userCart.items[idx];
-      const newQty = existingItem.qty + guestItem.qty;
+      const desiredQty = existingItem.qty + guestItem.qty;
 
-      if (variant && newQty > variant.stock) {
-        throw new ErrorResponse(
-          `Vượt quá tồn kho cho SKU ${guestItem.sku} (còn ${variant.stock})`,
-          409,
-        );
+      if (desiredQty > variant.stock) {
+        if (!clamp) {
+          throw new ErrorResponse(
+            `Vượt quá tồn kho cho SKU ${guestItem.sku} (${variant.size}/${variant.color}) — còn ${variant.stock}, giỏ khách ${guestItem.qty}`,
+            409,
+          );
+        }
+
+        const allowed = Math.max(0, variant.stock - existingItem.qty);
+        const addQty = Math.min(guestItem.qty, allowed);
+        if (addQty < guestItem.qty) userCart.mergeAdjusted = true;
+        if (addQty > 0) existingItem.qty = existingItem.qty + addQty;
+      } else {
+        existingItem.qty = desiredQty;
       }
 
-      existingItem.qty = newQty;
-      if (variant) {
-        existingItem.unitPrice =
-          variant.price != null ? variant.price : product.basePrice;
-      }
+      existingItem.unitPrice =
+        variant.price != null ? variant.price : product.basePrice;
       existingItem.mergedAt = new Date();
       existingItem.mergedFrom = 'guest';
     } else {
-      const unitPrice = variant
-        ? variant.price != null
-          ? variant.price
-          : product.basePrice
-        : guestItem.unitPrice || 0;
+      let qty = guestItem.qty;
+
+      if (guestItem.qty > variant.stock) {
+        if (!clamp) {
+          throw new ErrorResponse(
+            `Vượt quá tồn kho cho SKU ${guestItem.sku} (${variant.size}/${variant.color}) — còn ${variant.stock}, giỏ khách ${guestItem.qty}`,
+            409,
+          );
+        }
+
+        qty = variant.stock;
+        userCart.mergeAdjusted = true;
+      }
+
+      // Bỏ dòng hết hàng khi đang clamp (không thể thêm vào giỏ).
+      if (clamp && qty <= 0) continue;
+
+      const unitPrice =
+        variant.price != null ? variant.price : product.basePrice;
 
       userCart.items.push({
         ...(guestItem._id ? { _id: guestItem._id } : {}),
@@ -133,7 +167,7 @@ const mergeGuestIntoUser = async (userCart, guestCart, res) => {
         sku: guestItem.sku,
         size: guestItem.size,
         color: guestItem.color,
-        qty: guestItem.qty,
+        qty,
         unitPrice,
         mergedAt: new Date(),
         mergedFrom: 'guest',
@@ -150,16 +184,20 @@ const mergeGuestIntoUser = async (userCart, guestCart, res) => {
 
 /**
  * Xác định giỏ hàng cho request hiện tại.
- * - User đã đăng nhập: ưu tiên giỏ user; nếu chưa có thì chuyển giỏ guest sang user;
- *   nếu đã có cả hai thì gộp giỏ guest vào giỏ user.
+ * - User đã đăng nhập: ưu tiên giỏ user; nếu chưa có thì chuyển giỏ guest sang user.
  * - Khách vãng lai: dùng giỏ theo cartId cookie.
  * - createIfMissing: tạo giỏ mới khi chưa có (kèm set cookie với khách).
+ * - mergeOnConflict: xử lý khi có cả giỏ user và giỏ guest:
+ *   'none' (mặc định) giữ nguyên chờ /merge tường minh;
+ *   'throw' gộp và ném 409 nếu vượt kho;
+ *   'clamp' gộp và cắt số lượng về tồn kho tối đa (cho trang HTML).
  */
 const resolveCartForRequest = async ({
   userId = null,
   cartId = null,
   createIfMissing = false,
   res = null,
+  mergeOnConflict = 'none',
 } = {}) => {
   let effectiveCartId = cartId;
   let cart = null;
@@ -182,7 +220,11 @@ const resolveCartForRequest = async ({
       if (res) res.clearCookie('cartId');
       cart = guestCart;
     } else if (cart && guestCart) {
-      cart = await mergeGuestIntoUser(cart, guestCart, res);
+      if (mergeOnConflict === 'throw' || mergeOnConflict === 'clamp') {
+        cart = await mergeGuestIntoUser(cart, guestCart, res, {
+          onOverflow: mergeOnConflict,
+        });
+      }
     }
   } else if (!cart && guestCart) {
     cart = guestCart;

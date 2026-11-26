@@ -8,7 +8,7 @@
 </head>
 <body>
   <%- include('../partials/header') %>
-  <div data-flash data-type="info" hidden></div>
+  <%- include('../partials/flash') %>
   <%
     var L = (locals && locals.locals) ? locals.locals : (locals || {});
     var lines = Array.isArray(L.lines) ? L.lines : [];
