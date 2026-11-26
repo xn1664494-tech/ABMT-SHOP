@@ -107,6 +107,11 @@ const mergeGuestIntoUser = async (
         ? (product.variants || []).find((v) => v.sku === guestItem.sku)
         : null;
 
+    // Bỏ qua dòng không còn bán được: sản phẩm/biến thể đã xóa hoặc ngừng bán.
+    if (!product || product.isDeleted || product.isActive === false || !variant) {
+      continue;
+    }
+
     const idx = (userCart.items || []).findIndex(
       (item) => item.sku === guestItem.sku,
     );
@@ -115,10 +120,10 @@ const mergeGuestIntoUser = async (
       const existingItem = userCart.items[idx];
       const desiredQty = existingItem.qty + guestItem.qty;
 
-      if (variant && desiredQty > variant.stock) {
+      if (desiredQty > variant.stock) {
         if (!clamp) {
           throw new ErrorResponse(
-            `Vượt quá tồn kho cho SKU ${guestItem.sku} (còn ${variant.stock})`,
+            `Vượt quá tồn kho cho SKU ${guestItem.sku} (${variant.size}/${variant.color}) — còn ${variant.stock}, giỏ khách ${guestItem.qty}`,
             409,
           );
         }
@@ -131,28 +136,30 @@ const mergeGuestIntoUser = async (
         existingItem.qty = desiredQty;
       }
 
-      if (variant) {
-        existingItem.unitPrice =
-          variant.price != null ? variant.price : product.basePrice;
-      }
+      existingItem.unitPrice =
+        variant.price != null ? variant.price : product.basePrice;
       existingItem.mergedAt = new Date();
       existingItem.mergedFrom = 'guest';
     } else {
       let qty = guestItem.qty;
 
-      if (variant) {
-        qty = Math.min(guestItem.qty, variant.stock);
-        if (qty !== guestItem.qty) userCart.mergeAdjusted = true;
+      if (guestItem.qty > variant.stock) {
+        if (!clamp) {
+          throw new ErrorResponse(
+            `Vượt quá tồn kho cho SKU ${guestItem.sku} (${variant.size}/${variant.color}) — còn ${variant.stock}, giỏ khách ${guestItem.qty}`,
+            409,
+          );
+        }
+
+        qty = variant.stock;
+        userCart.mergeAdjusted = true;
       }
 
       // Bỏ dòng hết hàng khi đang clamp (không thể thêm vào giỏ).
-      if (clamp && variant && qty <= 0) continue;
+      if (clamp && qty <= 0) continue;
 
-      const unitPrice = variant
-        ? variant.price != null
-          ? variant.price
-          : product.basePrice
-        : guestItem.unitPrice || 0;
+      const unitPrice =
+        variant.price != null ? variant.price : product.basePrice;
 
       userCart.items.push({
         ...(guestItem._id ? { _id: guestItem._id } : {}),

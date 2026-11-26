@@ -92,7 +92,12 @@ router.post(
       return next(new ErrorResponse('Số lượng không hợp lệ', 400));
     }
     if (qtyNum > variant.stock) {
-      return next(new ErrorResponse(`Chỉ còn ${variant.stock} sản phẩm trong kho`, 409));
+      return next(
+        new ErrorResponse(
+          `Biến thể ${variant.sku} (${variant.size}/${variant.color}) chỉ còn ${variant.stock} (bạn thêm ${qtyNum})`,
+          409,
+        ),
+      );
     }
 
     const sku = variant.sku;
@@ -105,7 +110,12 @@ router.post(
     if (existingIdx >= 0) {
       const newQty = cart.items[existingIdx].qty + qtyNum;
       if (newQty > variant.stock) {
-        return next(new ErrorResponse(`Vượt quá tồn kho (còn ${variant.stock})`, 409));
+        return next(
+          new ErrorResponse(
+            `Tổng số lượng vượt tồn kho cho SKU ${variant.sku} (${variant.size}/${variant.color}) — còn ${variant.stock}, hiện có ${cart.items[existingIdx].qty}, thêm ${qtyNum}`,
+            409,
+          ),
+        );
       }
       cart.items[existingIdx].qty = newQty;
       cart.items[existingIdx].unitPrice =
@@ -161,10 +171,23 @@ router.put(
     const item = cart.items[itemIdx];
 
     const productObj = await Product.findById(item.product);
-    const variant = (productObj && productObj.variants) ? productObj.variants.find((v) => v.sku === item.sku) : null;
-    const maxStock = variant ? variant.stock : 0;
-    if (qtyNum > maxStock) {
-      return next(new ErrorResponse(`Vượt quá tồn kho (còn ${maxStock})`, 409));
+    if (!productObj || productObj.isDeleted || productObj.isActive === false) {
+      return next(new ErrorResponse('Sản phẩm không tồn tại', 404));
+    }
+
+    const variant = (productObj.variants || []).find(
+      (v) => v.sku === item.sku
+    );
+    if (!variant) {
+      return next(new ErrorResponse('Biến thể không tồn tại', 404));
+    }
+    if (qtyNum > variant.stock) {
+      return next(
+        new ErrorResponse(
+          `Biến thể ${variant.sku} (${variant.size}/${variant.color}) vượt quá tồn kho (còn ${variant.stock}, yêu cầu ${qtyNum})`,
+          409,
+        ),
+      );
     }
 
     item.qty = qtyNum;
