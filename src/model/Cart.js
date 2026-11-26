@@ -36,6 +36,17 @@ const cartItemSchema = new mongoose.Schema(
         message: 'Đơn giá trong giỏ hàng phải là số nguyên (VND)',
       },
     },
+    // Thời điểm dòng hàng được gộp từ giỏ khách sau khi đăng nhập.
+    mergedAt: {
+      type: Date,
+      default: null,
+    },
+    // Nguồn gộp của dòng hàng (hiện tại là 'guest').
+    mergedFrom: {
+      type: String,
+      trim: true,
+      default: null,
+    },
   },
   { _id: true },
 );
