@@ -13,7 +13,7 @@ const bcrypt = require('bcryptjs');
 const { buildSku } = require('../src/utils/sku');
 
 const SEED_EMAILS = [
-  'seed.admin@urbanminimal.test',
+  'admin@gmail.com',
 ];
 const SEED_SLUGS = [
   'nam', 'nu',
@@ -31,7 +31,7 @@ const SEED_SKUS = [
   'SP-QU-007-M-XANH', 'SP-QU-008-L-DEN',
 ];
 
-const SEED_ADMIN_PASSWORD = 'Admin@123456';
+const SEED_ADMIN_PASSWORD = 'admin123';
 
 const CATEGORIES = [
   { name: 'Nam', order: 1, children: [
