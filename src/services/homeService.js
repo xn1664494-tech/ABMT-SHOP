@@ -9,6 +9,23 @@ const DELIVERED_STATUS = 'delivered';
 const BEST_SELLER_RANGE_DAYS = 30;
 const MAX_NAV_CHILDREN = 6;
 
+// Chuẩn hóa URL ảnh thẻ sản phẩm: luôn trả về đường dẫn dùng được.
+const normalizeImageUrl = (value) => {
+  if (typeof value !== 'string') return PLACEHOLDER_IMAGE;
+
+  const trimmed = value.trim();
+  if (!trimmed) return PLACEHOLDER_IMAGE;
+
+  if (/^https?:\/\//i.test(trimmed)) return trimmed;
+  if (trimmed.charAt(0) === '/') return trimmed;
+
+  // Có scheme khác (data:, javascript:, ftp:...) -> không dùng.
+  if (/^[a-z][a-z0-9+.-]*:/i.test(trimmed)) return PLACEHOLDER_IMAGE;
+
+  // Đường dẫn tương đối (images/a.jpg, ./uploads/a.jpg) -> thêm '/' ở đầu.
+  return '/' + trimmed.replace(/^\.\//, '');
+};
+
 // Nạp model tùy chọn: dự án hiện chỉ có Product, các model khác sẽ tự dùng khi được bổ sung.
 const loadModel = (...fileNames) => {
   for (const fileName of fileNames) {
@@ -36,7 +53,7 @@ const productActiveFilter = () => {
 const toCard = (product, salePrice = null) => ({
   name: product.title,
   slug: product.slug,
-  image: (product.images && product.images[0]) || PLACEHOLDER_IMAGE,
+  image: normalizeImageUrl(product.images && product.images[0]),
   price: product.price,
   salePrice,
 });
@@ -216,6 +233,7 @@ const getHomeData = async () => {
 };
 
 module.exports = {
+  normalizeImageUrl,
   getNavCategories,
   getNewProductsByRoot,
   getSaleProducts,

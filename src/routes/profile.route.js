@@ -12,6 +12,7 @@ const {
 const User = require('../model/User');
 const asyncHandler = require('../utils/asyncHandler');
 const ErrorResponse = require('../utils/appError');
+const addressService = require('../services/addressService');
 
 const router = express.Router();
 
@@ -60,9 +61,24 @@ router.post(
   csrfProtection,
   asyncHandler(async (req, res) => {
     const userId = req.user._id || req.user.id;
-    const { fullName, phone, province, district, ward, detail } = req.body || {};
+    const { fullName, phone, province, district, ward, detail, provinceCode, wardCode } =
+      req.body || {};
 
-    if (!fullName || !phone || !province || !district || !ward || !detail) {
+    if (!fullName || !phone || !detail) {
+      throw new ErrorResponse('Thiếu thông tin địa chỉ', 400);
+    }
+
+    let finalProvince = province;
+    let finalWard = ward;
+
+    if (provinceCode && wardCode) {
+      const found = addressService.findWard(provinceCode, wardCode);
+      if (!found) {
+        throw new ErrorResponse('Địa chỉ không hợp lệ', 400);
+      }
+      finalProvince = found.province.fullName;
+      finalWard = found.ward.name;
+    } else if (!province || !ward) {
       throw new ErrorResponse('Thiếu thông tin địa chỉ', 400);
     }
 
@@ -78,10 +94,12 @@ router.post(
     user.addresses.push({
       recipient: fullName,
       phone,
-      city: province,
-      district,
-      ward,
+      city: finalProvince,
+      district: district || undefined,
+      ward: finalWard,
       street: detail,
+      provinceCode: provinceCode && wardCode ? String(provinceCode) : undefined,
+      wardCode: provinceCode && wardCode ? String(wardCode) : undefined,
       isDefault: (user.addresses || []).length === 0,
     });
 
@@ -106,7 +124,8 @@ router.put(
   asyncHandler(async (req, res) => {
     const userId = req.user._id || req.user.id;
     const { id } = req.params;
-    const { fullName, phone, province, district, ward, detail } = req.body || {};
+    const { fullName, phone, province, district, ward, detail, provinceCode, wardCode } =
+      req.body || {};
 
     const user = await User.findById(userId);
     if (!user) {
@@ -120,10 +139,22 @@ router.put(
 
     if (fullName !== undefined) user.addresses[addrIdx].recipient = fullName;
     if (phone !== undefined) user.addresses[addrIdx].phone = phone;
-    if (province !== undefined) user.addresses[addrIdx].city = province;
     if (district !== undefined) user.addresses[addrIdx].district = district;
-    if (ward !== undefined) user.addresses[addrIdx].ward = ward;
     if (detail !== undefined) user.addresses[addrIdx].street = detail;
+
+    if (provinceCode && wardCode) {
+      const found = addressService.findWard(provinceCode, wardCode);
+      if (!found) {
+        throw new ErrorResponse('Địa chỉ không hợp lệ', 400);
+      }
+      user.addresses[addrIdx].city = found.province.fullName;
+      user.addresses[addrIdx].ward = found.ward.name;
+      user.addresses[addrIdx].provinceCode = String(provinceCode);
+      user.addresses[addrIdx].wardCode = String(wardCode);
+    } else {
+      if (province !== undefined) user.addresses[addrIdx].city = province;
+      if (ward !== undefined) user.addresses[addrIdx].ward = ward;
+    }
 
     await user.save();
 

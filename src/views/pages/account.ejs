@@ -39,7 +39,7 @@
       .account-nav { position: static; margin-bottom: 16px; }
       .account-menu { flex-direction: row; gap: 6px; overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
       .account-menu::-webkit-scrollbar { display: none; }
-      .account-link, .account-btn { white-space: nowrap; padding: 8px 12px; font-size: 13px; flex-shrink: 0; }
+      .account-link, .account-btn { text-wrap: nowrap; padding: 8px 12px; font-size: 13px; flex-shrink: 0; }
       .account-profile-row { grid-template-columns: 1fr; gap: 4px; }
       .account-profile-row:last-child { border-bottom: none; }
     }
@@ -112,7 +112,7 @@
                       <span class="badge badge-soft" style="font-size: 11px;">Mặc định</span>
                     <% } %>
                   </div>
-                  <p style="font-size: 13px; color: var(--ink); margin: 0 0 4px; line-height: 1.5;"><%= addr.street || '' %>, <%= addr.ward || '' %>, <%= addr.district || '' %>, <%= addr.city || '' %></p>
+                  <p style="font-size: 13px; color: var(--ink); margin: 0 0 4px; line-height: 1.5;"><%= [addr.street, addr.ward, addr.district, addr.city].filter(Boolean).join(', ') %></p>
                   <% if (addr.phone) { %>
                   <p style="font-size: 13px; color: var(--muted); margin: 0;"><%= addr.phone %></p>
                   <% } %>

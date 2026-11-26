@@ -224,7 +224,7 @@ router.get('/catalog', asyncHandler(async (req, res, next) => {
     }
   }
 
-  const flash = getFlash(req);
+  const flash = typeof getFlash === 'function' ? getFlash(req) : [];
   res.render('pages/catalog', {
     title: 'Danh sách sản phẩm',
     categories,
@@ -292,7 +292,7 @@ router.get('/products/:slug', asyncHandler(async (req, res, next) => {
     }
   }
 
-  const flash = getFlash(req);
+  const flash = typeof getFlash === 'function' ? getFlash(req) : [];
   res.render('pages/product-detail', {
     title: product.name,
     flash,
@@ -360,15 +360,6 @@ router.get('/checkout', asyncHandler(async (req, res, next) => {
 
   const paymentMethods = ['cod', 'bank_transfer'];
 
-  // Danh sách tỉnh/thành (đọc từ file tĩnh nếu có)
-  let provinces = [];
-  try {
-    const addressData = require('../public/data/vietnam-address.json');
-    provinces = addressData.provinces || [];
-  } catch (e) {
-    provinces = [];
-  }
-
   res.set('Cache-Control', 'no-store');
   res.render('pages/checkout', {
     title: 'Thanh toán',
@@ -379,7 +370,6 @@ router.get('/checkout', asyncHandler(async (req, res, next) => {
       total,
       savedAddresses,
       paymentMethods,
-      provinces,
     },
     cartCount: count,
   });
@@ -392,17 +382,8 @@ router.get('/address/new', asyncHandler(async (req, res, next) => {
     return res.redirect(302, '/login?next=/address/new');
   }
 
-  let provinces = [];
-  try {
-    const addressData = require('../public/data/vietnam-address.json');
-    provinces = addressData.provinces || [];
-  } catch (e) {
-    provinces = [];
-  }
-
   res.render('pages/address-new', {
     title: 'Thêm địa chỉ mới',
-    locals: { provinces },
   });
 }));
 
