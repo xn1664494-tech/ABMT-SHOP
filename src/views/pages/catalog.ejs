@@ -29,20 +29,49 @@
     if (L.price_max) qp.push('maxPrice=' + encodeURIComponent(L.price_max));
     if (sortVal && sortVal !== 'newest') qp.push('sort=' + encodeURIComponent(sortVal));
     var baseQuery = qp.length ? '?' + qp.join('&') + '&page=' : '?page=';
+    var cc = (typeof currentCategory !== 'undefined' && currentCategory) ? currentCategory : null;
+    var rc = (typeof rootCategory !== 'undefined' && rootCategory) ? rootCategory : null;
+    var childCats = (typeof childCategories !== 'undefined' && Array.isArray(childCategories)) ? childCategories : [];
+    var rootCats = (typeof rootCategories !== 'undefined' && Array.isArray(rootCategories)) ? rootCategories : [];
+    function chipHref(slug) {
+      var parts = [];
+      if (slug) parts.push('category=' + encodeURIComponent(slug));
+      if (sortVal && sortVal !== 'newest') parts.push('sort=' + encodeURIComponent(sortVal));
+      return '/catalog' + (parts.length ? '?' + parts.join('&') : '');
+    }
+    function isCurrentCat(slug) { return !!(cc && cc.slug === slug); }
   %>
   <main id="main-content" class="main-content">
     <div class="container page-shell">
       <nav class="breadcrumb" aria-label="Breadcrumb">
         <a href="/">Trang chủ</a>
         <span class="sep">/</span>
-        <span aria-current="page">Sản phẩm</span>
+        <% if (rc && cc && cc.slug !== rc.slug) { %>
+          <a href="<%= chipHref(rc.slug) %>"><%= rc.name %></a>
+          <span class="sep">/</span>
+        <% } %>
+        <span aria-current="page"><%= cc ? cc.name : 'Sản phẩm' %></span>
       </nav>
 
       <div class="page-head">
         <div>
-          <h1 class="page-title">Danh sách sản phẩm</h1>
-          <p class="page-sub">Chọn trang phục phù hợp với phong cách của bạn</p>
+          <h1 class="page-title"><%= cc ? 'Thời trang ' + cc.name : 'Danh sách sản phẩm' %></h1>
+          <p class="page-sub"><%= Number(pg.total) || 0 %> sản phẩm</p>
         </div>
+      </div>
+
+      <div class="catalog-chips" role="group" aria-label="Chọn danh mục">
+        <% if (!rc) { %>
+          <a class="catalog-chip<%= !cc ? ' is-current' : '' %>" href="<%= chipHref('') %>">Tất cả</a>
+          <% rootCats.forEach(function (cat) { %>
+            <a class="catalog-chip" href="<%= chipHref(cat.slug) %>"><%= cat.name %></a>
+          <% }) %>
+        <% } else { %>
+          <a class="catalog-chip<%= isCurrentCat(rc.slug) ? ' is-current' : '' %>" href="<%= chipHref(rc.slug) %>">Tất cả <%= rc.name %></a>
+          <% childCats.forEach(function (cat) { %>
+            <a class="catalog-chip<%= isCurrentCat(cat.slug) ? ' is-current' : '' %>" href="<%= chipHref(cat.slug) %>"><%= cat.name %></a>
+          <% }) %>
+        <% } %>
       </div>
 
       <form id="filter-form" class="catalog-form" action="/catalog" method="get">
@@ -78,9 +107,9 @@
                 <label class="label" for="filter-category">Danh mục</label>
                 <select id="filter-category" name="category" class="select">
                   <option value="">Tất cả danh mục</option>
-                  <% categoryList.forEach(function (cat) { %>
-                    <option value="<%= cat.slug %>" <%= L.category === cat.slug ? 'selected' : '' %>><%= cat.name %></option>
-                  <% }) %>
+                    <% categoryList.forEach(function (cat) { %>
+                      <option value="<%= cat.slug %>" <%= (L.category === cat.slug || (cc && cat._id && cc._id.toString() === cat._id.toString())) ? 'selected' : '' %>><%= cat.name %></option>
+                    <% }) %>
                 </select>
               </div>
 

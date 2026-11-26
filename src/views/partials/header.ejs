@@ -205,9 +205,57 @@
     </button>
     <nav class="site-nav" id="site-nav" aria-label="Menu chính">
       <button class="menu-close" id="menu-close" type="button" aria-label="Đóng menu">×</button>
+      <%
+        var navRoots = (locals.navCategories && Array.isArray(locals.navCategories)) ? locals.navCategories : [];
+        var activeCat = String(locals.category || '');
+        var namRoot = navRoots.find(function (r) { return r.name === 'Nam'; });
+        var nuRoot = navRoots.find(function (r) { return r.name === 'Nữ'; });
+        function rootHasActive(root) {
+          if (!activeCat || !root) return false;
+          if (root.slug === activeCat) return true;
+          return (root.children || []).some(function (c) { return c.slug === activeCat; });
+        }
+        function rootHref(root, fallback) {
+          return root ? '/catalog?category=' + encodeURIComponent(root.slug) : fallback;
+        }
+      %>
       <ul class="nav-list">
-        <li><a href="/#section-new-men" class="nav-link">Nam</a></li>
-        <li><a href="/#section-new-women" class="nav-link">Nữ</a></li>
+        <% if (namRoot) { %>
+          <li class="has-dropdown<%= rootHasActive(namRoot) ? ' is-active' : '' %>">
+            <div class="nav-parent-row">
+              <a href="<%= rootHref(namRoot, '/#section-new-men') %>" class="nav-link<%= rootHasActive(namRoot) ? ' on' : '' %>">Nam</a>
+              <button type="button" class="nav-sub-toggle" aria-expanded="false" aria-label="Mở danh mục Nam">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+              </button>
+            </div>
+            <ul class="nav-dropdown<%= (namRoot.children || []).length > 6 ? ' two-cols' : '' %>">
+              <li><a href="/catalog?category=<%= encodeURIComponent(namRoot.slug) %>">Xem tất cả Nam</a></li>
+              <% (namRoot.children || []).forEach(function (child) { %>
+                <li><a href="/catalog?category=<%= encodeURIComponent(child.slug) %>"<%= activeCat === child.slug ? ' class="on"' : '' %>><%= child.name %></a></li>
+              <% }) %>
+            </ul>
+          </li>
+        <% } else { %>
+          <li><a href="/#section-new-men" class="nav-link">Nam</a></li>
+        <% } %>
+        <% if (nuRoot) { %>
+          <li class="has-dropdown<%= rootHasActive(nuRoot) ? ' is-active' : '' %>">
+            <div class="nav-parent-row">
+              <a href="<%= rootHref(nuRoot, '/#section-new-women') %>" class="nav-link<%= rootHasActive(nuRoot) ? ' on' : '' %>">Nữ</a>
+              <button type="button" class="nav-sub-toggle" aria-expanded="false" aria-label="Mở danh mục Nữ">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+              </button>
+            </div>
+            <ul class="nav-dropdown<%= (nuRoot.children || []).length > 6 ? ' two-cols' : '' %>">
+              <li><a href="/catalog?category=<%= encodeURIComponent(nuRoot.slug) %>">Xem tất cả Nữ</a></li>
+              <% (nuRoot.children || []).forEach(function (child) { %>
+                <li><a href="/catalog?category=<%= encodeURIComponent(child.slug) %>"<%= activeCat === child.slug ? ' class="on"' : '' %>><%= child.name %></a></li>
+              <% }) %>
+            </ul>
+          </li>
+        <% } else { %>
+          <li><a href="/#section-new-women" class="nav-link">Nữ</a></li>
+        <% } %>
         <li><a href="/catalog?sort=newest" class="nav-link">Sản phẩm mới</a></li>
         <li><a href="/#section-sale" class="nav-link">Giảm giá</a></li>
       </ul>
@@ -311,7 +359,24 @@
         if (!isHidden) {
           closeSearch(true);
         }
+        document.querySelectorAll('.has-dropdown .nav-dropdown.is-open').forEach(function (panel) {
+          panel.classList.remove('is-open');
+        });
+        document.querySelectorAll('.nav-sub-toggle[aria-expanded="true"]').forEach(function (btn) {
+          btn.setAttribute('aria-expanded', 'false');
+        });
       }
+    });
+
+    document.querySelectorAll('.nav-sub-toggle').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var li = btn.closest('.has-dropdown');
+        var panel = li ? li.querySelector('.nav-dropdown') : null;
+        if (!panel) return;
+        var open = !panel.classList.contains('is-open');
+        panel.classList.toggle('is-open', open);
+        btn.setAttribute('aria-expanded', String(open));
+      });
     });
   </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">

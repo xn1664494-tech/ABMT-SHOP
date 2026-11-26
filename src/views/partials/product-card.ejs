@@ -1,14 +1,18 @@
-﻿<article class="product-card" id="product-<%= product.slug %>">
+﻿<%
+  const cardBadge = typeof badge !== 'undefined' ? badge : null;
+  const cardRank = typeof rank !== 'undefined' ? rank : null;
+%>
+<article class="product-card" id="product-<%= product.slug %>">
   <a href="/products/<%= product.slug %>" class="product-link">
-    <div class="product-thumb<%= locals.badge || locals.rank || product.outOfStock ? ' has-badge' : '' %>">
+    <div class="product-thumb<%= cardBadge || cardRank || product.outOfStock ? ' has-badge' : '' %>">
       <img src="<%= product.image %>" alt="<%= product.name %>" loading="lazy" decoding="async" width="300" height="400" data-fallback="/images/placeholder/product.svg">
       <% if (product.outOfStock) { %>
         <span class="badge badge-sale">Hết hàng</span>
-      <% } else if (locals.badge) { %>
-        <span class="badge <%= locals.badge === 'Giảm giá' ? 'badge-sale' : 'badge-soft' %>"><%= locals.badge %></span>
+      <% } else if (cardBadge) { %>
+        <span class="badge <%= cardBadge === 'Giảm giá' ? 'badge-sale' : 'badge-new' %>"><%= cardBadge %></span>
       <% } %>
-      <% if (locals.rank) { %>
-        <span class="badge badge-count"><%= locals.rank %></span>
+      <% if (cardRank) { %>
+        <span class="badge badge-count<%= cardRank <= 3 ? ' is-top' : '' %>"><%= cardRank %></span>
       <% } %>
     </div>
     <div class="product-info">
