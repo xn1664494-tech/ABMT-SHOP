@@ -94,34 +94,39 @@ const ensureCategoryValid = async (categoryId) => {
 /**
  * Trừ kho điều kiện cho danh sách dòng hàng.
  * items: Array<{ productId, variantSku, qty }>
- * Dùng CAS variant (stock >= qty) để tránh oversell.
- * Trả về { ok: true } nếu tất cả đều trừ thành công.
- * Nếu bất kỳ dòng nào thiếu stock → ném ErrorResponse để caller có thể gọi restoreStock.
+ * CAS trên đúng (_id, sku) với stock >= qty để tránh oversell.
+ * Tự hoàn các dòng đã trừ nếu có dòng lỗi, rồi ném ErrorResponse.
  */
 async function decrementStock(items) {
+  const deducted = [];
+
   for (const item of items || []) {
+    if (!Number.isInteger(item.qty) || item.qty <= 0) {
+      await restoreStock(deducted);
+      throw new ErrorResponse('Số lượng đặt hàng không hợp lệ', 400);
+    }
+
     const updateResult = await Product.updateOne(
       {
         _id: item.productId,
         'variants.sku': item.variantSku,
         'variants.stock': { $gte: item.qty },
+        isDeleted: false,
       },
       { $inc: { 'variants.$.stock': -item.qty } }
     );
+
     if (updateResult.modifiedCount === 0) {
-      // Hoàn các dòng đã trừ trước đó trước khi ném lỗi
-      for (const done of items) {
-        await Product.updateOne(
-          { _id: done.productId, 'variants.sku': done.variantSku },
-          { $inc: { 'variants.$.stock': done.qty } }
-        );
-      }
+      await restoreStock(deducted);
       throw new ErrorResponse(
         `Không đủ tồn kho cho SKU ${item.variantSku}`,
         409
       );
     }
+
+    deducted.push({ ...item });
   }
+
   return { ok: true };
 }
 
@@ -129,9 +134,14 @@ async function decrementStock(items) {
  * Hoàn kho cho danh sách dòng hàng.
  * items: Array<{ productId, variantSku, qty }>
  * Dùng khi hủy đơn hoặc rollback tạo đơn thất bại.
+ * Caller phải chặn double-restore bằng Order.stockRestoredAt (xem T6-1-3).
  */
 async function restoreStock(items) {
   for (const item of items || []) {
+    if (!Number.isInteger(item.qty) || item.qty <= 0) {
+      throw new ErrorResponse('Số lượng hoàn kho không hợp lệ', 400);
+    }
+
     await Product.updateOne(
       { _id: item.productId, 'variants.sku': item.variantSku },
       { $inc: { 'variants.$.stock': item.qty } }

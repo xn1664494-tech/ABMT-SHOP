@@ -11,6 +11,7 @@ const asyncHandler = require('../utils/asyncHandler');
 const ErrorResponse = require('../utils/appError');
 const { calculateShippingFee } = require('../model/Order');
 const addressService = require('../services/addressService');
+const { createOrder } = require('../services/CheckoutService');
 
 const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id);
 
@@ -131,125 +132,71 @@ router.post(
       return next(new ErrorResponse('Phương thức thanh toán không hợp lệ', 400));
     }
 
-    // Duyệt từng dòng hàng, kiểm tra biến thể + tồn kho, tính giá từ DB
     const orderItems = [];
-    const stockDeductions = []; // { productId, variantSku, qty } để bù trừ nếu lỗi
     let subtotal = 0;
 
     for (const item of itemsToOrder) {
       const productObj = await Product.findById(item.product);
       if (!productObj || productObj.isDeleted) {
-        // Hoàn lại các dòng đã trừ kho
-        for (const ded of stockDeductions) {
-          await Product.updateOne(
-            { _id: ded.productId, 'variants.sku': ded.variantSku },
-            { $inc: { 'variants.$.stock': ded.qty } }
-          );
-        }
         return next(new ErrorResponse(`Sản phẩm ${item.sku} không còn tồn tại`, 404));
       }
 
       const variant = (productObj.variants || []).find((v) => v.sku === item.sku);
       if (!variant) {
-        // Hoàn lại kho
-        for (const ded of stockDeductions) {
-          await Product.updateOne(
-            { _id: ded.productId, 'variants.sku': ded.variantSku },
-            { $inc: { 'variants.$.stock': ded.qty } }
-          );
-        }
         return next(new ErrorResponse(`Biến thể ${item.sku} không tồn tại`, 404));
       }
 
       if (variant.stock < item.qty) {
-        // Hoàn lại kho
-        for (const ded of stockDeductions) {
-          await Product.updateOne(
-            { _id: ded.productId, 'variants.sku': ded.variantSku },
-            { $inc: { 'variants.$.stock': ded.qty } }
-          );
-        }
-        return next(new ErrorResponse(`Sản phẩm ${variant.size}/${variant.color} chỉ còn ${variant.stock} (bạn đặt ${item.qty})`, 409));
+        return next(new ErrorResponse(`SKU ${item.sku} (${variant.size}/${variant.color}) chỉ còn ${variant.stock} (bạn đặt ${item.qty})`, 409));
       }
 
-    // Trừ kho có điều kiện (stock >= qty)
-    const updateResult = await Product.updateOne(
-      { _id: item.product, 'variants.sku': item.sku, 'variants.stock': { $gte: item.qty } },
-      { $inc: { 'variants.$.stock': -item.qty } }
-    );
+      const unitPrice = variant.price ?? productObj.basePrice;
+      const lineTotal = unitPrice * item.qty;
+      subtotal += lineTotal;
 
-    if (updateResult.modifiedCount === 0) {
-      // Hoàn lại các dòng đã trừ
-      for (const ded of stockDeductions) {
-        await Product.updateOne(
-          { _id: ded.productId, 'variants.sku': ded.variantSku },
-          { $inc: { 'variants.$.stock': ded.qty } }
-        );
-      }
-      return next(new ErrorResponse(`Sản phẩm ${variant.size}/${variant.color} hết hàng khi xử lý`, 409));
+      orderItems.push({
+        product: item.product,
+        name: productObj.name,
+        image: (productObj.images && productObj.images[0]) || '',
+        sku: item.sku,
+        size: item.size,
+        color: item.color,
+        unitPrice,
+        qty: item.qty,
+        lineTotal,
+      });
     }
 
-    stockDeductions.push({ productId: item.product, variantSku: item.sku, qty: item.qty });
+    const shippingFee = calculateShippingFee(subtotal);
+    const discount = 0;
+    const total = subtotal + shippingFee - discount;
 
-    const unitPrice = variant.price || productObj.basePrice;
-    const lineTotal = unitPrice * item.qty;
-    subtotal += lineTotal;
-
-    orderItems.push({
-      product: item.product,
-      name: productObj.name,
-      image: (productObj.images && productObj.images[0]) || '',
-      sku: item.sku,
-      size: item.size,
-      color: item.color,
-      unitPrice,
-      qty: item.qty,
-      lineTotal,
+    const order = await createOrder({
+      userId,
+      selectedItemId,
+      orderPayload: {
+        items: orderItems,
+        shippingAddress,
+        paymentMethod: pm,
+        subtotal,
+        shippingFee,
+        discount,
+        total,
+        note: note || '',
+      },
     });
-  }
 
-  const shippingFee = calculateShippingFee(subtotal);
-  const discount = 0;
-  const total = subtotal + shippingFee - discount;
-
-  const order = await Order.create({
-    user: userId,
-    items: orderItems,
-    shippingAddress,
-    paymentMethod: pm,
-    paymentStatus: 'unpaid',
-    status: 'pending',
-    subtotal,
-    shippingFee,
-    discount,
-    total,
-    note: note || '',
-    statusHistory: [
-      { status: 'pending', at: new Date(), by: userId, note: 'Tạo đơn hàng' },
-    ],
-  });
-
-  if (selectedItemId) {
-    const itemObjectId = new mongoose.Types.ObjectId(selectedItemId);
-    await Cart.updateOne(
-      { user: userId, 'items._id': itemObjectId },
-      { $pull: { items: { _id: itemObjectId } } }
-    );
-  } else {
-    await Cart.deleteOne({ user: userId });
-  }
-
-  return res.status(201).json({
-    success: true,
-    message: 'Tạo đơn hàng thành công',
-    data: {
-      id: String(order._id),
-      code: order.code,
-      total: order.total,
-      status: order.status,
-    },
-  });
-})
+    return res.status(201).json({
+      success: true,
+      message: 'Tạo đơn hàng thành công',
+      data: {
+        id: String(order._id),
+        code: order.code,
+        total: order.total,
+        status: order.status,
+      },
+    });
+  })
 );
 
 /**
