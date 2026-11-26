@@ -1,12 +1,11 @@
 const express = require('express');
-const crypto = require('crypto');
 const HomeController = require('../controllers/HomeController');
 const Cart = require('../model/Cart');
 const Product = require('../model/Products');
 const User = require('../model/User');
 const Order = require('../model/Order');
 const { ACCESS_COOKIE, verifyToken } = require('../services/tokenService');
-const { calculateShippingFee } = require('../model/Order');
+const CartService = require('../services/CartService');
 const asyncHandler = require('../utils/asyncHandler');
 const ErrorResponse = require('../utils/appError');
 const { getFlash } = require('../utils/flash');
@@ -27,24 +26,6 @@ const extractAccessToken = (req) => {
   return null;
 };
 
-const getCartId = (req) => {
-  let cartId = req.cookies ? req.cookies.cartId : undefined;
-  if (!cartId) {
-    cartId = require('crypto').randomBytes(16).toString('hex');
-  }
-  return cartId;
-};
-
-const setCartCookie = (res, cartId) => {
-  res.cookie('cartId', cartId, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'Lax',
-    path: '/',
-    maxAge: 30 * 24 * 60 * 60 * 1000, // 30 ngày
-  });
-};
-
 const isValidObjectId = (id) => require('mongoose').Types.ObjectId.isValid(id);
 
 const isSafeNext = (next) => {
@@ -58,15 +39,6 @@ const isSafeNext = (next) => {
     return false;
   }
   return true;
-};
-
-// Helper: tính toán tóm tắt giỏ hàng từ items
-const calcCartSummary = (items) => {
-  const subtotal = items.reduce((sum, item) => sum + (item.unitPrice * item.qty), 0);
-  const shippingFee = calculateShippingFee(subtotal);
-  const total = subtotal + shippingFee;
-  const count = items.reduce((sum, item) => sum + item.qty, 0);
-  return { subtotal, shippingFee, total, count };
 };
 
 // Trang chủ (UI)
@@ -141,47 +113,35 @@ router.get('/profile', (req, res) => {
 // Trang giỏ hàng (HTML)
 router.get('/cart', asyncHandler(async (req, res, next) => {
   res.set('Cache-Control', 'no-store');
-  const cartId = getCartId(req);
-  let cart = await Cart.findOne({ sessionId: cartId });
+  const currentUser = res.locals.currentUser;
+  const cartId = req.cookies ? req.cookies.cartId : undefined;
 
-  // Nếu đã đăng nhập, ưu tiên giỏ theo user, gộp giỏ sessionId vào nếu có
-  if (res.locals.currentUser) {
-    const userCart = await Cart.findOne({ user: res.locals.currentUser.id });
-    if (cart && cart.items && cart.items.length > 0) {
-      if (!userCart) {
-        await Cart.updateOne(
-          { sessionId: cartId },
-          { $set: { user: res.locals.currentUser.id, sessionId: null, expiresAt: null } }
-        );
-        cart = await Cart.findOne({ user: res.locals.currentUser.id });
-      } else {
-        // Gộp items từ guest cart vào user cart
-        const existingSkus = new Set((userCart.items || []).map((i) => i.sku));
-        (cart.items || []).forEach((item) => {
-          if (!existingSkus.has(item.sku)) {
-            userCart.items.push(item);
-          }
-        });
-        await userCart.save();
-        await Cart.deleteOne({ sessionId: cartId });
-        res.clearCookie('cartId');
-      }
-    }
-    cart = userCart || cart;
-  }
-
-  if (cart && ensureCartItemIds(cart)) {
-    await cart.save();
-  }
+  // Xác định giỏ: ưu tiên user, chuyển/gộp giỏ guest nếu cần.
+  const cart = await CartService.resolveCartForRequest({
+    userId: currentUser ? currentUser.id : null,
+    cartId,
+    createIfMissing: true,
+    res,
+    mergeOnConflict: 'clamp',
+  });
 
   const viewCart = cart
     ? await Cart.findOne({ _id: cart._id }).populate('items.product', 'name slug images variants')
     : null;
   const items = viewCart ? viewCart.items : [];
-  const { subtotal, shippingFee, total, count } = calcCartSummary(items);
+  const { subtotal, shippingFee, total, count } = CartService.buildSummary(items);
+
+  const flash = getFlash(req);
+  if (cart && cart.mergeAdjusted) {
+    flash.push({
+      type: 'info',
+      message: 'Một số sản phẩm đã được điều chỉnh số lượng',
+    });
+  }
 
   res.render('pages/cart', {
     title: 'Giỏ hàng',
+    flash,
     locals: {
       empty: items.length === 0,
       items,
@@ -189,10 +149,10 @@ router.get('/cart', asyncHandler(async (req, res, next) => {
       shippingFee,
       total,
       count,
+      flash,
     },
     cartCount: count,
   });
-  setCartCookie(res, cartId);
 }));
 
 // Trang catalog (HTML)
@@ -429,36 +389,16 @@ router.get('/checkout', asyncHandler(async (req, res, next) => {
     return res.redirect(302, '/login?next=/checkout');
   }
 
-  const cartId = getCartId(req);
-  let cart = await Cart.findOne({ sessionId: cartId });
+  const cartId = req.cookies ? req.cookies.cartId : undefined;
 
-  if (res.locals.currentUser) {
-    const userCart = await Cart.findOne({ user: res.locals.currentUser.id });
-    if (cart && cart.items && cart.items.length > 0) {
-      if (!userCart) {
-        await Cart.updateOne(
-          { sessionId: cartId },
-          { $set: { user: res.locals.currentUser.id, sessionId: null, expiresAt: null } }
-        );
-        cart = await Cart.findOne({ sessionId: cartId });
-      } else {
-        const existingSkus = new Set((userCart.items || []).map((i) => i.sku));
-        (cart.items || []).forEach((item) => {
-          if (!existingSkus.has(item.sku)) {
-            userCart.items.push(item);
-          }
-        });
-        await userCart.save();
-        await Cart.deleteOne({ sessionId: cartId });
-        res.clearCookie('cartId');
-      }
-    }
-    cart = userCart || cart;
-  }
-
-  if (cart && ensureCartItemIds(cart)) {
-    await cart.save();
-  }
+  // Xác định giỏ: ưu tiên user, chuyển/gộp giỏ guest nếu cần.
+  const cart = await CartService.resolveCartForRequest({
+    userId: res.locals.currentUser.id,
+    cartId,
+    createIfMissing: false,
+    res,
+    mergeOnConflict: 'clamp',
+  });
 
   const rawItemId = req.query.item;
   let selectedItemId = null;
@@ -481,7 +421,7 @@ router.get('/checkout', asyncHandler(async (req, res, next) => {
     return res.redirect(302, '/cart');
   }
 
-  const { subtotal, shippingFee, total, count } = calcCartSummary(items);
+  const { subtotal, shippingFee, total, count } = CartService.buildSummary(items);
 
   // Lấy địa chỉ đã lưu của user
   const user = await User.findById(res.locals.currentUser.id).select('addresses').lean();
@@ -495,9 +435,18 @@ router.get('/checkout', asyncHandler(async (req, res, next) => {
 
   const paymentMethods = ['cod', 'bank_transfer'];
 
+  const flash = getFlash(req);
+  if (cart && cart.mergeAdjusted) {
+    flash.push({
+      type: 'info',
+      message: 'Một số sản phẩm đã được điều chỉnh số lượng',
+    });
+  }
+
   res.set('Cache-Control', 'no-store');
   res.render('pages/checkout', {
     title: 'Thanh toán',
+    flash,
     locals: {
       lines,
       subtotal,
@@ -506,10 +455,10 @@ router.get('/checkout', asyncHandler(async (req, res, next) => {
       savedAddresses,
       paymentMethods,
       itemId: selectedItemId || '',
+      flash,
     },
     cartCount: count,
   });
-  setCartCookie(res, cartId);
 }));
 
 // Trang thêm địa chỉ mới (HTML) - yêu cầu đăng nhập

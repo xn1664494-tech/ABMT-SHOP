@@ -1,32 +1,22 @@
 const express = require('express');
-const crypto = require('crypto');
 const router = express.Router();
 const Cart = require('../model/Cart');
 const Product = require('../model/Products');
-const { calculateShippingFee } = require('../model/Order');
+const CartService = require('../services/CartService');
 const asyncHandler = require('../utils/asyncHandler');
 const ErrorResponse = require('../utils/appError');
+const { authenticate } = require('../middleware/authenticate');
 const { csrfProtection } = require('../middleware/csrf');
-const { ensureCartItemIds } = require('../utils/cartItems');
 
-const CART_COOKIE_MAX_AGE = 30 * 24 * 60 * 60 * 1000;
+const { buildSummary, normalizeColor, findItemIndexById } = CartService;
 
-const setCartCookie = (res, cartId) => {
-  res.cookie('cartId', cartId, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'Lax',
-    path: '/',
-    maxAge: CART_COOKIE_MAX_AGE,
-  });
-};
-
-const calcSummary = (items) => {
-  const subtotal = items.reduce((sum, item) => sum + (item.unitPrice * item.qty), 0);
-  const shippingFee = calculateShippingFee(subtotal);
-  const total = subtotal + shippingFee;
-  const count = items.reduce((sum, item) => sum + item.qty, 0);
-  return { subtotal, shippingFee, total, count };
+/**
+ * Phân tích qty: trả null nếu bỏ trống, NaN nếu không phải số nguyên >= 1.
+ */
+const parseQty = (raw) => {
+  if (raw === undefined || raw === null || raw === '') return null;
+  const num = Number(raw);
+  return Number.isInteger(num) && num >= 1 ? num : NaN;
 };
 
 /**
@@ -34,29 +24,13 @@ const calcSummary = (items) => {
  */
 const resolveCart = async (req, res, currentUser, createIfMissing = false) => {
   const cookieCartId = req.cookies ? req.cookies.cartId : undefined;
-  let cartId = cookieCartId;
-
-  let cart = null;
-  if (currentUser) {
-    cart = await Cart.findOne({ user: currentUser.id });
-  }
-  if (!cart && cartId) {
-    cart = await Cart.findOne({ sessionId: cartId });
-  }
-  if (!cart && createIfMissing) {
-    if (!currentUser && !cartId) {
-      cartId = crypto.randomBytes(16).toString('hex');
-    }
-    const fields = currentUser ? { user: currentUser.id } : { sessionId: cartId };
-    cart = await Cart.create({ ...fields, items: [] });
-    if (!currentUser) setCartCookie(res, cartId);
-  }
-
-  if (cart && ensureCartItemIds(cart)) {
-    await cart.save();
-  }
-
-  return cart;
+  return CartService.resolveCartForRequest({
+    userId: currentUser ? currentUser.id || currentUser._id : null,
+    cartId: cookieCartId,
+    createIfMissing,
+    res,
+    mergeOnConflict: 'none',
+  });
 };
 
 /**
@@ -67,7 +41,8 @@ router.get(
   asyncHandler(async (req, res, next) => {
     const cart = await resolveCart(req, res, res.locals.currentUser, true);
     const items = cart ? cart.items : [];
-    const summary = calcSummary(items);
+    await CartService.refreshItemPrices(items);
+    const summary = buildSummary(items);
 
     return res.status(200).json({
       success: true,
@@ -95,12 +70,14 @@ router.post(
     }
 
     const productObj = await Product.findById(product);
-    if (!productObj || productObj.isDeleted) {
+    if (!productObj || productObj.isDeleted || productObj.isActive === false) {
       return next(new ErrorResponse('Sản phẩm không tồn tại', 404));
     }
 
     const variant = (productObj.variants || []).find(
-      (v) => v.size === String(size).toUpperCase() && v.color === String(color)
+      (v) =>
+        v.size === String(size).toUpperCase() &&
+        normalizeColor(v.color) === normalizeColor(color)
     );
     if (!variant) {
       return next(new ErrorResponse('Biến thể không tồn tại', 404));
@@ -109,24 +86,40 @@ router.post(
       return next(new ErrorResponse('Biến thể đã hết hàng', 409));
     }
 
-    const qtyNum = Math.max(1, Number(qty) || 1);
+    const parsedQty = parseQty(qty);
+    const qtyNum = parsedQty === null ? 1 : parsedQty;
+    if (!Number.isInteger(qtyNum)) {
+      return next(new ErrorResponse('Số lượng không hợp lệ', 400));
+    }
     if (qtyNum > variant.stock) {
-      return next(new ErrorResponse(`Chỉ còn ${variant.stock} sản phẩm trong kho`, 409));
+      return next(
+        new ErrorResponse(
+          `Biến thể ${variant.sku} (${variant.size}/${variant.color}) chỉ còn ${variant.stock} (bạn thêm ${qtyNum})`,
+          409,
+        ),
+      );
     }
 
     const sku = variant.sku;
     const cart = await resolveCart(req, res, res.locals.currentUser, true);
 
     const existingIdx = (cart.items || []).findIndex(
-      (item) => item.sku === sku && item.product.equals(product)
+      (item) => item.sku === sku && String(item.product) === String(product)
     );
 
     if (existingIdx >= 0) {
       const newQty = cart.items[existingIdx].qty + qtyNum;
       if (newQty > variant.stock) {
-        return next(new ErrorResponse(`Vượt quá tồn kho (còn ${variant.stock})`, 409));
+        return next(
+          new ErrorResponse(
+            `Tổng số lượng vượt tồn kho cho SKU ${variant.sku} (${variant.size}/${variant.color}) — còn ${variant.stock}, hiện có ${cart.items[existingIdx].qty}, thêm ${qtyNum}`,
+            409,
+          ),
+        );
       }
       cart.items[existingIdx].qty = newQty;
+      cart.items[existingIdx].unitPrice =
+        variant.price != null ? variant.price : productObj.basePrice;
     } else {
       cart.items.push({
         product,
@@ -134,14 +127,14 @@ router.post(
         size: String(size).toUpperCase(),
         color: String(color),
         qty: qtyNum,
-        unitPrice: variant.price || productObj.basePrice,
+        unitPrice: variant.price != null ? variant.price : productObj.basePrice,
       });
     }
 
     await cart.save();
 
     const items = cart.items;
-    const summary = calcSummary(items);
+    const summary = buildSummary(items);
 
     return res.status(200).json({
       success: true,
@@ -161,30 +154,50 @@ router.put(
     const { qty } = req.body;
     const itemId = req.params.id;
 
-    const qtyNum = Math.max(1, Number(qty) || 1);
+    const qtyNum = parseQty(qty);
+    if (!Number.isInteger(qtyNum)) {
+      return next(new ErrorResponse('Số lượng không hợp lệ', 400));
+    }
 
     const cart = await resolveCart(req, res, res.locals.currentUser);
     if (!cart) {
       return next(new ErrorResponse('Giỏ hàng không tồn tại', 404));
     }
 
-    const item = (cart.items || []).find((it) => it._id && it._id.toString() === itemId);
-    if (!item) {
+    const itemIdx = findItemIndexById(cart.items || [], itemId);
+    if (itemIdx < 0) {
       return next(new ErrorResponse('Sản phẩm không tồn tại trong giỏ', 404));
     }
+    const item = cart.items[itemIdx];
 
     const productObj = await Product.findById(item.product);
-    const variant = (productObj && productObj.variants) ? productObj.variants.find((v) => v.sku === item.sku) : null;
-    const maxStock = variant ? variant.stock : 0;
-    if (qtyNum > maxStock) {
-      return next(new ErrorResponse(`Vượt quá tồn kho (còn ${maxStock})`, 409));
+    if (!productObj || productObj.isDeleted || productObj.isActive === false) {
+      return next(new ErrorResponse('Sản phẩm không tồn tại', 404));
+    }
+
+    const variant = (productObj.variants || []).find(
+      (v) => v.sku === item.sku
+    );
+    if (!variant) {
+      return next(new ErrorResponse('Biến thể không tồn tại', 404));
+    }
+    if (qtyNum > variant.stock) {
+      return next(
+        new ErrorResponse(
+          `Biến thể ${variant.sku} (${variant.size}/${variant.color}) vượt quá tồn kho (còn ${variant.stock}, yêu cầu ${qtyNum})`,
+          409,
+        ),
+      );
     }
 
     item.qty = qtyNum;
+    if (variant) {
+      item.unitPrice = variant.price != null ? variant.price : productObj.basePrice;
+    }
     await cart.save();
 
     const items = cart.items;
-    const summary = calcSummary(items);
+    const summary = buildSummary(items);
 
     return res.status(200).json({
       success: true,
@@ -207,17 +220,16 @@ router.delete(
       return next(new ErrorResponse('Giỏ hàng không tồn tại', 404));
     }
 
-    const beforeLen = (cart.items || []).length;
-    cart.items = (cart.items || []).filter((it) => !it._id || it._id.toString() !== itemId);
-
-    if (cart.items.length === beforeLen) {
+    const itemIdx = findItemIndexById(cart.items || [], itemId);
+    if (itemIdx < 0) {
       return next(new ErrorResponse('Sản phẩm không tồn tại trong giỏ', 404));
     }
 
+    cart.items.splice(itemIdx, 1);
     await cart.save();
 
     const items = cart.items;
-    const summary = calcSummary(items);
+    const summary = buildSummary(items);
 
     return res.status(200).json({
       success: true,
@@ -227,40 +239,38 @@ router.delete(
 );
 
 /**
- * GET /api/cart/merge - Gộp giỏ guest (cartId cookie) vào giỏ user sau đăng nhập
+ * POST /api/cart/merge - Gộp giỏ guest (cartId cookie) vào giỏ user sau đăng nhập
+ * Body: {}
  */
-router.get(
+router.post(
   '/merge',
+  authenticate,
+  csrfProtection,
   asyncHandler(async (req, res, next) => {
-    const currentUser = res.locals && res.locals.currentUser ? res.locals.currentUser : null;
+    const currentUser = req.user;
     if (!currentUser) {
       return next(new ErrorResponse('Chưa đăng nhập', 401));
     }
 
+    const userId = currentUser.id || currentUser._id;
     const cartId = req.cookies ? req.cookies.cartId : undefined;
     const guestCart = cartId ? await Cart.findOne({ sessionId: cartId }) : null;
 
-    let customerCart = await Cart.findOne({ user: currentUser.id });
+    let customerCart = await Cart.findOne({ user: userId });
 
     if (guestCart && guestCart.items && guestCart.items.length > 0) {
       if (!customerCart) {
-        customerCart = await Cart.create({ user: currentUser.id, items: [] });
+        customerCart = await Cart.create({ user: userId, items: [] });
       }
-
-      const existingSkus = new Set((customerCart.items || []).map((item) => item.sku));
-      guestCart.items.forEach((item) => {
-        if (!existingSkus.has(item.sku)) {
-          customerCart.items.push(item);
-        }
-      });
-
-      await customerCart.save();
-      await Cart.deleteOne({ sessionId: cartId });
-      res.clearCookie('cartId');
+      customerCart = await CartService.mergeGuestIntoUser(
+        customerCart,
+        guestCart,
+        res
+      );
     }
 
     const items = customerCart ? customerCart.items : [];
-    const summary = calcSummary(items);
+    const summary = buildSummary(items);
 
     return res.status(200).json({
       success: true,
