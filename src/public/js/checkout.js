@@ -74,6 +74,11 @@
       paymentMethod: getPaymentMethod(),
     };
 
+    var itemInput = checkoutForm ? checkoutForm.querySelector('input[name="item"]') : null;
+    if (itemInput && itemInput.value) {
+      payload.item = itemInput.value;
+    }
+
     if (isNewAddress(selected)) {
       if (!addressForm) {
         throw new Error('Thiếu thông tin địa chỉ giao hàng.');

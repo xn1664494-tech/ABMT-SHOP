@@ -44,6 +44,8 @@ const setCartCookie = (res, cartId) => {
   });
 };
 
+const isValidObjectId = (id) => require('mongoose').Types.ObjectId.isValid(id);
+
 const isSafeNext = (next) => {
   if (typeof next !== 'string' || next === '') {
     return false;
@@ -351,7 +353,27 @@ router.get('/checkout', asyncHandler(async (req, res, next) => {
     cart = userCart || cart;
   }
 
-  const items = cart ? cart.items : [];
+  if (cart && ensureCartItemIds(cart)) {
+    await cart.save();
+  }
+
+  const rawItemId = req.query.item;
+  let selectedItemId = null;
+  if (rawItemId !== undefined) {
+    if (typeof rawItemId !== 'string' || !isValidObjectId(rawItemId)) {
+      return res.redirect(302, '/cart?error=' + encodeURIComponent('Mã sản phẩm trong giỏ không hợp lệ'));
+    }
+    selectedItemId = rawItemId;
+  }
+
+  let items = cart ? cart.items : [];
+  if (selectedItemId) {
+    items = items.filter((item) => String(item._id) === selectedItemId);
+    if (items.length === 0) {
+      return res.redirect(302, '/cart?error=' + encodeURIComponent('Sản phẩm không tồn tại trong giỏ hàng'));
+    }
+  }
+
   if (items.length === 0) {
     return res.redirect(302, '/cart');
   }
@@ -380,6 +402,7 @@ router.get('/checkout', asyncHandler(async (req, res, next) => {
       total,
       savedAddresses,
       paymentMethods,
+      itemId: selectedItemId || '',
     },
     cartCount: count,
   });
