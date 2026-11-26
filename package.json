@@ -16,6 +16,7 @@
     "test:postman": "node scripts/run-postman-test.js",
     "check:env": "node scripts/check-env.js",
     "seed": "node scripts/seed.js",
+    "seed:categories": "node scripts/seedCategories.js",
     "test:seed-verify": "node --test test/index.seed.verify.test.js",
     "benchmark:product-list": "node scripts/benchmark-product-list.js"
   },

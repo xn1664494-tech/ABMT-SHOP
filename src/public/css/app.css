@@ -86,6 +86,7 @@ body.no-scroll { overflow: hidden; }
   position: fixed; top: 0; left: 0; height: 100%; width: min(80vw, 320px);
   background: var(--surface); padding: 56px 24px 24px;
   transform: translateX(-100%); transition: transform .25s; z-index: 50;
+  overflow-y: auto; scrollbar-width: thin;
 }
 .site-nav.is-open { transform: translateX(0); }
 .nav-list { display: flex; flex-direction: column; }
@@ -105,7 +106,7 @@ body.no-scroll { overflow: hidden; }
   .menu-toggle, .menu-close, .nav-overlay { display: none; }
   .site-nav {
     position: static; transform: none; width: auto; height: auto; padding: 0;
-    background: transparent; flex: 1; transition: none;
+    background: transparent; flex: 1; transition: none; overflow: visible;
   }
   .nav-list { flex-direction: row; gap: 20px; }
   .nav-link { padding: 6px 0; border-bottom: 2px solid transparent; }
@@ -161,6 +162,7 @@ body.no-scroll { overflow: hidden; }
   padding: 3px 12px; border-radius: var(--r-pill);
 }
 .banner-title { font-size: clamp(24px, 3vw, 32px); line-height: 1.25; font-weight: 600; color: var(--ink-strong); }
+.banner-ctas { display: flex; flex-wrap: wrap; gap: 10px; }
 .banner-dots {
   position: absolute; bottom: 16px; left: 50%; transform: translateX(-50%);
   display: flex; gap: 8px; z-index: 2;
@@ -687,23 +689,25 @@ body.no-scroll { overflow: hidden; }
   pointer-events: none;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
 }
 @media (max-width: 767.98px) {
   #toast-region {
-    left: 16px;
-    right: 16px;
-    bottom: 16px;
+    left: 12px;
+    right: 12px;
+    top: 12px;
+    bottom: auto;
     width: auto;
   }
+  .toast { min-width: 0; max-width: none; }
 }
 @media (min-width: 768px) {
   #toast-region {
-    top: 24px;
-    right: 24px;
+    top: 20px;
+    right: 20px;
     bottom: auto;
     left: auto;
-    width: min(440px, calc(100vw - 48px));
+    width: min(420px, calc(100vw - 40px));
   }
 }
 .toast {
@@ -711,13 +715,13 @@ body.no-scroll { overflow: hidden; }
   display: flex;
   align-items: flex-start;
   gap: 12px;
-  padding: 16px 18px;
-  min-height: 56px;
+  padding: 14px 18px;
+  min-width: 320px;
+  max-width: 420px;
   background: var(--surface);
-  border: 1px solid var(--line);
-  border-left: 6px solid var(--accent);
-  border-radius: 16px;
-  box-shadow: var(--shadow-toast);
+  border: 1px solid var(--line-strong);
+  border-radius: 20px;
+  box-shadow: 0 12px 32px rgba(42,47,54,.08);
   color: var(--ink-strong);
   font-size: 16px;
   font-weight: 500;
@@ -725,10 +729,9 @@ body.no-scroll { overflow: hidden; }
   transition: opacity .2s, transform .2s;
 }
 .toast-icon { width: 22px; height: 22px; flex: none; color: var(--accent-deep); }
-.toast.toast-success { border-left-color: var(--accent-deep); background: var(--mint); }
-.toast.toast-error { border-left-color: var(--danger); background: var(--peach); color: var(--danger); }
+.toast.toast-success .toast-icon { color: var(--accent-deep); }
 .toast.toast-error .toast-icon { color: var(--danger); }
-.toast.toast-info { border-left-color: var(--accent); background: var(--sky); }
+.toast.toast-info .toast-icon { color: var(--accent-deep); }
 .toast .toast-text { flex: 1; line-height: 1.5; min-width: 0; }
 .toast.is-leaving { opacity: 0; transform: translateY(-6px); }
 .toast-close {
@@ -751,6 +754,9 @@ body.no-scroll { overflow: hidden; }
 }
 .prefer-reduced-motion .toast,
 .prefer-reduced-motion .toast-close { transition: none; }
+@media (prefers-reduced-motion: reduce) {
+  .toast, .toast-close { transition: none !important; animation: none !important; }
+}
 
 /* Flash from [data-flash] is handled by JS; CSS just ensures the element can be styled */
 
@@ -1628,7 +1634,7 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 .footer-legal a:hover { text-decoration: underline; }
 
 /* ===== HEADER: NAV DROPDOWN ===== */
-.site-header { position: relative; z-index: 30; }
+.site-header { position: relative; z-index: 100; }
 .has-dropdown { position: relative; }
 .nav-parent-row { display: flex; align-items: center; gap: 2px; }
 .nav-parent-row .nav-link { flex: 1; min-width: 0; }
@@ -1641,40 +1647,54 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 }
 .nav-sub-toggle svg { transition: transform .15s; }
 .nav-sub-toggle[aria-expanded="true"] svg { transform: rotate(180deg); }
-.nav-dropdown {
-  display: grid; gap: 2px;
+.mega {
+  display: grid; gap: 24px;
   background: var(--surface); border: 1px solid var(--line);
-  border-radius: 16px; box-shadow: var(--shadow-toast);
-  padding: 8px;
+  border-radius: var(--r-lg); box-shadow: 0 12px 32px rgba(42,47,54,.08);
+  padding: 24px 28px;
 }
-.nav-dropdown a {
-  display: block; padding: 8px 10px; border-radius: 10px;
-  font-size: 14px; color: var(--ink-strong); overflow-wrap: anywhere;
+.mega h4 { margin: 0 0 10px; font-size: 14px; font-weight: 700; color: var(--ink-strong); }
+.mega a { display: block; padding: 4px 0; font-size: 14px; color: var(--ink-soft); }
+.mega a:hover, .mega a.on { color: var(--ink-strong); text-decoration: underline; }
+.mega .mega-tile {
+  display: flex; flex-direction: column; justify-content: flex-end;
+  min-height: 130px; padding: 18px 20px; border-radius: var(--r-md);
+  color: var(--ink-strong); text-decoration: none;
 }
-.nav-dropdown a:hover, .nav-dropdown a.on { background: var(--mint); color: var(--accent-deep); }
+.mega .mega-tile b { font-size: 16px; font-weight: 600; }
+.mega .mega-tile span { margin-top: 4px; font-size: 12.5px; color: var(--ink-soft); }
+.mega .mega-tile:hover { text-decoration: none; box-shadow: 0 12px 32px rgba(42,47,54,.08); }
+.mega-tile--sky { background: var(--sky); }
+.mega-tile--lilac { background: var(--lilac); }
 @media (max-width: 767.98px) {
-  .nav-dropdown {
-    display: none; width: 100%; margin: 4px 0 8px 0; padding-left: 16px;
+  .mega {
+    display: none; grid-template-columns: 1fr; gap: 14px;
+    width: 100%; margin: 4px 0 12px; padding: 12px 8px;
     border: 0; box-shadow: none; background: transparent; border-radius: 0;
   }
-  .nav-dropdown.is-open { display: grid; }
-  .nav-dropdown a { padding: 8px; font-size: 13px; }
+  .mega.is-open { display: grid; }
+  .mega .mega-tile { min-height: 96px; }
+}
+@media (max-width: 599.98px) {
+  .site-nav .mega { display: grid; gap: 8px; }
+  .site-nav .mega .mega-tile { display: none; }
+  .site-nav .mega a { padding: 6px 0 6px 12px; font-size: 14px; }
 }
 @media (min-width: 768px) {
   .nav-sub-toggle { display: none; }
   .has-dropdown::after {
-    content: ""; position: absolute; top: 100%; left: 0; right: 0; height: 8px;
+    content: ""; position: absolute; top: 100%; left: 0; right: 0; height: 10px;
   }
-  .nav-dropdown {
-    position: absolute; top: calc(100% + 8px); left: 0; z-index: 31;
-    min-width: 220px;
+  .mega {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) 1.2fr;
+    position: absolute; top: calc(100% + 8px); left: 0; z-index: 110;
+    width: min(760px, calc(100vw - 48px));
     opacity: 0; visibility: hidden; pointer-events: none;
     transform: translateY(4px);
     transition: opacity .15s, transform .15s, visibility .15s;
   }
-  .nav-dropdown.two-cols { grid-template-columns: 1fr 1fr; }
-  .has-dropdown:hover > .nav-dropdown,
-  .has-dropdown:focus-within > .nav-dropdown {
+  .has-dropdown:hover > .mega,
+  .has-dropdown:focus-within > .mega {
     opacity: 1; visibility: visible; pointer-events: auto; transform: none;
   }
 }
@@ -1694,4 +1714,25 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 }
 .catalog-chip:hover { border-color: var(--ink); }
 .catalog-chip.is-current { background: var(--ink); color: var(--canvas); border-color: var(--ink); }
+
+/* ===== DIALOG / MODAL: VIỀN MẶT ĐỊNH CỦA TRÌNH DUYỆT ===== */
+dialog, .modal, [role="dialog"] {
+  border: 0;
+  background: var(--surface);
+  color: var(--ink);
+  border-radius: var(--r-lg);
+  box-shadow: 0 12px 32px rgba(42,47,54,.08);
+  padding: 24px;
+}
+dialog::backdrop, .modal-backdrop::backdrop {
+  background: rgba(20,24,29,.55);
+}
+.modal-overlay, .dialog-overlay {
+  background: rgba(20,24,29,.55);
+  border: 0;
+}
+
+/* Chỉ bỏ outline khi focus bằng chương trình, giữ :focus-visible cho bàn phím. */
+:focus:not(:focus-visible) { outline: none; }
+main:focus, form:focus, [tabindex="-1"]:focus { outline: none; }
 

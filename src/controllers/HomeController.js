@@ -39,9 +39,9 @@ const getNewProducts = async (categoryIds, limit = 4) => {
 
 const getFallback = () => ({
   vouchers: [
-    { code: 'GIAM30K', desc: 'Giảm 30.000đ', note: 'Áp dụng cho đơn phù hợp' },
-    { code: 'GIAM10', desc: 'Giảm 10%', note: 'Áp dụng cho đơn phù hợp' },
-    { code: 'KHACHMOI', desc: 'Giảm 50.000đ', note: 'Dành cho khách mới' }
+    { code: 'GIAM30K', desc: 'Giảm 30.000đ', note: 'Cho đơn từ 300.000đ · HSD 30/11/2026' },
+    { code: 'GIAM10', desc: 'Giảm 10%, tối đa 50.000đ', note: 'Cho đơn từ 400.000đ · HSD 31/12/2026' },
+    { code: 'KHACHMOI', desc: 'Giảm 50.000đ', note: 'Đơn đầu tiên từ 250.000đ · HSD 31/12/2026' }
   ],
   categories: [],
   productsNewMen: [],

@@ -206,10 +206,34 @@
     <nav class="site-nav" id="site-nav" aria-label="Menu chính">
       <button class="menu-close" id="menu-close" type="button" aria-label="Đóng menu">×</button>
       <%
-        var navRoots = (locals.navCategories && Array.isArray(locals.navCategories)) ? locals.navCategories : [];
-        var activeCat = String(locals.category || '');
-        var namRoot = navRoots.find(function (r) { return r.name === 'Nam'; });
-        var nuRoot = navRoots.find(function (r) { return r.name === 'Nữ'; });
+        var nested = (locals && locals.locals) ? locals.locals : {};
+        var navSource = (typeof navCategories !== 'undefined' && Array.isArray(navCategories) && navCategories.length)
+          ? navCategories
+          : ((locals && Array.isArray(locals.navCategories) && locals.navCategories.length)
+            ? locals.navCategories
+            : ((Array.isArray(nested.navCategories) && nested.navCategories.length) ? nested.navCategories : []));
+        var fallbackRoots = [
+          { name: 'Nam', slug: 'nam', children: [
+            { name: 'Áo thun', slug: 'ao-thun-nam' }, { name: 'Áo sơ mi', slug: 'ao-so-mi-nam' },
+            { name: 'Áo khoác', slug: 'ao-khoac-nam' }, { name: 'Quần dài', slug: 'quan-dai-nam' },
+            { name: 'Quần short', slug: 'quan-short-nam' }
+          ] },
+          { name: 'Nữ', slug: 'nu', children: [
+            { name: 'Áo thun', slug: 'ao-thun-nu' }, { name: 'Áo sơ mi', slug: 'ao-so-mi-nu' },
+            { name: 'Quần dài', slug: 'quan-dai-nu' }, { name: 'Váy đầm', slug: 'vay-dam-nu' },
+            { name: 'Chân váy', slug: 'chan-vay-nu' }
+          ] },
+        ];
+        var namFromDb = navSource.find(function (r) { return r.name === 'Nam'; });
+        var nuFromDb = navSource.find(function (r) { return r.name === 'Nữ'; });
+        var namRoot = namFromDb && (namFromDb.children || []).length ? namFromDb : fallbackRoots[0];
+        var nuRoot = nuFromDb && (nuFromDb.children || []).length ? nuFromDb : fallbackRoots[1];
+        var activeCat = String(nested.category || (locals && locals.category) || '');
+        var viewLocals = {
+          q: nested.q || (locals && locals.q) || '',
+          currentUser: nested.currentUser || (locals && locals.currentUser),
+          cartCount: nested.cartCount || (locals && locals.cartCount),
+        };
         function rootHasActive(root) {
           if (!activeCat || !root) return false;
           if (root.slug === activeCat) return true;
@@ -218,22 +242,49 @@
         function rootHref(root, fallback) {
           return root ? '/catalog?category=' + encodeURIComponent(root.slug) : fallback;
         }
+        function childHref(root, child) {
+          return '/catalog?category=' + encodeURIComponent(child.slug);
+        }
+        function quickColumns(root) {
+          var columns = (root.children || []).slice(0, 2).map(function (child) {
+            return { title: child.name, links: [{ name: child.name, href: childHref(root, child) }] };
+          });
+          columns.push({
+            title: 'Xem nhanh',
+            links: [
+              { name: 'Sản phẩm mới', href: '/catalog?sort=newest' },
+              { name: 'Đang giảm giá', href: '/catalog?sort=price_asc' },
+              { name: 'Tất cả đồ ' + root.name, href: rootHref(root, '/catalog') }
+            ]
+          });
+          return columns.slice(0, 3);
+        }
+        function renderMega(root, tileClass) {
+          if (!root) return '';
+          var columns = quickColumns(root).map(function (col) {
+            var links = col.links.map(function (link) {
+              var on = activeCat === link.href.split('category=')[1] ? ' class="on"' : '';
+              return '<a href="' + link.href + '"' + on + '>' + link.name + '</a>';
+            }).join('');
+            return '<div><h4>' + col.title + '</h4>' + links + '</div>';
+          }).join('');
+          var tile = '<a class="mega-tile ' + tileClass + '" href="' + rootHref(root, '/catalog') + '">'
+            + '<b>Thời trang ' + root.name + '</b>'
+            + '<span>' + (root.name === 'Nữ' ? 'Nhẹ nhàng, thoải mái cả ngày' : 'Gọn gàng, dễ phối mỗi ngày') + '</span>'
+            + '</a>';
+          return columns + tile;
+        }
       %>
       <ul class="nav-list">
         <% if (namRoot) { %>
           <li class="has-dropdown<%= rootHasActive(namRoot) ? ' is-active' : '' %>">
             <div class="nav-parent-row">
-              <a href="<%= rootHref(namRoot, '/#section-new-men') %>" class="nav-link<%= rootHasActive(namRoot) ? ' on' : '' %>">Nam</a>
+              <a href="<%= rootHref(namRoot, '/#section-new-men') %>" class="nav-link<%= rootHasActive(namRoot) ? ' on' : '' %>" aria-haspopup="true">Nam</a>
               <button type="button" class="nav-sub-toggle" aria-expanded="false" aria-label="Mở danh mục Nam">
                 <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
               </button>
             </div>
-            <ul class="nav-dropdown<%= (namRoot.children || []).length > 6 ? ' two-cols' : '' %>">
-              <li><a href="/catalog?category=<%= encodeURIComponent(namRoot.slug) %>">Xem tất cả Nam</a></li>
-              <% (namRoot.children || []).forEach(function (child) { %>
-                <li><a href="/catalog?category=<%= encodeURIComponent(child.slug) %>"<%= activeCat === child.slug ? ' class="on"' : '' %>><%= child.name %></a></li>
-              <% }) %>
-            </ul>
+            <div class="mega" role="group" aria-label="Danh mục Nam"><%- renderMega(namRoot, 'mega-tile--sky') %></div>
           </li>
         <% } else { %>
           <li><a href="/#section-new-men" class="nav-link">Nam</a></li>
@@ -241,17 +292,12 @@
         <% if (nuRoot) { %>
           <li class="has-dropdown<%= rootHasActive(nuRoot) ? ' is-active' : '' %>">
             <div class="nav-parent-row">
-              <a href="<%= rootHref(nuRoot, '/#section-new-women') %>" class="nav-link<%= rootHasActive(nuRoot) ? ' on' : '' %>">Nữ</a>
+              <a href="<%= rootHref(nuRoot, '/#section-new-women') %>" class="nav-link<%= rootHasActive(nuRoot) ? ' on' : '' %>" aria-haspopup="true">Nữ</a>
               <button type="button" class="nav-sub-toggle" aria-expanded="false" aria-label="Mở danh mục Nữ">
                 <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
               </button>
             </div>
-            <ul class="nav-dropdown<%= (nuRoot.children || []).length > 6 ? ' two-cols' : '' %>">
-              <li><a href="/catalog?category=<%= encodeURIComponent(nuRoot.slug) %>">Xem tất cả Nữ</a></li>
-              <% (nuRoot.children || []).forEach(function (child) { %>
-                <li><a href="/catalog?category=<%= encodeURIComponent(child.slug) %>"<%= activeCat === child.slug ? ' class="on"' : '' %>><%= child.name %></a></li>
-              <% }) %>
-            </ul>
+            <div class="mega" role="group" aria-label="Danh mục Nữ"><%- renderMega(nuRoot, 'mega-tile--lilac') %></div>
           </li>
         <% } else { %>
           <li><a href="/#section-new-women" class="nav-link">Nữ</a></li>
@@ -263,7 +309,7 @@
     <div class="header-actions">
       <!-- 1) Ô tìm kiếm (desktop, từ 768px trở lên hiển thị) -->
       <form class="header-search" action="/catalog" method="GET" role="search">
-        <input class="header-search-input" type="search" name="keyword" placeholder="Tìm sản phẩm..." aria-label="Tìm sản phẩm" value="<%= locals.q || '' %>" autocomplete="off">
+        <input class="header-search-input" type="search" name="keyword" placeholder="Tìm sản phẩm..." aria-label="Tìm sản phẩm" value="<%= viewLocals.q %>" autocomplete="off">
         <button class="header-search-btn" type="submit" aria-label="Tìm kiếm">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <circle cx="11" cy="11" r="6.5"/>
@@ -281,7 +327,7 @@
       </button>
 
       <!-- 3) Tài khoản -->
-      <a class="header-icon-btn" href="<%= locals.currentUser ? '/account' : '/login' %>" aria-label="<%= locals.currentUser ? 'Tài khoản của ' + (locals.currentUser.name || 'bạn') : 'Đăng nhập' %>">
+      <a class="header-icon-btn" href="<%= viewLocals.currentUser ? '/account' : '/login' %>" aria-label="<%= viewLocals.currentUser ? 'Tài khoản của ' + (viewLocals.currentUser.name || 'bạn') : 'Đăng nhập' %>">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <circle cx="12" cy="8" r="4"/>
           <path d="M4.5 20.5c1-4 4-6 7.5-6s6.5 2 7.5 6"/>
@@ -289,7 +335,7 @@
       </a>
 
       <!-- 4) Giỏ hàng -->
-      <% const cartCount = Number(locals.cartCount) || 0; %>
+      <% const cartCount = Number(viewLocals.cartCount) || 0; %>
       <a class="header-icon-btn header-cart" href="/cart" aria-label="Giỏ hàng<%= cartCount > 0 ? ', ' + cartCount + ' sản phẩm' : '' %>">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <path d="M5 8h14l-1 12H6L5 8z"/>
@@ -304,7 +350,7 @@
   <!-- 5) Hàng tìm kiếm trên điện thoại -->
   <div class="header-search-bar container" id="header-search-bar" hidden>
     <form class="header-search-bar-form" action="/catalog" method="GET" role="search">
-      <input class="header-search-bar-input" type="search" name="keyword" placeholder="Tìm sản phẩm..." aria-label="Tìm sản phẩm" value="<%= locals.q || '' %>" autocomplete="off">
+        <input class="header-search-bar-input" type="search" name="keyword" placeholder="Tìm sản phẩm..." aria-label="Tìm sản phẩm" value="<%= viewLocals.q %>" autocomplete="off">
       <button class="header-search-btn" type="submit" aria-label="Tìm kiếm">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <circle cx="11" cy="11" r="6.5"/>
@@ -359,7 +405,7 @@
         if (!isHidden) {
           closeSearch(true);
         }
-        document.querySelectorAll('.has-dropdown .nav-dropdown.is-open').forEach(function (panel) {
+        document.querySelectorAll('.has-dropdown .mega.is-open').forEach(function (panel) {
           panel.classList.remove('is-open');
         });
         document.querySelectorAll('.nav-sub-toggle[aria-expanded="true"]').forEach(function (btn) {
@@ -371,7 +417,7 @@
     document.querySelectorAll('.nav-sub-toggle').forEach(function (btn) {
       btn.addEventListener('click', function () {
         var li = btn.closest('.has-dropdown');
-        var panel = li ? li.querySelector('.nav-dropdown') : null;
+        var panel = li ? li.querySelector('.mega') : null;
         if (!panel) return;
         var open = !panel.classList.contains('is-open');
         panel.classList.toggle('is-open', open);
