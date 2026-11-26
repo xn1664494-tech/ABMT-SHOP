@@ -120,6 +120,7 @@ router.get('/cart', asyncHandler(async (req, res, next) => {
     cartId,
     createIfMissing: true,
     res,
+    mergeOnConflict: 'clamp',
   });
 
   const viewCart = cart
@@ -128,8 +129,17 @@ router.get('/cart', asyncHandler(async (req, res, next) => {
   const items = viewCart ? viewCart.items : [];
   const { subtotal, shippingFee, total, count } = CartService.buildSummary(items);
 
+  const flash = getFlash(req);
+  if (cart && cart.mergeAdjusted) {
+    flash.push({
+      type: 'info',
+      message: 'Một số sản phẩm đã được điều chỉnh số lượng',
+    });
+  }
+
   res.render('pages/cart', {
     title: 'Giỏ hàng',
+    flash,
     locals: {
       empty: items.length === 0,
       items,
@@ -137,6 +147,7 @@ router.get('/cart', asyncHandler(async (req, res, next) => {
       shippingFee,
       total,
       count,
+      flash,
     },
     cartCount: count,
   });
@@ -317,6 +328,7 @@ router.get('/checkout', asyncHandler(async (req, res, next) => {
     cartId,
     createIfMissing: false,
     res,
+    mergeOnConflict: 'clamp',
   });
 
   const rawItemId = req.query.item;
@@ -354,9 +366,18 @@ router.get('/checkout', asyncHandler(async (req, res, next) => {
 
   const paymentMethods = ['cod', 'bank_transfer'];
 
+  const flash = getFlash(req);
+  if (cart && cart.mergeAdjusted) {
+    flash.push({
+      type: 'info',
+      message: 'Một số sản phẩm đã được điều chỉnh số lượng',
+    });
+  }
+
   res.set('Cache-Control', 'no-store');
   res.render('pages/checkout', {
     title: 'Thanh toán',
+    flash,
     locals: {
       lines,
       subtotal,
@@ -365,6 +386,7 @@ router.get('/checkout', asyncHandler(async (req, res, next) => {
       savedAddresses,
       paymentMethods,
       itemId: selectedItemId || '',
+      flash,
     },
     cartCount: count,
   });

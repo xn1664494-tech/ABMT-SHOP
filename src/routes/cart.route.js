@@ -29,6 +29,7 @@ const resolveCart = async (req, res, currentUser, createIfMissing = false) => {
     cartId: cookieCartId,
     createIfMissing,
     res,
+    mergeOnConflict: 'none',
   });
 };
 
