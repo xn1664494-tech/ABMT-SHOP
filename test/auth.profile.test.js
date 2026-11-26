@@ -37,6 +37,18 @@ const csrfFor = async (agent) => {
   return res.body.data.csrfToken;
 };
 
+// origin/main bypass CSRF khi NODE_ENV=test. Bat tam trong pham vi 1 request
+// de assert hanh vi that cua csrfProtection, roi khoi phuc ngay sau do.
+const withCsrfEnforced = async (fn) => {
+  const previousNodeEnv = process.env.NODE_ENV;
+  process.env.NODE_ENV = 'development';
+  try {
+    return await fn();
+  } finally {
+    process.env.NODE_ENV = previousNodeEnv;
+  }
+};
+
 test.beforeEach(() => {
   fakeUserModel.users.length = 0;
 });
@@ -189,14 +201,39 @@ test('T4-1-3: token khong hop le tra 401', async () => {
   assert.equal(res.status, 401);
 });
 
-test.skip('T4-1-3: cap nhat profile thieu CSRF token tra 403', async () => {
+test('T4-1-3: cap nhat profile thieu CSRF token tra 403', async () => {
   await seedUser();
   const agent = request.agent(app);
   await login(agent);
 
-  const res = await agent.patch('/api/profile/me').send({ name: 'Tran Thi B' });
+  const res = await withCsrfEnforced(() =>
+    agent.patch('/api/profile/me').send({ name: 'Tran Thi B' }),
+  );
 
   assert.equal(res.status, 403);
+  assert.equal(fakeUserModel.users[0].name, 'Nguyen Van A');
+});
+
+test('T4-1-3: GET /api/profile/addresses khong bi route /:userId bat nham', async () => {
+  const user = await seedUser();
+  user.addresses.push({
+    recipient: 'Nguyen Van A',
+    phone: '0900000000',
+    city: 'Ha Noi',
+    district: 'Hoan Kiem',
+    ward: 'Hang Bac',
+    street: '1 Test',
+    isDefault: true,
+  });
+
+  const agent = request.agent(app);
+  await login(agent);
+
+  const res = await agent.get('/api/profile/addresses');
+
+  assert.equal(res.status, 200);
+  assert.equal(res.body.success, true);
+  assert.equal(res.body.data.addresses.length, 1);
 });
 
 test('T4-1-3: khong the cap nhat profile cua nguoi khac qua URL', async () => {
