@@ -3,9 +3,10 @@
 - **Task ID:** T5-2-1
 - **Phase:** Phase 3 — Nghiệp vụ thương mại
 - **Dev:** Dev 2 — Backend Business & Database
-- **Nhánh:** `fix/t5-2-1-stock-check`
-- **Base (stacked):** `feat/dev2-cart-api-fix-2026-11-26` (PR clamp/flash chưa merge vào `main`; PR của nhánh này cần base là nhánh trên)
-- **Trạng thái:** DONE — chờ review
+- **Nhánh:** `fix/t5-2-1-stock-check` (đã merge & xóa) — cập nhật bởi `docs/t5-2-1-closeout`
+- **Base:** `main`
+- **Trạng thái:** DONE — đã merge PR #88 (`187db6a`)
+- **PR:** https://github.com/xn1664494-tech/ABMT-SHOP/pull/88
 
 ## 1. Yêu cầu
 
@@ -67,4 +68,4 @@ Cookie: accessToken=<jwt>; cartId=<guest-session>
 ## 6. Ghi chú
 
 - Kiểm tra ở giỏ mang tính cảnh báo; chốt tồn kho cuối cùng khi đặt hàng dùng CAS `stock >= qty` (chống oversell) và cũng trả 409.
-- Nhánh stacked trên PR clamp/flash; khi PR kia merge vào `main`, đổi base PR này về `main`.
+- Đã merge vào `main` qua PR #88 (commit `187db6a`); nhánh `fix/t5-2-1-stock-check` đã xóa sau merge.
