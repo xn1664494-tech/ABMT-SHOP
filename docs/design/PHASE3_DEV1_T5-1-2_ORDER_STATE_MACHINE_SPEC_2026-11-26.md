@@ -160,3 +160,17 @@ Chạy dự kiến: `node --test test/order.state-machine.test.js` + 22 file DB-
 - T5-1-1 đã xong contract cart (xem banner trong báo cáo audit).
 - Service state machine có caller thật (route admin/customer), không chỉ test static.
 - Không ghi status trực tiếp ở bất kỳ route/controller nào khác.
+
+---
+
+## 10. Dev 1 đã chốt (2026-11-26)
+
+| Chốt | Giá trị |
+|---|---|
+| Owner file | Dev 1 **chỉ tạo file/service mới** (`src/services/orderStateMachine.js`, `test/order.state-machine.test.js`). Không sửa `src/model/Order.js` khi chưa có uỷ quyền Dev 2. |
+| Actor hợp lệ | `admin`, `system`, `scheduler` (câu 5). Không cho "user tự do" ghi status. |
+| T6-2-2 | Phải đi qua `assertTransition`, **không ghi `status` trực tiếp**. |
+| Cơ chế ghi | CAS `findOneAndUpdate` + `$push statusHistory` như mục 3; không `order.status = ...; save()`. |
+| Chưa chốt | Ma trận chi tiết mục 4 (đặc biệt `pending→confirmed` cho `system` và khách hủy ở `confirmed`), kiểu `statusHistory.by` cho `system`, marker/idempotency trên `Order.js`. |
+
+=> Dev 1 có thể bắt đầu **file mới + test DB-free** ngay khi được phép implement; chưa đụng file cũ của Dev 2.

@@ -86,11 +86,11 @@ Lưu ý: `admin.users.test.js` / `admin.audit-event.test.js` dùng fake model (�
 
 | Việc | Trạng thái | Người quyết |
 |---|---|---|
-| Mount `currentUser` trước `/api` (`c309879`) | Chưa merge; `/api/cart/merge` vẫn luôn 401 | Dev 2 chốt lấy riêng commit hay phương án khác |
-| Contract cart (`PUT/qty` vs FE `PATCH/quantity`, `sku` vs `_id`, cookie `cartId`) | Chưa chốt | Dev 1 ↔ Dev 2 |
-| Merge semantics (cộng dồn SKU, check stock, idempotency) | Chưa chốt | Dev 2 |
-| T5-1-2 state machine service | Mới chỉ là spec (`docs/design/PHASE3_DEV1_T5-1-2_ORDER_STATE_MACHINE_SPEC_2026-11-26.md`) | Dev 2 duyệt ma trận quyền |
-| T6-1-3 policy + cron | Mới chỉ là spec (`docs/design/PHASE3_DEV1_T6-1-3_OVERDUE_ORDER_POLICY_2026-11-26.md`) | Dev 2 chốt TTL/owner hoàn kho/hạ tầng |
+| Mount `currentUser` trước `/api` (`c309879`) | Chưa merge; `/api/cart/merge` vẫn luôn 401 | **Dev 1 chốt đề xuất**: lấy riêng commit `c309879`; chờ Dev 2 uỷ quyền/cherry-pick |
+| Contract cart | **Dev 1 chốt**: giữ `PUT /api/cart/items/:id {qty}`; FE `cart.js:177-178` đã khớp, **không đổi FE**; identity dùng `sku`, nhưng `cart.route.js` thuộc Dev 2 nên Dev 2 sửa 2 dòng `:171,:211`; API set cookie `cartId` | Dev 2 xác nhận lịch sửa |
+| Merge semantics | Dev 1 chốt hành vi: cộng dồn qty + check stock + lấy giá DB + `mergedAt/mergedFrom` + clear cookie sau save; **Dev 2 viết trong `cart.route.js`, Dev 1 review** | Dev 2 |
+| T5-1-2 state machine service | Dev 1 chốt actor `admin/system/scheduler`; spec sẵn; Dev 1 có thể tạo file mới `src/services/orderStateMachine.js` + test khi được phép implement | Ma trận chi tiết vẫn chờ Dev 2 |
+| T6-1-3 policy + cron | Dev 1 chốt TTL 2h, unpaid-only, paid không hủy, dryRun, UTC, ưu tiên external scheduler; **owner hoàn kho + dep `node-cron` vẫn chờ Dev 2** | Dev 2 |
 | T6-1-2 audit publisher thật | `auditEvent.js` vẫn no-op | Làm sau T6-1-1 |
 
 ---
