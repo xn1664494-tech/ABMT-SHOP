@@ -1,4 +1,5 @@
 const express = require('express');
+const mongoose = require('mongoose');
 const router = express.Router();
 const Order = require('../model/Order');
 const Cart = require('../model/Cart');
@@ -11,11 +12,11 @@ const ErrorResponse = require('../utils/appError');
 const { calculateShippingFee } = require('../model/Order');
 const addressService = require('../services/addressService');
 
-const isValidObjectId = (id) => require('mongoose').Types.ObjectId.isValid(id);
+const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id);
 
 /**
  * POST /api/orders - Tạo đơn hàng mới (yêu cầu đăng nhập + CSRF)
- * Body: { addressId | address{fullName, phone, province, district, ward, detail}, note, paymentMethod }
+ * Body: { item?, addressId | address{fullName, phone, province, district, ward, detail}, note, paymentMethod }
  */
 router.post(
   '/',
@@ -23,13 +24,29 @@ router.post(
   csrfProtection,
   asyncHandler(async (req, res, next) => {
     const userId = req.user._id || req.user.id;
-    const { addressId, address, note, paymentMethod } = req.body || {};
+    const { addressId, address, note, paymentMethod, item: rawItemId } = req.body || {};
 
     // Lấy giỏ hàng của user
     const cart = await Cart.findOne({ user: userId });
     if (!cart || !cart.items || cart.items.length === 0) {
       return next(new ErrorResponse('Giỏ hàng trống, không thể đặt hàng', 400));
     }
+
+    let selectedItemId = null;
+    if (rawItemId !== undefined && rawItemId !== null && rawItemId !== '') {
+      if (typeof rawItemId !== 'string' || !isValidObjectId(rawItemId)) {
+        return next(new ErrorResponse('Id sản phẩm trong giỏ không hợp lệ', 400));
+      }
+      const hasItem = cart.items.some((entry) => String(entry._id) === rawItemId);
+      if (!hasItem) {
+        return next(new ErrorResponse('Sản phẩm không tồn tại trong giỏ hàng', 404));
+      }
+      selectedItemId = rawItemId;
+    }
+
+    const itemsToOrder = selectedItemId
+      ? cart.items.filter((entry) => String(entry._id) === selectedItemId)
+      : cart.items;
 
     // Xác định địa chỉ giao hàng
     let shippingAddress = null;
@@ -119,7 +136,7 @@ router.post(
     const stockDeductions = []; // { productId, variantSku, qty } để bù trừ nếu lỗi
     let subtotal = 0;
 
-    for (const item of cart.items) {
+    for (const item of itemsToOrder) {
       const productObj = await Product.findById(item.product);
       if (!productObj || productObj.isDeleted) {
         // Hoàn lại các dòng đã trừ kho
@@ -212,8 +229,15 @@ router.post(
     ],
   });
 
-  // Xóa giỏ hàng sau khi tạo đơn thành công
-  await Cart.deleteOne({ user: userId });
+  if (selectedItemId) {
+    const itemObjectId = new mongoose.Types.ObjectId(selectedItemId);
+    await Cart.updateOne(
+      { user: userId, 'items._id': itemObjectId },
+      { $pull: { items: { _id: itemObjectId } } }
+    );
+  } else {
+    await Cart.deleteOne({ user: userId });
+  }
 
   return res.status(201).json({
     success: true,
