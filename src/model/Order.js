@@ -247,6 +247,11 @@ const orderSchema = new mongoose.Schema(
       },
     },
     note: { type: String, trim: true, maxlength: [500, 'Ghi chú tối đa 500 ký tự'] },
+    stockRestoredAt: {
+      type: Date,
+      default: null,
+      description: 'Thời gian hoàn kho, dùng để tránh double-restock khi hủy đơn',
+    },
   },
   {
     timestamps: true,

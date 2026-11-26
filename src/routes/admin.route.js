@@ -4,6 +4,13 @@ const { csrfProtection } = require('../middleware/csrf');
 const validate = require('../middleware/validate');
 const asyncHandler = require('../utils/asyncHandler');
 const { getStats } = require('../services/adminService');
+const {
+  getDashboard,
+  getRevenueSeries,
+  getTopCategories,
+  getLowStockVariants,
+} = require('../services/dashboardService');
+const { dashboardQuerySchema } = require('../validators/dashboardValidator');
 const AdminUserController = require('../controllers/adminUserController');
 const {
   listUsersQuerySchema,
@@ -43,6 +50,53 @@ router.get(
       data: stats,
     });
   })
+);
+
+/**
+ * GET /api/admin/dashboard - JSON aggregation cho bieu do dashboard.
+ */
+router.get(
+  '/dashboard',
+  authenticate,
+  authorize('admin'),
+  validate(dashboardQuerySchema, 'query'),
+  asyncHandler(async (req, res) => {
+    const data = await getDashboard(req.validatedQuery);
+    return res.status(200).json({ success: true, data });
+  }),
+);
+
+router.get(
+  '/dashboard/revenue',
+  authenticate,
+  authorize('admin'),
+  validate(dashboardQuerySchema, 'query'),
+  asyncHandler(async (req, res) => {
+    const data = await getRevenueSeries(req.validatedQuery);
+    return res.status(200).json({ success: true, data });
+  }),
+);
+
+router.get(
+  '/dashboard/top-categories',
+  authenticate,
+  authorize('admin'),
+  validate(dashboardQuerySchema, 'query'),
+  asyncHandler(async (req, res) => {
+    const data = await getTopCategories(req.validatedQuery);
+    return res.status(200).json({ success: true, data });
+  }),
+);
+
+router.get(
+  '/dashboard/low-stock',
+  authenticate,
+  authorize('admin'),
+  validate(dashboardQuerySchema, 'query'),
+  asyncHandler(async (req, res) => {
+    const data = await getLowStockVariants(req.validatedQuery);
+    return res.status(200).json({ success: true, data });
+  }),
 );
 
 /**

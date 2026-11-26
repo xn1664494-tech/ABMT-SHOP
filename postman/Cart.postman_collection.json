@@ -1,0 +1,259 @@
+{
+  "info": {
+    "name": "T3-2-2 Cart API",
+    "description": "Collection kiem thu API Cart: xem gio, them/sua so luong/xoa, gop gio guest vao user. Gia luon lay tu DB (bo qua unitPrice client gui len), chan vuot ton kho 409. POST/PUT/DELETE can CSRF.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_postman_id": "t3-2-2-cart-api"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3099", "type": "string" },
+    { "key": "customerToken", "value": "", "type": "string" },
+    { "key": "csrfToken", "value": "", "type": "string" },
+    { "key": "cartProductId", "value": "", "type": "string" },
+    { "key": "cartProductPrice", "value": "", "type": "string" },
+    { "key": "cartSku", "value": "", "type": "string" },
+    { "key": "cartItemId", "value": "", "type": "string" }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "if (!['GET', 'HEAD', 'OPTIONS'].includes(pm.request.method)) {",
+          "  var token = pm.collectionVariables.get('csrfToken');",
+          "  if (token && !pm.request.headers.get('X-CSRF-Token')) {",
+          "    pm.request.headers.add({ key: 'X-CSRF-Token', value: token });",
+          "  }",
+          "}"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "Cart - Lay CSRF token",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/auth/csrf"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status la 200', function () { pm.response.to.have.status(200); });",
+              "pm.test('Luu csrf token', function () {",
+              "  pm.collectionVariables.set('csrfToken', pm.response.json().data.csrfToken);",
+              "  pm.expect(pm.collectionVariables.get('csrfToken')).to.not.be.empty;",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Cart - Lay gio guest",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/cart"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status la 200', function () { pm.response.to.have.status(200); });",
+              "pm.test('Tra ve success va items', function () {",
+              "  var body = pm.response.json();",
+              "  pm.expect(body.success).to.equal(true);",
+              "  pm.expect(body.data.items).to.be.an('array');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Cart - Them san pham (bo qua gia client)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"product\": \"{{cartProductId}}\", \"size\": \"M\", \"color\": \"Den\", \"qty\": 2, \"unitPrice\": 1}"
+        },
+        "url": "{{baseUrl}}/api/cart/items"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status la 200', function () { pm.response.to.have.status(200); });",
+              "var data = pm.response.json().data;",
+              "pm.test('Gia lay tu DB, khong tin unitPrice client', function () {",
+              "  pm.expect(data.items).to.have.length(1);",
+              "  pm.expect(String(data.items[0].unitPrice)).to.equal(String(pm.variables.get('cartProductPrice')));",
+              "  pm.expect(data.subtotal).to.equal(Number(pm.variables.get('cartProductPrice')) * 2);",
+              "});",
+              "pm.test('Luu item id', function () {",
+              "  var item = data.items[0];",
+              "  var id = String(item._id || item.id || '');",
+              "  pm.expect(id).to.not.be.empty;",
+              "  pm.collectionVariables.set('cartItemId', id);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Cart - Cap nhat so luong",
+      "request": {
+        "method": "PUT",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\"qty\": 3}" },
+        "url": "{{baseUrl}}/api/cart/items/{{cartItemId}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status la 200', function () { pm.response.to.have.status(200); });",
+              "pm.test('So luong duoc cap nhat', function () {",
+              "  var data = pm.response.json().data;",
+              "  pm.expect(data.items[0].qty).to.equal(3);",
+              "  pm.expect(data.count).to.equal(3);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Cart - Cap nhat vuot ton kho (409)",
+      "request": {
+        "method": "PUT",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\"qty\": 9999}" },
+        "url": "{{baseUrl}}/api/cart/items/{{cartItemId}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status la 409', function () { pm.response.to.have.status(409); });",
+              "pm.test('Khong thanh cong', function () { pm.expect(pm.response.json().success).to.equal(false); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Cart - Dang nhap customer",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"email\": \"postman.customer@test.com\", \"password\": \"password123\"}"
+        },
+        "url": "{{baseUrl}}/api/auth/login"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status la 200', function () { pm.response.to.have.status(200); });",
+              "pm.test('Dang nhap thanh cong', function () { pm.expect(pm.response.json().success).to.equal(true); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Cart - Gop gio guest vao user",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": "{{baseUrl}}/api/cart/merge"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status la 200', function () { pm.response.to.have.status(200); });",
+              "var data = pm.response.json().data;",
+              "pm.test('Gop duoc san pham guest', function () {",
+              "  pm.expect(data.items.map(function (i) { return i.sku; })).to.include(pm.variables.get('cartSku'));",
+              "  pm.expect(data.count).to.equal(3);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Cart - Lay gio sau khi gop",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/cart"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status la 200', function () { pm.response.to.have.status(200); });",
+              "var data = pm.response.json().data;",
+              "pm.test('Gio user co san pham va gia DB', function () {",
+              "  pm.expect(data.items).to.have.length(1);",
+              "  pm.expect(String(data.items[0].unitPrice)).to.equal(String(pm.variables.get('cartProductPrice')));",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Cart - Xoa san pham",
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": "{{baseUrl}}/api/cart/items/{{cartItemId}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status la 200', function () { pm.response.to.have.status(200); });",
+              "pm.test('Gio rong sau khi xoa', function () {",
+              "  var data = pm.response.json().data;",
+              "  pm.expect(data.items).to.have.length(0);",
+              "  pm.expect(data.count).to.equal(0);",
+              "});"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
