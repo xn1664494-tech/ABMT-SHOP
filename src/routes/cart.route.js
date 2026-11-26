@@ -6,6 +6,20 @@ const Product = require('../model/Products');
 const { calculateShippingFee } = require('../model/Order');
 const asyncHandler = require('../utils/asyncHandler');
 const ErrorResponse = require('../utils/appError');
+const { csrfProtection } = require('../middleware/csrf');
+const { ensureCartItemIds } = require('../utils/cartItems');
+
+const CART_COOKIE_MAX_AGE = 30 * 24 * 60 * 60 * 1000;
+
+const setCartCookie = (res, cartId) => {
+  res.cookie('cartId', cartId, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'Lax',
+    path: '/',
+    maxAge: CART_COOKIE_MAX_AGE,
+  });
+};
 
 const calcSummary = (items) => {
   const subtotal = items.reduce((sum, item) => sum + (item.unitPrice * item.qty), 0);
@@ -18,8 +32,9 @@ const calcSummary = (items) => {
 /**
  * Lấy giỏ hàng hiện tại: ưu tiên user (nếu đăng nhập), còn không thì theo sessionId (cookie cartId)
  */
-const resolveCart = async (req, currentUser, createIfMissing = false) => {
-  const cartId = req.cookies ? req.cookies.cartId : undefined;
+const resolveCart = async (req, res, currentUser, createIfMissing = false) => {
+  const cookieCartId = req.cookies ? req.cookies.cartId : undefined;
+  let cartId = cookieCartId;
 
   let cart = null;
   if (currentUser) {
@@ -29,9 +44,18 @@ const resolveCart = async (req, currentUser, createIfMissing = false) => {
     cart = await Cart.findOne({ sessionId: cartId });
   }
   if (!cart && createIfMissing) {
-    const fields = currentUser ? { user: currentUser.id } : { sessionId: cartId || crypto.randomBytes(16).toString('hex') };
+    if (!currentUser && !cartId) {
+      cartId = crypto.randomBytes(16).toString('hex');
+    }
+    const fields = currentUser ? { user: currentUser.id } : { sessionId: cartId };
     cart = await Cart.create({ ...fields, items: [] });
+    if (!currentUser) setCartCookie(res, cartId);
   }
+
+  if (cart && ensureCartItemIds(cart)) {
+    await cart.save();
+  }
+
   return cart;
 };
 
@@ -41,7 +65,7 @@ const resolveCart = async (req, currentUser, createIfMissing = false) => {
 router.get(
   '/',
   asyncHandler(async (req, res, next) => {
-    const cart = await resolveCart(req, res.locals.currentUser, true);
+    const cart = await resolveCart(req, res, res.locals.currentUser, true);
     const items = cart ? cart.items : [];
     const summary = calcSummary(items);
 
@@ -62,6 +86,7 @@ router.get(
  */
 router.post(
   '/items',
+  csrfProtection,
   asyncHandler(async (req, res, next) => {
     const { product, size, color, qty } = req.body;
 
@@ -90,7 +115,7 @@ router.post(
     }
 
     const sku = variant.sku;
-    const cart = await resolveCart(req, res.locals.currentUser, true);
+    const cart = await resolveCart(req, res, res.locals.currentUser, true);
 
     const existingIdx = (cart.items || []).findIndex(
       (item) => item.sku === sku && item.product.equals(product)
@@ -131,18 +156,19 @@ router.post(
  */
 router.put(
   '/items/:id',
+  csrfProtection,
   asyncHandler(async (req, res, next) => {
     const { qty } = req.body;
     const itemId = req.params.id;
 
     const qtyNum = Math.max(1, Number(qty) || 1);
 
-    const cart = await resolveCart(req, res.locals.currentUser);
+    const cart = await resolveCart(req, res, res.locals.currentUser);
     if (!cart) {
       return next(new ErrorResponse('Giỏ hàng không tồn tại', 404));
     }
 
-    const item = (cart.items || []).find((it) => it._id.toString() === itemId);
+    const item = (cart.items || []).find((it) => it._id && it._id.toString() === itemId);
     if (!item) {
       return next(new ErrorResponse('Sản phẩm không tồn tại trong giỏ', 404));
     }
@@ -172,16 +198,17 @@ router.put(
  */
 router.delete(
   '/items/:id',
+  csrfProtection,
   asyncHandler(async (req, res, next) => {
     const itemId = req.params.id;
 
-    const cart = await resolveCart(req, res.locals.currentUser);
+    const cart = await resolveCart(req, res, res.locals.currentUser);
     if (!cart) {
       return next(new ErrorResponse('Giỏ hàng không tồn tại', 404));
     }
 
     const beforeLen = (cart.items || []).length;
-    cart.items = (cart.items || []).filter((it) => it._id.toString() !== itemId);
+    cart.items = (cart.items || []).filter((it) => !it._id || it._id.toString() !== itemId);
 
     if (cart.items.length === beforeLen) {
       return next(new ErrorResponse('Sản phẩm không tồn tại trong giỏ', 404));
