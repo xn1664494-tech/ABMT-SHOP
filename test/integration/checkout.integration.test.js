@@ -203,7 +203,7 @@ test('IT-CART-GUEST: TTL index va unique sessionId', async (t) => {
     indexes.some(
       (index) =>
         index.key.expiresAt === 1 &&
-        index.expireAfterSeconds === Cart.GUEST_CART_TTL_SECONDS,
+        index.expireAfterSeconds === 0,
     ),
     'thieu TTL index expiresAt',
   );
