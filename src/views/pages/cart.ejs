@@ -80,6 +80,7 @@
                       <input type="number" class="qty-field" value="<%= qty %>" min="1" max="<%= maxStock || qty %>" data-saved="<%= qty %>" inputmode="numeric" aria-label="Số lượng <%= productName %>">
                       <button type="button" class="qty-btn" data-action="inc" aria-label="Tăng số lượng">+</button>
                     </div>
+                    <a href="/checkout?item=<%= encodeURIComponent(itemId) %>" class="btn btn-primary btn-sm" data-action="checkout">Thanh toán</a>
                     <button type="button" class="btn btn-ghost btn-sm" data-action="remove">Xóa</button>
                   </div>
                 </div>

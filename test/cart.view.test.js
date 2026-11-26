@@ -49,9 +49,10 @@ test('T5-4-1: view hien ten/anh/gia/tong va escape du lieu san pham', async () =
     images: ['https://example.com/ao-den.jpg'],
     variants: [{ sku: 'SP-AO-001-M-DEN', stock: 5 }],
   };
+  const itemId = new mongoose.Types.ObjectId();
   seedCart([
     {
-      _id: new mongoose.Types.ObjectId(),
+      _id: itemId,
       product,
       sku: 'SP-AO-001-M-DEN',
       size: 'M',
@@ -72,5 +73,6 @@ test('T5-4-1: view hien ten/anh/gia/tong va escape du lieu san pham', async () =
   assert.match(res.text, /max="5"/);
   assert.match(res.text, /id="empty"[^>]*hidden/);
   assert.doesNotMatch(res.text, /id="full"[^>]*hidden/);
-  assert.match(res.text, /href="\/checkout"/);
+  assert.match(res.text, new RegExp(`href="/checkout\\?item=${itemId.toString()}"[^>]*data-action="checkout"`));
+  assert.match(res.text, /href="\/checkout"[^>]*btn-block/);
 });
