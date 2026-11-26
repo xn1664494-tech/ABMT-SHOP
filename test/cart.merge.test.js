@@ -9,13 +9,31 @@ process.env.JWT_ACCESS_EXPIRES_IN = '15m';
 process.env.APP_ORIGIN = 'http://localhost:3000';
 
 const { createFakeUserModel, installFakeUserModel } = require('./support/fakeUserModel');
-const { createFakeCartModel, installFakeModel } = require('./support/fakeCartModels');
+const {
+  createFakeCartModel,
+  createFakeProductModel,
+  installFakeModel,
+} = require('./support/fakeCartModels');
 
 const userModel = createFakeUserModel();
 installFakeUserModel(userModel);
 
 const cartModel = createFakeCartModel();
 installFakeModel('../../src/model/Cart', cartModel);
+
+const productIds = {
+  'SKU-GUEST': new Types.ObjectId(),
+  'SKU-USER': new Types.ObjectId(),
+};
+const productModel = createFakeProductModel(
+  Object.entries(productIds).map(([sku, _id]) => ({
+    _id,
+    name: `Áo ${sku}`,
+    basePrice: 199000,
+    variants: [{ sku, stock: 10, price: 199000 }],
+  }))
+);
+installFakeModel('../../src/model/Products', productModel);
 
 const request = require('supertest');
 const app = require('../src/app');
@@ -32,13 +50,7 @@ const signToken = (payload) =>
 
 const makeItem = (sku, qty = 1) => ({
   _id: new Types.ObjectId(),
-  product: {
-    _id: new Types.ObjectId(),
-    name: `Áo ${sku}`,
-    slug: sku.toLowerCase(),
-    images: ['https://example.com/ao.jpg'],
-    variants: [{ sku, stock: 10 }],
-  },
+  product: productIds[sku],
   sku,
   size: 'M',
   color: 'Den',
@@ -91,7 +103,7 @@ test('T5-4-3: gop gio khi dang nhap khong nhan trung SKU va xoa gio guest', asyn
   const userCart = seedUserCart([makeItem('SKU-USER', 2)]);
 
   const res = await request(app)
-    .get('/api/cart/merge')
+    .post('/api/cart/merge')
     .set('Cookie', cookiesFor());
 
   assert.equal(res.status, 200);
@@ -103,8 +115,9 @@ test('T5-4-3: gop gio khi dang nhap khong nhan trung SKU va xoa gio guest', asyn
   assert.equal(userCart.items.length, 2);
   assert.equal(
     userCart.items.find((item) => item.sku === 'SKU-USER').qty,
-    2
+    5
   );
+  assert.equal(userCart.items.find((item) => item.sku === 'SKU-GUEST').qty, 1);
   assert.equal(
     cartModel.carts.some((cart) => cart.sessionId === 'guest-session'),
     false
@@ -120,7 +133,7 @@ test('T5-4-3: gop gio tao user cart neu chua co', async () => {
   seedGuestCart([makeItem('SKU-GUEST', 2)]);
 
   const res = await request(app)
-    .get('/api/cart/merge')
+    .post('/api/cart/merge')
     .set('Cookie', cookiesFor());
 
   assert.equal(res.status, 200);
@@ -138,7 +151,7 @@ test('T5-4-3: gop gio chua dang nhap bi tu choi', async () => {
   seedGuestCart([makeItem('SKU-GUEST', 1)]);
 
   const res = await request(app)
-    .get('/api/cart/merge')
+    .post('/api/cart/merge')
     .set('Cookie', 'cartId=guest-session');
 
   assert.equal(res.status, 401);
