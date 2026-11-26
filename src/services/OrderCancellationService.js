@@ -28,6 +28,18 @@ const canActorCancel = ({ actorRole, isOwner, from }) => {
   return false;
 };
 
+const canCancelOrder = ({ actorRole, isOwner, from }) => {
+  if (!Order.canTransition(from, 'cancelled')) {
+    return false;
+  }
+
+  try {
+    return canActorCancel({ actorRole, isOwner, from });
+  } catch (error) {
+    return false;
+  }
+};
+
 async function cancelOrder({ orderId, actorRole, actorId, isOwner, note }) {
   const order = await Order.findById(orderId);
   if (!order) {
@@ -105,4 +117,4 @@ async function cancelOrder({ orderId, actorRole, actorId, isOwner, note }) {
   return cancelled;
 }
 
-module.exports = { cancelOrder };
+module.exports = { cancelOrder, canActorCancel, canCancelOrder };

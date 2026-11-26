@@ -11,6 +11,8 @@ const ErrorResponse = require('../utils/appError');
 const { getFlash } = require('../utils/flash');
 const { ensureCartItemIds } = require('../utils/cartItems');
 const presentation = require('../utils/productPresentation');
+const orderPresentation = require('../utils/orderPresentation');
+const { canCancelOrder } = require('../services/OrderCancellationService');
 
 const router = express.Router();
 
@@ -39,6 +41,67 @@ const isSafeNext = (next) => {
     return false;
   }
   return true;
+};
+
+const buildOrderSummary = (order, role) => {
+  const status = order.status || 'pending';
+  return {
+    id: String(order._id),
+    code: order.code || '-',
+    createdAtLabel: orderPresentation.formatDate(order.createdAt),
+    totalLabel: orderPresentation.formatCurrency(order.total),
+    status,
+    statusLabel: orderPresentation.getStatusLabel(status),
+    statusClass: orderPresentation.getStatusClass(status),
+    canCancel: canCancelOrder({ actorRole: role, isOwner: true, from: status }),
+  };
+};
+
+const buildOrderDetail = (order, role, isOwner) => {
+  const status = order.status || 'pending';
+  const address = order.shippingAddress || {};
+  const addressLines = [address.detail, address.ward, address.district, address.province]
+    .filter(Boolean)
+    .join(', ');
+
+  return {
+    id: String(order._id),
+    code: order.code || '-',
+    createdAtLabel: orderPresentation.formatDate(order.createdAt),
+    updatedAtLabel: orderPresentation.formatDate(order.updatedAt),
+    status,
+    statusLabel: orderPresentation.getStatusLabel(status),
+    statusClass: orderPresentation.getStatusClass(status),
+    paymentStatusLabel: orderPresentation.getPaymentStatusLabel(order.paymentStatus),
+    paymentMethodLabel: orderPresentation.getPaymentMethodLabel(order.paymentMethod),
+    items: (order.items || []).map((item) => ({
+      name: item.name || 'Sản phẩm',
+      image: item.image || '',
+      sku: item.sku || '-',
+      size: item.size || '-',
+      color: item.color || '-',
+      qty: Number(item.qty) || 0,
+      unitPriceLabel: orderPresentation.formatCurrency(item.unitPrice),
+      lineTotalLabel: orderPresentation.formatCurrency(item.lineTotal),
+    })),
+    shipping: {
+      fullName: address.fullName || '-',
+      phone: address.phone || '-',
+      address: addressLines || '-',
+    },
+    note: order.note || '',
+    subtotalLabel: orderPresentation.formatCurrency(order.subtotal),
+    shippingFeeLabel: orderPresentation.formatCurrency(order.shippingFee),
+    discountLabel: orderPresentation.formatCurrency(order.discount),
+    totalLabel: orderPresentation.formatCurrency(order.total),
+    statusHistory: (order.statusHistory || []).map((entry) => ({
+      status: entry.status || 'pending',
+      statusLabel: orderPresentation.getStatusLabel(entry.status),
+      atLabel: orderPresentation.formatDate(entry.at),
+      note: entry.note || '',
+    })),
+    canCancel: canCancelOrder({ actorRole: role, isOwner, from: status }),
+  };
 };
 
 // Trang chủ (UI)
@@ -458,6 +521,76 @@ router.get('/checkout', asyncHandler(async (req, res, next) => {
       flash,
     },
     cartCount: count,
+  });
+}));
+
+router.get('/orders', asyncHandler(async (req, res, next) => {
+  const currentUser = res.locals.currentUser;
+  if (!currentUser) {
+    return res.redirect(302, '/login?next=/orders');
+  }
+
+  const orders = await Order.find({ user: currentUser.id })
+    .sort({ createdAt: -1 })
+    .limit(50)
+    .lean();
+
+  const flash = getFlash(req);
+  res.set('Cache-Control', 'no-store');
+  return res.render('pages/orders', {
+    title: 'Đơn hàng của tôi',
+    flash,
+    locals: {
+      orders: orders.map((order) => buildOrderSummary(order, currentUser.role)),
+      flash,
+    },
+  });
+}));
+
+router.get('/orders/:id', asyncHandler(async (req, res, next) => {
+  const currentUser = res.locals.currentUser;
+  if (!currentUser) {
+    return res.redirect(302, `/login?next=/orders/${encodeURIComponent(req.params.id)}`);
+  }
+
+  if (!isValidObjectId(req.params.id)) {
+    return res.status(404).render('error', {
+      title: 'Không tìm thấy đơn hàng',
+      statusCode: 404,
+      message: 'Đơn hàng không tồn tại.',
+    });
+  }
+
+  const order = await Order.findById(req.params.id).lean();
+  if (!order) {
+    return res.status(404).render('error', {
+      title: 'Không tìm thấy đơn hàng',
+      statusCode: 404,
+      message: 'Đơn hàng không tồn tại.',
+    });
+  }
+
+  const isOwner = String(order.user) === String(currentUser.id);
+  const isAdmin = currentUser.role === 'admin';
+  if (!isOwner && !isAdmin) {
+    return res.status(403).render('error', {
+      title: 'Lỗi 403',
+      statusCode: 403,
+      message: 'Bạn không có quyền xem đơn hàng này.',
+    });
+  }
+
+  const flash = getFlash(req);
+  res.set('Cache-Control', 'no-store');
+  return res.render('pages/order-detail', {
+    title: 'Chi tiết đơn hàng',
+    flash,
+    locals: {
+      order: buildOrderDetail(order, currentUser.role, isOwner),
+      isOwner,
+      isAdmin,
+      flash,
+    },
   });
 }));
 
