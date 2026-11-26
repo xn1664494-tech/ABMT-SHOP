@@ -40,7 +40,7 @@ test('T5-4-1: gio rong hien empty state, an thanh toan va khong cache', async ()
   assert.equal(res.headers['cache-control'], 'no-store');
 });
 
-test('T5-4-1: view hien ten/anh/gia/tong va escape du lieu san pham', async () => {
+test('T5-4-1/T5-4-3: view hien ten/anh/gia/tong va escape du lieu san pham', async () => {
   const unsafeName = '<img src=x onerror=alert(1)> Áo đen';
   const product = {
     _id: new mongoose.Types.ObjectId(),
@@ -71,6 +71,11 @@ test('T5-4-1: view hien ten/anh/gia/tong va escape du lieu san pham', async () =
   assert.match(res.text, /https:\/\/example\.com\/ao-den\.jpg/);
   assert.match(res.text, /data-sku="SP-AO-001-M-DEN"/);
   assert.match(res.text, /max="5"/);
+  assert.match(res.text, /<span data-unit-price>199\.000₫<\/span>/);
+  assert.match(res.text, /data-line-total>398\.000₫</);
+  assert.match(res.text, /id="sub">398\.000₫</);
+  assert.match(res.text, /id="ship">30\.000₫</);
+  assert.match(res.text, /id="total">428\.000₫</);
   assert.match(res.text, /id="empty"[^>]*hidden/);
   assert.doesNotMatch(res.text, /id="full"[^>]*hidden/);
   assert.match(res.text, new RegExp(`href="/checkout\\?item=${itemId.toString()}"[^>]*data-action="checkout"`));
