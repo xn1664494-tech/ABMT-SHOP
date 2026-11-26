@@ -24,7 +24,14 @@ const validate = (schema, source = 'body') => (req, res, next) => {
     return next(error);
   }
 
-  req[source] = result.data;
+  // Express 5: req.query là getter chỉ đọc nên không thể gán đè trực tiếp.
+  // Với query, đưa dữ liệu đã validate (strip unknown keys, trim, lowercase)
+  // sang req.validatedQuery để controller dùng thay vì req.query thô.
+  if (source === 'query') {
+    req.validatedQuery = result.data;
+  } else {
+    req[source] = result.data;
+  }
   return next();
 };
 

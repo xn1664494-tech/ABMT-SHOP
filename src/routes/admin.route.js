@@ -1,8 +1,14 @@
 const express = require('express');
 const { authenticate, authorize } = require('../middleware/authenticate');
 const { csrfProtection } = require('../middleware/csrf');
+const validate = require('../middleware/validate');
 const asyncHandler = require('../utils/asyncHandler');
 const { getStats } = require('../services/adminService');
+const AdminUserController = require('../controllers/adminUserController');
+const {
+  listUsersQuerySchema,
+  updateUserRoleSchema,
+} = require('../validators/adminUserValidator');
 
 const router = express.Router();
 
@@ -37,6 +43,31 @@ router.get(
       data: stats,
     });
   })
+);
+
+/**
+ * GET /api/admin/users - Danh sach nguoi dung (phan trang + tim kiem)
+ * Chi admin. Khong tra password/token/field noi bo.
+ */
+router.get(
+  '/users',
+  authenticate,
+  authorize('admin'),
+  validate(listUsersQuerySchema, 'query'),
+  AdminUserController.list,
+);
+
+/**
+ * PATCH /api/admin/users/:userId/role - Doi vai tro nguoi dung
+ * Chi admin + CSRF. Chan admin tu ha quyen chinh minh.
+ */
+router.patch(
+  '/users/:userId/role',
+  authenticate,
+  authorize('admin'),
+  csrfProtection,
+  validate(updateUserRoleSchema),
+  AdminUserController.updateRole,
 );
 
 module.exports = router;
