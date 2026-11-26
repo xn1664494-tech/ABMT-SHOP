@@ -46,6 +46,18 @@ const getCsrf = async (agent) => {
   };
 };
 
+// origin/main bypass CSRF khi NODE_ENV=test. Bat tam trong pham vi 1 request
+// de assert hanh vi that cua csrfProtection, roi khoi phuc ngay sau do.
+const withCsrfEnforced = async (fn) => {
+  const previousNodeEnv = process.env.NODE_ENV;
+  process.env.NODE_ENV = 'development';
+  try {
+    return await fn();
+  } finally {
+    process.env.NODE_ENV = previousNodeEnv;
+  }
+};
+
 test.beforeEach(() => {
   fakeUserModel.users.length = 0;
 });
@@ -61,26 +73,26 @@ test('T4-1-2: csrf endpoint cap token va cookie doc duoc boi JS', async () => {
   assert.match(rawCookie, /SameSite=Strict/i);
 });
 
-test.skip('T4-1-2: refresh thieu CSRF token tra 403', async () => {
+test('T4-1-2: refresh thieu CSRF token tra 403', async () => {
   await seedUser();
   const agent = request.agent(app);
   await agent.post('/api/auth/login').send({ email: EMAIL, password: PASSWORD });
 
-  const res = await agent.post('/api/auth/refresh');
+  const res = await withCsrfEnforced(() => agent.post('/api/auth/refresh'));
 
   assert.equal(res.status, 403);
   assert.match(res.body.error, /CSRF/i);
 });
 
-test.skip('T4-1-2: CSRF token sai tra 403', async () => {
+test('T4-1-2: CSRF token sai tra 403', async () => {
   await seedUser();
   const agent = request.agent(app);
   await agent.post('/api/auth/login').send({ email: EMAIL, password: PASSWORD });
   await getCsrf(agent);
 
-  const res = await agent
-    .post('/api/auth/refresh')
-    .set('X-CSRF-Token', 'wrong-token');
+  const res = await withCsrfEnforced(() =>
+    agent.post('/api/auth/refresh').set('X-CSRF-Token', 'wrong-token'),
+  );
 
   assert.equal(res.status, 403);
 });

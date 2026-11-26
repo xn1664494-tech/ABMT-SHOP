@@ -51,6 +51,20 @@ test('T3-1-2: login thanh cong tra 200, dat cookie HttpOnly va khong lo token tr
   assert.equal(JSON.stringify(res.body).includes(PASSWORD), false);
   assert.doesNotMatch(JSON.stringify(res.body), /\$2[aby]\$\d{2}\$/);
 
+  // Khong duoc tra token trong body: chi co cookie HttpOnly.
+  const bodyText = JSON.stringify(res.body);
+  assert.doesNotMatch(
+    bodyText,
+    /eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+/,
+    'body khong duoc chua JWT',
+  );
+  assert.equal(res.body.accessToken, undefined);
+  assert.equal(res.body.refreshToken, undefined);
+  assert.equal(res.body.token, undefined);
+  assert.equal(res.body.data.accessToken, undefined);
+  assert.equal(res.body.data.refreshToken, undefined);
+  assert.equal(res.body.data.user.token, undefined);
+
   const cookies = cookiesOf(res);
   const accessCookie = cookies.find((item) => item.startsWith('accessToken='));
   const refreshCookie = cookies.find((item) => item.startsWith('refreshToken='));
