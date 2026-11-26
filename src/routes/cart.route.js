@@ -6,6 +6,7 @@ const Product = require('../model/Products');
 const { calculateShippingFee } = require('../model/Order');
 const asyncHandler = require('../utils/asyncHandler');
 const ErrorResponse = require('../utils/appError');
+const { authenticate } = require('../middleware/authenticate');
 const { csrfProtection } = require('../middleware/csrf');
 const { ensureCartItemIds } = require('../utils/cartItems');
 
@@ -168,7 +169,7 @@ router.put(
       return next(new ErrorResponse('Giỏ hàng không tồn tại', 404));
     }
 
-    const item = (cart.items || []).find((it) => it._id && it._id.toString() === itemId);
+    const item = (cart.items || []).find((it) => it.sku === itemId);
     if (!item) {
       return next(new ErrorResponse('Sản phẩm không tồn tại trong giỏ', 404));
     }
@@ -208,7 +209,7 @@ router.delete(
     }
 
     const beforeLen = (cart.items || []).length;
-    cart.items = (cart.items || []).filter((it) => !it._id || it._id.toString() !== itemId);
+    cart.items = (cart.items || []).filter((it) => it.sku !== itemId);
 
     if (cart.items.length === beforeLen) {
       return next(new ErrorResponse('Sản phẩm không tồn tại trong giỏ', 404));
@@ -227,12 +228,15 @@ router.delete(
 );
 
 /**
- * GET /api/cart/merge - Gộp giỏ guest (cartId cookie) vào giỏ user sau đăng nhập
+ * POST /api/cart/merge - Gộp giỏ guest (cartId cookie) vào giỏ user sau đăng nhập
+ * Body: {}
  */
-router.get(
+router.post(
   '/merge',
+  authenticate,
+  csrfProtection,
   asyncHandler(async (req, res, next) => {
-    const currentUser = res.locals && res.locals.currentUser ? res.locals.currentUser : null;
+    const currentUser = req.user;
     if (!currentUser) {
       return next(new ErrorResponse('Chưa đăng nhập', 401));
     }
@@ -247,12 +251,51 @@ router.get(
         customerCart = await Cart.create({ user: currentUser.id, items: [] });
       }
 
-      const existingSkus = new Set((customerCart.items || []).map((item) => item.sku));
-      guestCart.items.forEach((item) => {
-        if (!existingSkus.has(item.sku)) {
-          customerCart.items.push(item);
+      for (const guestItem of guestCart.items) {
+        const existingIdx = (customerCart.items || []).findIndex(
+          (item) => item.sku === guestItem.sku
+        );
+
+        if (existingIdx >= 0) {
+          const existingItem = customerCart.items[existingIdx];
+          const productObj = await Product.findById(guestItem.product);
+          const variant = (productObj && productObj.variants)
+            ? productObj.variants.find((v) => v.sku === guestItem.sku)
+            : null;
+          const maxStock = variant ? variant.stock : 0;
+          const newQty = existingItem.qty + guestItem.qty;
+          if (newQty > maxStock) {
+            return next(
+              new ErrorResponse(
+                `Vượt quá tồn kho cho SKU ${guestItem.sku} (còn ${maxStock})`,
+                409
+              )
+            );
+          }
+          existingItem.qty = newQty;
+          existingItem.unitPrice = variant ? (variant.price || productObj.basePrice) : existingItem.unitPrice;
+          existingItem.mergedAt = new Date();
+          existingItem.mergedFrom = 'guest';
+        } else {
+          const productObj = await Product.findById(guestItem.product);
+          const variant = (productObj && productObj.variants)
+            ? productObj.variants.find((v) => v.sku === guestItem.sku)
+            : null;
+          const unitPrice = variant
+            ? variant.price || productObj.basePrice
+            : guestItem.unitPrice || 0;
+          customerCart.items.push({
+            product: guestItem.product,
+            sku: guestItem.sku,
+            size: guestItem.size,
+            color: guestItem.color,
+            qty: guestItem.qty,
+            unitPrice,
+            mergedAt: new Date(),
+            mergedFrom: 'guest',
+          });
         }
-      });
+      }
 
       await customerCart.save();
       await Cart.deleteOne({ sessionId: cartId });
