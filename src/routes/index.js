@@ -43,7 +43,7 @@ const isSafeNext = (next) => {
   return true;
 };
 
-const buildOrderSummary = (order, role) => {
+const buildOrderSummary = (order, role, isOwner = true) => {
   const status = order.status || 'pending';
   return {
     id: String(order._id),
@@ -53,7 +53,7 @@ const buildOrderSummary = (order, role) => {
     status,
     statusLabel: orderPresentation.getStatusLabel(status),
     statusClass: orderPresentation.getStatusClass(status),
-    canCancel: canCancelOrder({ actorRole: role, isOwner: true, from: status }),
+    canCancel: canCancelOrder({ actorRole: role, isOwner, from: status }),
   };
 };
 
@@ -623,6 +623,7 @@ router.get('/admin', asyncHandler(async (req, res, next) => {
   res.render('pages/admin-dashboard', {
     title: 'Trang quản trị',
     locals: {
+      active: 'dashboard',
       stats: stats.stats,
       recentOrders: stats.recentOrders,
       lowStockProducts: stats.lowStockProducts,
@@ -649,8 +650,134 @@ router.get('/admin/products/new', asyncHandler(async (req, res, next) => {
   res.render('pages/admin-product-form', {
     title: 'Thêm sản phẩm',
     locals: {
+      active: 'products',
       categories,
       colors: ['Đen', 'Trắng', 'Xanh', 'Đỏ', 'Xanh dương', 'Hồng', 'Tím', 'Nâu'],
+    },
+  });
+}));
+
+router.get('/admin/categories', asyncHandler(async (req, res, next) => {
+  if (!res.locals.currentUser) {
+    return res.redirect(302, '/login?next=/admin/categories');
+  }
+  if (res.locals.currentUser.role !== 'admin') {
+    return res.status(403).render('error', {
+      title: 'Lỗi 403',
+      statusCode: 403,
+      message: 'Bạn không có quyền truy cập trang này.',
+    });
+  }
+
+  const categories = await require('../services/categoryService').list();
+  const flash = getFlash(req);
+  res.set('Cache-Control', 'no-store');
+  return res.render('pages/admin-categories', {
+    title: 'Quản lý danh mục',
+    flash,
+    locals: {
+      active: 'categories',
+      categories,
+      flash,
+    },
+  });
+}));
+
+router.get('/admin/orders', asyncHandler(async (req, res, next) => {
+  if (!res.locals.currentUser) {
+    return res.redirect(302, '/login?next=/admin/orders');
+  }
+  if (res.locals.currentUser.role !== 'admin') {
+    return res.status(403).render('error', {
+      title: 'Lỗi 403',
+      statusCode: 403,
+      message: 'Bạn không có quyền truy cập trang này.',
+    });
+  }
+
+  const statusValues = Object.keys(orderPresentation.ORDER_STATUS_LABELS);
+  const requestedStatus = typeof req.query.status === 'string' ? req.query.status : 'all';
+  const activeStatus =
+    requestedStatus === 'all' || statusValues.includes(requestedStatus)
+      ? requestedStatus
+      : 'all';
+  const filter = activeStatus === 'all' ? {} : { status: activeStatus };
+
+  const [orders, counts] = await Promise.all([
+    Order.find(filter).sort({ createdAt: -1 }).limit(100).lean(),
+    Promise.all(statusValues.map((status) => Order.countDocuments({ status }))),
+  ]);
+
+  const statusTabs = [
+    {
+      value: 'all',
+      label: 'Tất cả',
+      count: counts.reduce((sum, count) => sum + (Number(count) || 0), 0),
+      isActive: activeStatus === 'all',
+    },
+    ...statusValues.map((status, index) => ({
+      value: status,
+      label: orderPresentation.getStatusLabel(status),
+      count: Number(counts[index]) || 0,
+      isActive: activeStatus === status,
+    })),
+  ];
+
+  const flash = getFlash(req);
+  res.set('Cache-Control', 'no-store');
+  return res.render('pages/admin-orders', {
+    title: 'Quản lý đơn hàng',
+    flash,
+    locals: {
+      active: 'orders',
+      orders: orders.map((order) =>
+        buildOrderSummary(order, res.locals.currentUser.role, String(order.user) === String(res.locals.currentUser.id))
+      ),
+      statusTabs,
+      activeStatus,
+      flash,
+    },
+  });
+}));
+
+router.get('/admin/users', asyncHandler(async (req, res, next) => {
+  if (!res.locals.currentUser) {
+    return res.redirect(302, '/login?next=/admin/users');
+  }
+  if (res.locals.currentUser.role !== 'admin') {
+    return res.status(403).render('error', {
+      title: 'Lỗi 403',
+      statusCode: 403,
+      message: 'Bạn không có quyền truy cập trang này.',
+    });
+  }
+
+  const parsePositive = (value, fallback) => {
+    const parsed = parseInt(value, 10);
+    return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback;
+  };
+  const page = parsePositive(req.query.page, 1);
+  const limit = Math.min(100, parsePositive(req.query.limit, 20));
+  const q = typeof req.query.q === 'string' ? req.query.q.trim().slice(0, 100) : '';
+
+  const data = await require('../services/adminUserService').listUsers({
+    page: String(page),
+    limit: String(limit),
+    q,
+  });
+
+  const flash = getFlash(req);
+  res.set('Cache-Control', 'no-store');
+  return res.render('pages/admin-users', {
+    title: 'Quản lý người dùng',
+    flash,
+    locals: {
+      active: 'users',
+      users: data.items,
+      pagination: data.pagination,
+      q,
+      currentUserId: res.locals.currentUser.id,
+      flash,
     },
   });
 }));

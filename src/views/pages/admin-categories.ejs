@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title %></title>
+  <link rel="stylesheet" href="/css/app.css">
+  <style>
+    .admin-table { width: 100%; border-collapse: collapse; }
+    .admin-table th, .admin-table td { padding: 12px 10px; text-align: left; border-bottom: 1px solid var(--line); }
+    .admin-table th { color: var(--ink-strong); font-weight: 600; white-space: nowrap; }
+    .admin-table td { color: var(--ink); vertical-align: middle; }
+    .admin-table tbody tr:last-child td { border-bottom: none; }
+    .admin-actions { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
+    @media (max-width: 575.98px) { .admin-actions { flex-direction: column; align-items: stretch; } }
+  </style>
+</head>
+<body>
+  <%- include('../partials/header') %>
+  <%- include('../partials/flash') %>
+  <%
+    const L = (locals && locals.locals) ? locals.locals : (locals || {});
+    const active = L.active || 'categories';
+    const categories = Array.isArray(L.categories) ? L.categories : [];
+    const categoryById = {};
+    categories.forEach(function (category) { categoryById[category.id] = category; });
+  %>
+  <main id="main-content" class="main-content">
+    <div class="container admin-shell">
+      <div class="admin-topbar">
+        <button type="button" id="tg" class="admin-menu-btn" aria-label="Mở menu quản trị" aria-controls="sb" aria-expanded="false">☰</button>
+        <span class="admin-brand">ABMT ADMIN</span>
+      </div>
+      <div class="admin-scrim" id="scrim"></div>
+      <div class="admin-layout">
+        <aside class="admin-sidebar" id="sb" aria-label="Điều hướng quản trị">
+          <%- include('../partials/admin-sidebar', { active: active }) %>
+        </aside>
+        <div class="admin-main">
+          <nav class="breadcrumb" aria-label="Breadcrumb">
+            <a href="/">Trang chủ</a>
+            <span class="sep">/</span>
+            <a href="/admin">Quản trị</a>
+            <span class="sep">/</span>
+            <span aria-current="page">Danh mục</span>
+          </nav>
+
+          <div class="page-head">
+            <div>
+              <h1 class="page-title">Quản lý danh mục</h1>
+              <p class="page-sub">Thêm, chỉnh sửa và sắp xếp danh mục sản phẩm</p>
+            </div>
+            <a href="/admin/products/new" class="btn btn-ghost btn-sm">Thêm sản phẩm</a>
+          </div>
+
+          <div class="admin-form-grid">
+            <section class="card admin-form-card" aria-labelledby="categoryFormTitle">
+              <h2 id="categoryFormTitle" class="section-title">Thêm danh mục</h2>
+              <form id="categoryForm" class="admin-form-card" data-api="json" autocomplete="off">
+                <label class="field">
+                  <span>Tên danh mục</span>
+                  <input id="categoryName" name="name" type="text" maxlength="120" required placeholder="Ví dụ: Áo thun">
+                </label>
+                <label class="field">
+                  <span>Danh mục cha</span>
+                  <select id="categoryParent" name="parentId">
+                    <option value="">-- Danh mục gốc --</option>
+                    <% categories.forEach(function (category) { %>
+                      <option value="<%= category.id %>"><%= category.name %></option>
+                    <% }) %>
+                  </select>
+                </label>
+                <label class="field">
+                  <span>Thứ tự</span>
+                  <input id="categoryOrder" name="order" type="number" min="0" step="1" value="0">
+                </label>
+                <div class="form-actions">
+                  <button id="categorySubmit" type="submit" class="btn btn-primary">Thêm mới</button>
+                  <button id="categoryCancel" type="button" class="btn btn-ghost" hidden>Hủy chỉnh sửa</button>
+                </div>
+              </form>
+            </section>
+
+            <section class="card" style="padding: 0; overflow: hidden;" aria-labelledby="categoryListTitle">
+              <h2 id="categoryListTitle" class="section-title" style="padding: 16px 18px 0; margin: 0;">Danh sách danh mục</h2>
+              <div style="overflow-x: auto;">
+                <table id="categoryList" class="admin-table">
+                  <thead>
+                    <tr>
+                      <th>Tên</th>
+                      <th>Slug</th>
+                      <th>Danh mục cha</th>
+                      <th>Thứ tự</th>
+                      <th>Thao tác</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <% categories.forEach(function (category) { %>
+                      <% var parent = category.parentId && categoryById[category.parentId]; %>
+                      <tr
+                        data-id="<%= category.id %>"
+                        data-name="<%= category.name %>"
+                        data-parent-id="<%= category.parentId || '' %>"
+                        data-order="<%= category.order || 0 %>"
+                      >
+                        <td><%= category.name %></td>
+                        <td><code><%= category.slug %></code></td>
+                        <td><%= parent ? parent.name : '—' %></td>
+                        <td><%= category.order || 0 %></td>
+                        <td>
+                          <div class="admin-actions">
+                            <button type="button" class="btn btn-ghost btn-sm" data-action="edit-category" data-id="<%= category.id %>">Sửa</button>
+                            <button type="button" class="btn btn-danger btn-sm" data-action="delete-category" data-id="<%= category.id %>">Xóa</button>
+                          </div>
+                        </td>
+                      </tr>
+                    <% }) %>
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+  <%- include('../partials/footer') %>
+  <script src="/js/api.js"></script>
+  <script src="/js/ui.js"></script>
+  <script src="/js/admin.js"></script>
+</body>
+</html>
