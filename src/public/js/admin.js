@@ -37,7 +37,7 @@
 
     if (scrim) scrim.addEventListener('click', closeSidebar);
 
-    var closeBtn = sidebar.querySelector('.admin-side-close');
+    var closeBtn = sidebar.querySelector('[data-adm-close]') || sidebar.querySelector('.admin-side-close');
     if (closeBtn) closeBtn.addEventListener('click', closeSidebar);
 
     sidebar.addEventListener('click', function (event) {
@@ -56,6 +56,34 @@
       if (mq.addEventListener) mq.addEventListener('change', onChange);
       else if (mq.addListener) mq.addListener(onChange);
     }
+  }
+
+  /* === Logout === */
+  function initLogout() {
+    var button = document.querySelector('[data-adm-logout]');
+    if (!button || !window.ABMT || !window.ABMT.api) return;
+
+    var inProgress = false;
+
+    button.addEventListener('click', function () {
+      if (inProgress) return;
+      inProgress = true;
+      button.disabled = true;
+
+      window.ABMT.api.post('/api/auth/logout')
+        .then(function () {
+          window.location.replace('/login');
+        })
+        .catch(function (error) {
+          if (error && (error.status === 401 || error.code === 401)) {
+            window.location.replace('/login');
+            return;
+          }
+          if (window.ABMT.toast) window.ABMT.toast.fromError(error);
+          inProgress = false;
+          button.disabled = false;
+        });
+    });
   }
 
   /* === Charts === */
@@ -653,6 +681,7 @@
   }
 
   initSidebar();
+  initLogout();
   initCharts();
   initVariants();
   initCategories();

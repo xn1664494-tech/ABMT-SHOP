@@ -27,6 +27,12 @@ router.post(
   asyncHandler(async (req, res, next) => {
     const userId = req.user._id || req.user.id;
     const { addressId, address, note, paymentMethod, item: rawItemId } = req.body || {};
+    const requirePhoneVerified = String(process.env.REQUIRE_PHONE_VERIFIED || "true") !== "false";
+    if (requirePhoneVerified && req.user.role !== "admin" && !req.user.phoneVerified) {
+      const err = new ErrorResponse("Nguoi dung chua xac minh so dien thoai", 403);
+      err.code = "PHONE_NOT_VERIFIED";
+      return next(err);
+    }
 
     // Lấy giỏ hàng của user
     const cart = await Cart.findOne({ user: userId });

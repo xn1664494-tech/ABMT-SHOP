@@ -154,6 +154,12 @@
       })
       .catch(function (error) {
         submitting = false;
+        if (error && error.code === "PHONE_NOT_VERIFIED") {
+          if (window.ABMT && window.ABMT.toast) {
+            window.ABMT.toast.error("Ban can xac minh so dien thoai truoc khi dat hang.");
+          }
+          return;
+        }
         if (window.ABMT && window.ABMT.toast) {
           window.ABMT.toast.fromError(error);
         }

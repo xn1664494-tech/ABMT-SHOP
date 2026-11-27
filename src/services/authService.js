@@ -2,6 +2,7 @@ const bcrypt = require('bcryptjs');
 const User = require('../model/User');
 const ErrorResponse = require('../utils/appError');
 const { signAccessToken, signRefreshToken, verifyToken } = require('./tokenService');
+const { maskPhone } = require('../utils/maskPhone');
 
 const BCRYPT_ROUNDS = 10;
 
@@ -14,7 +15,8 @@ const toPublicUser = (user) => ({
   email: user.email,
   role: user.role,
   status: user.status,
-  phone: user.phone || null,
+  phoneMasked: maskPhone(user.phone || null),
+  phoneVerified: Boolean(user.phoneVerified),
   createdAt: user.createdAt,
 });
 
