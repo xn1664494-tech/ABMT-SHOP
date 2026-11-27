@@ -102,6 +102,9 @@ Các header Helmet khác (HSTS, `X-Content-Type-Options`, `Referrer-Policy`, `X-
 | `npm test` | 363 tests / 357 pass / 0 fail / 6 skip | 0 |
 | So sánh `version`/`integrity`/`resolved` trong package-lock (HEAD vs worktree) | Chỉ `helmet@8.3.0` là thêm mới; không dependency khác đổi | 0 |
 | Quét secret trong diff (`MONGODB_URI`, `JWT_SECRET=`, password, private key, api key) | Không có kết quả | 0 |
+| Sau khi merge `origin/main` (PR #108): `node --test test/security-headers.test.js test/error-handler.test.js test/trust-proxy.test.js` | 15 tests / 15 pass / 0 fail | 0 |
+| Sau khi merge `origin/main` (PR #108): `npm test` | 6 fail — lỗi có sẵn từ PR #108 (xem §10), không phải CSP | 1 |
+| CI PR #109 — https://github.com/xn1664494-tech/ABMT-SHOP/actions/runs/46011823304 | 4 test T7-1-1 đều `ok`; tổng 351 pass / 6 fail, trùng 6 lỗi đã xác định | 1 |
 
 > 6 test `skip` trong `npm test` **không được tính là PASS**; baseline trước task là 359 tests / 353 pass / 0 fail / 6 skip, sau task tăng đúng 4 test mới.
 
@@ -112,7 +115,7 @@ Không chạy DB thật, migration, cron, seed production; không đọc `.env`,
 ## 7. Kết quả test
 
 - Test mới bao phủ: CSP header tồn tại; nonce đúng format `'nonce-[A-Za-z0-9+/]{22}=='`; nonce khác nhau giữa 2 request; nonce trong HTML khớp header; `script-src` không có `'unsafe-inline'`/`'unsafe-eval'`; CDN/font/img allowlist; quét toàn bộ file `.ejs` đảm bảo mọi inline script/style đều có `nonce="<%= cspNonce %>"`.
-- Regression đầy đủ `npm test` xanh; không có test nào bị bỏ qua để đạt kết quả.
+- Trước khi merge `origin/main`, `npm test` xanh (363/357 pass/0 fail/6 skip); không có test nào bị bỏ qua để đạt kết quả. Sau khi sync `origin/main` (PR #108), 6 test cũ fail do lỗi có sẵn ở `main`; cả 4 test T7-1-1 vẫn pass cả local lẫn CI. Không sửa các lỗi đó vì nằm ngoài phạm vi task.
 
 ---
 
@@ -154,6 +157,9 @@ Không chạy DB thật, migration, cron, seed production; không đọc `.env`,
 | `upgrade-insecure-requests` | Chủ động bỏ qua để không hỏng `http://localhost`; cần bật lại khi có cấu hình TLS/production rõ ràng (T8) |
 | Kiểm chứng CSP trên browser thật | Repo không có Playwright/Cypress (`T1-4-2_NFR_TEST_PLAN.md`); `T7-4-1` E2E chưa xong → blockers đã ghi trong readiness audit |
 | Kiểm chứng header qua reverse proxy thật | Thuộc T8-1-2, đang BLOCKED |
+| Conflict merge với `origin/main` (PR #108) | Đã resolve trong commit merge `9a17270`: giữ nguyên template mới của #108 rồi áp lại nonce cho `admin-chart-data`, đồng thời thêm nonce cho `phone-verify-modal.ejs` do #108 thêm mới |
+| 6 test fail sau merge/CI | Có sẵn trên `origin/main` do PR #108: `orderPresentation is not defined` (4 test order) và admin dashboard bỏ link `/admin/categories` (2 test). Không phải hồi quy từ CSP; không sửa ngoài phạm vi T7-1-1 |
+| CI PR #109 chưa xanh | Không merge theo điều kiện đã cam kết; chờ `main` được sửa bởi owner/PR phù hợp rồi chạy lại CI |
 
 ---
 
@@ -169,9 +175,11 @@ Không chạy DB thật, migration, cron, seed production; không đọc `.env`,
 
 ## 12. Commit SHA
 
-`713d46ed3b5068c5358777c49dfb1f4b275ad2c9` — `feat(T7-1-1): add Helmet CSP nonce and security header tests`
-
-Commit báo cáo này: sẽ được ghi nhận trong lịch sử PR ngay sau commit code.
+| Commit | Nội dung |
+|---|---|
+| `713d46ed3b5068c5358777c49dfb1f4b275ad2c9` | `feat(T7-1-1): add Helmet CSP nonce and security header tests` |
+| `a1b58034b77004b7baa17d579ee830a87fed5909` | `docs(T7-1-1): add security review report` |
+| `9a17270` | `merge: sync origin/main (PR #108) into T7-1-1 branch` — resolve conflict, không rebase/force push |
 
 ---
 
@@ -183,7 +191,7 @@ https://github.com/xn1664494-tech/ABMT-SHOP/pull/109
 
 ## 14. Merge commit SHA
 
-Chờ merge. Giá trị cuối cùng được ghi trong báo cáo tổng kết Phase 4 sau khi PR #109 merge và CI `main` xanh.
+**Không có.** PR #109 chưa merge vì CI chưa xanh. Không merge vào `main` khi có fail.
 
 ---
 
@@ -192,7 +200,9 @@ Chờ merge. Giá trị cuối cùng được ghi trong báo cáo tổng kết P
 | Trường | Giá trị |
 |---|---|
 | Task | T7-1-1 Security Review |
-| Trạng thái code | Hoàn thành, đã push, PR #109 đang chờ CI/review |
-| DoD | Đạt (với các giới hạn đã nêu rõ tại §10) |
-| Merge | Chưa merge — tuân thủ điều kiện "chỉ merge khi CI xanh" |
-| Task tiếp theo | Chưa bắt đầu T7-1-2; chỉ chuyển sau khi PR #109 merge thành công, CI `main` xanh và `origin/main` cập nhật |
+| Trạng thái code | Hoàn thành, đã push, conflict với `origin/main` đã resolve, PR #109 `MERGEABLE` |
+| DoD code | Đạt (với các giới hạn đã nêu rõ tại §10) |
+| CI | **FAIL** — run https://github.com/xn1664494-tech/ABMT-SHOP/actions/runs/46011823304: 351 pass / 6 fail. 4 test T7-1-1 đều pass; 6 fail có sẵn từ PR #108 trên `origin/main` |
+| Merge | **Chưa merge** — tuân thủ điều kiện "chỉ merge khi CI xanh, không conflict" |
+| Chờ phê duyệt | Cần owner xử lý 6 lỗi có sẵn trên `main` hoặc cho phép merge dù CI đỏ (không được tự ý) |
+| Task tiếp theo | Chưa bắt đầu T7-1-2; chỉ chuyển sau khi có xác nhận merge thành công T7-1-1 như yêu cầu |
