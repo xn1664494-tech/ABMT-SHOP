@@ -56,6 +56,9 @@ const seedUser = async (role = 'customer') => {
     password: 'hashed-password-not-used',
     role,
     status: 'active',
+    phone: '0912345678',
+    phoneVerified: true,
+    phoneVerifiedAt: new Date(),
   });
   created.users.push(user);
   return user;
