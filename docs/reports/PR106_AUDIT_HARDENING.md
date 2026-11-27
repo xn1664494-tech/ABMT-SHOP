@@ -7,6 +7,7 @@
 | Ngày | 2026-11-27 |
 | Quyết định đã chọn | **Fail-open + log** khi ghi audit thất bại |
 | Regression DB-free | **269 tests — 269 pass — 0 fail — 0 skip — exit 0** |
+| CI PR | run `45975225124` — **SUCCESS toàn bộ** (seed, verify, unit, integration, postman, jest) |
 
 ---
 
@@ -79,7 +80,11 @@ EXIT=0
 
 ### Integration / Jest
 
-Không chạy DB thật tại máy (không có `TEST_MONGODB_URI` riêng). GitHub Actions job `Seed + unit + integration + jest` là nơi verify sau khi push.
+Không chạy DB thật tại máy (không có `TEST_MONGODB_URI` riêng). GitHub Actions job `Seed + unit + integration + jest` là nơi verify.
+
+| Run | Phạm vi | Kết quả |
+|---|---|---|
+| `45975225124` | PR #106 commit `4ea7f64` | **SUCCESS toàn bộ**: Seed, Seed+index verify, Unit, Integration, Postman, Jest đều success |
 
 ---
 
