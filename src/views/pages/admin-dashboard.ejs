@@ -5,9 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title><%= title %></title>
   <link rel="stylesheet" href="/css/app.css">
+  <link rel="stylesheet" href="/css/shop.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" media="all">
 </head>
-<body>
-  <%- include('../partials/header') %>
+<body class="shop">
   <div data-flash data-type="info" hidden></div>
   <%
     var L = (locals && locals.locals) ? locals.locals : (locals || {});
@@ -18,6 +21,14 @@
     var totalOrders = Number(stats.totalOrders) || 0;
     var totalRevenue = Number(stats.totalRevenue) || 0;
     var activeUsers = Number(stats.activeUsers) || 0;
+
+    var adminUser = (typeof currentUser !== 'undefined' && currentUser) ? currentUser : {};
+    var adminName = adminUser.name || 'Quản trị viên';
+    var adminInitial = String(adminName).trim().charAt(0).toUpperCase() || 'A';
+
+    function fmt(value) {
+      return (Number(value) || 0).toLocaleString('vi-VN');
+    }
 
     function formatDate(value) {
       var d = new Date(value);
@@ -44,141 +55,169 @@
       revenueValues.push(revenueMap[dayKey] || 0);
     }
 
+    var hasOrderData = totalOrders > 0;
+    var lowStockCount = lowStockProducts.length;
+
     var chartData = {
-      revenue: { labels: revenueLabels, data: revenueValues },
-      donut: {
-        labels: ['Sắp hết hàng', 'Còn hàng'],
-        data: [lowStockProducts.length, Math.max(0, totalProducts - lowStockProducts.length)]
-      }
+      revenue: hasOrderData
+        ? { labels: revenueLabels, data: revenueValues }
+        : { labels: [], data: [] },
+      donut: totalProducts > 0
+        ? {
+            labels: ['Sắp hết hàng', 'Còn hàng'],
+            data: [lowStockCount, Math.max(0, totalProducts - lowStockCount)]
+          }
+        : { labels: [], data: [] }
     };
   %>
-  <main id="main-content" class="main-content">
-    <div class="container admin-shell">
-      <div class="admin-topbar">
-        <button type="button" id="tg" class="admin-menu-btn" aria-label="Mở menu quản trị" aria-controls="sb" aria-expanded="false">☰</button>
-        <span class="admin-brand">ABMT ADMIN</span>
-      </div>
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <symbol id="i-dash" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-store" viewBox="0 0 24 24"><path d="M4 9l1.5-5h13L20 9"/><path d="M4 9a2.7 2.7 0 005.3 0 2.7 2.7 0 005.4 0A2.7 2.7 0 0020 9"/><path d="M5 12v8h14v-8"/></symbol>
+    <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.6-3.6 3.2-5.5 6.5-5.5s5.9 1.9 6.5 5.5"/><circle cx="17.5" cy="9" r="2.6"/><path d="M17 14.5c2.6.2 4.2 1.9 4.6 4.5"/></symbol>
+    <symbol id="i-cash" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/><path d="M6.5 9.5v5M17.5 9.5v5"/></symbol>
+    <symbol id="i-order" viewBox="0 0 24 24"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2V3z"/><path d="M9 8h6M9 12h6"/></symbol>
+    <symbol id="i-box" viewBox="0 0 24 24"><path d="M12 3l8 4v10l-8 4-8-4V7l8-4z"/><path d="M4 7l8 4 8-4M12 11v10"/></symbol>
+    <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></symbol>
+    <symbol id="i-out" viewBox="0 0 24 24"><path d="M10 4H6a2 2 0 00-2 2v12a2 2 0 002 2h4"/><path d="M16 8l4 4-4 4M20 12H9"/></symbol>
+    <symbol id="i-chev" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></symbol>
+    <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+  </svg>
 
-      <div class="admin-scrim" id="scrim"></div>
-
-      <div class="admin-layout">
-        <aside class="admin-sidebar" id="sb" aria-label="Điều hướng quản trị">
-          <div class="admin-side-head">
-            <span class="admin-side-title">ABMT ADMIN</span>
-            <button type="button" class="admin-side-close" aria-label="Đóng menu">×</button>
-          </div>
-          <nav class="admin-nav">
-            <a href="/admin" class="is-active" aria-current="page">Tổng quan</a>
-            <a href="/admin/products/new">Thêm sản phẩm</a>
-            <a href="/catalog">Xem cửa hàng</a>
-            <a href="/account">Tài khoản</a>
-          </nav>
-        </aside>
-
-        <div class="admin-main">
-          <div class="page-head">
-            <div>
-              <h1 class="page-title">Tổng quan</h1>
-              <p class="page-sub">Theo dõi hoạt động kinh doanh của cửa hàng</p>
-            </div>
-            <a href="/admin/products/new" class="btn btn-primary btn-sm">Thêm sản phẩm</a>
-          </div>
-
-          <div class="metric-grid">
-            <div class="metric-card">
-              <span class="metric-label">Doanh thu</span>
-              <span class="metric-value metric-accent" id="vRev"><%= totalRevenue.toLocaleString('vi-VN') %>₫</span>
-            </div>
-            <div class="metric-card">
-              <span class="metric-label">Đơn hàng</span>
-              <span class="metric-value" id="vOrd"><%= totalOrders %></span>
-            </div>
-            <div class="metric-card">
-              <span class="metric-label">Sản phẩm</span>
-              <span class="metric-value"><%= totalProducts %></span>
-            </div>
-            <div class="metric-card">
-              <span class="metric-label">Khách hàng</span>
-              <span class="metric-value"><%= activeUsers %></span>
-            </div>
-          </div>
-
-          <div class="chart-grid">
-            <section class="admin-panel" aria-labelledby="chart-title">
-              <div class="admin-panel-head">
-                <h2 class="admin-panel-title" id="chart-title">Doanh thu 7 ngày</h2>
-                <span class="admin-panel-note">Đơn đã giao</span>
-              </div>
-              <div class="chart-box">
-                <canvas id="chart" height="240" aria-label="Biểu đồ doanh thu 7 ngày" role="img"></canvas>
-                <p class="chart-fallback" data-chart-fallback hidden></p>
-              </div>
-            </section>
-
-            <section class="admin-panel" aria-labelledby="donut-title">
-              <div class="admin-panel-head">
-                <h2 class="admin-panel-title" id="donut-title">Tình trạng tồn kho</h2>
-                <a href="/catalog" class="admin-panel-link">Xem sản phẩm</a>
-              </div>
-              <div class="chart-box">
-                <canvas id="donut" height="240" aria-label="Biểu đồ tình trạng tồn kho" role="img"></canvas>
-                <p class="chart-fallback" data-chart-fallback hidden></p>
-              </div>
-            </section>
-          </div>
-
-          <div class="chart-grid">
-            <section class="admin-panel" aria-labelledby="recent-title">
-              <div class="admin-panel-head">
-                <h2 class="admin-panel-title" id="recent-title">Đơn hàng gần đây</h2>
-              </div>
-              <% if (recentOrders.length > 0) { %>
-                <div class="admin-list">
-                  <% recentOrders.forEach(function (order) { %>
-                    <div class="admin-list-item">
-                      <div class="admin-list-main">
-                        <span class="admin-list-title"><%= order.code || 'Đơn hàng' %></span>
-                        <span class="admin-list-sub"><%= order.customerName || 'Khách hàng' %> · <%= formatDate(order.createdAt) %></span>
-                      </div>
-                      <span class="admin-list-value"><%= (Number(order.total) || 0).toLocaleString('vi-VN') %>₫</span>
-                    </div>
-                  <% }) %>
-                </div>
-              <% } else { %>
-                <p class="admin-empty">Chưa có đơn hàng nào.</p>
-              <% } %>
-            </section>
-
-            <section class="admin-panel" aria-labelledby="stock-title">
-              <div class="admin-panel-head">
-                <h2 class="admin-panel-title" id="stock-title">Sắp hết hàng</h2>
-              </div>
-              <% if (lowStockProducts.length > 0) { %>
-                <div class="admin-list">
-                  <% lowStockProducts.forEach(function (product) { %>
-                    <div class="admin-list-item">
-                      <div class="admin-list-main">
-                        <span class="admin-list-title"><%= product.name %></span>
-                        <span class="admin-list-sub">Còn lại trong kho</span>
-                      </div>
-                      <span class="admin-list-value is-danger"><%= Number(product.stock) || 0 %></span>
-                    </div>
-                  <% }) %>
-                </div>
-              <% } else { %>
-                <p class="admin-empty">Không có sản phẩm nào sắp hết hàng.</p>
-              <% } %>
-            </section>
-          </div>
-        </div>
-      </div>
+  <aside class="adm-sb" id="sb" aria-label="Menu quản trị">
+    <div class="adm-brand">
+      ABMT<small>Admin</small>
+      <button type="button" class="adm-sb-close" data-adm-close aria-label="Đóng menu">×</button>
     </div>
-  </main>
-  <%- include('../partials/footer') %>
+    <nav class="adm-nav">
+      <h2 class="adm-nav-h">Tổng quan</h2>
+      <a href="/admin" aria-current="page"><svg class="ico"><use href="#i-dash"/></svg>Tổng quan</a>
+      <h2 class="adm-nav-h">Cửa hàng</h2>
+      <a href="/admin/products/new"><svg class="ico"><use href="#i-plus"/></svg>Thêm sản phẩm</a>
+      <a href="/catalog"><svg class="ico"><use href="#i-store"/></svg>Xem cửa hàng</a>
+      <h2 class="adm-nav-h">Tài khoản</h2>
+      <a href="/account"><svg class="ico"><use href="#i-users"/></svg>Tài khoản</a>
+    </nav>
+    <div class="adm-who">
+      Đăng nhập với tư cách
+      <b><%= adminName %></b>
+      <button type="button" class="adm-logout" data-adm-logout><svg class="ico" style="width:16px;height:16px"><use href="#i-out"/></svg>Đăng xuất</button>
+    </div>
+  </aside>
+  <div class="adm-scrim" id="scrim"></div>
+
+  <div class="adm-main">
+    <header class="adm-top">
+      <button type="button" id="tg" class="adm-tg" aria-label="Mở menu quản trị" aria-controls="sb" aria-expanded="false"><svg class="ico"><use href="#i-menu"/></svg></button>
+      <div class="adm-sp"></div>
+      <a class="adm-store" href="/catalog"><svg class="ico" style="width:18px;height:18px"><use href="#i-store"/></svg><span>Xem cửa hàng</span></a>
+      <div class="adm-user"><span class="adm-av"><%= adminInitial %></span><span class="adm-nm"><%= adminName %></span><svg class="ico"><use href="#i-chev"/></svg></div>
+    </header>
+
+    <main class="adm-wrap">
+      <div class="adm-ph">
+        <div>
+          <p class="adm-crumb">Quản trị / Tổng quan</p>
+          <h1>Tổng quan</h1>
+          <p class="adm-subtext">Theo dõi hoạt động kinh doanh của cửa hàng</p>
+        </div>
+        <a class="adm-btn" href="/admin/products/new"><svg class="ico" style="width:16px;height:16px"><use href="#i-plus"/></svg>Thêm sản phẩm</a>
+      </div>
+
+      <section class="adm-stats" aria-label="Chỉ số kinh doanh">
+        <article class="adm-sc">
+          <div class="adm-row"><span class="adm-chip" style="background:var(--mint)"><svg class="ico"><use href="#i-cash"/></svg></span><span class="adm-lb">Doanh thu</span></div>
+          <div class="adm-v"><%= fmt(totalRevenue) %>₫</div>
+          <div class="adm-sub">Từ đơn đã giao</div>
+        </article>
+        <article class="adm-sc">
+          <div class="adm-row"><span class="adm-chip" style="background:var(--sky)"><svg class="ico"><use href="#i-order"/></svg></span><span class="adm-lb">Tổng số đơn hàng</span></div>
+          <div class="adm-v"><%= fmt(totalOrders) %></div>
+          <div class="adm-sub">Tất cả đơn hàng</div>
+        </article>
+        <article class="adm-sc">
+          <div class="adm-row"><span class="adm-chip" style="background:var(--peach)"><svg class="ico"><use href="#i-box"/></svg></span><span class="adm-lb">Sản phẩm</span></div>
+          <div class="adm-v"><%= fmt(totalProducts) %></div>
+          <div class="adm-sub">Đang bán</div>
+          <a class="adm-go" href="/catalog">Xem sản phẩm<svg class="ico"><use href="#i-arrow"/></svg></a>
+        </article>
+        <article class="adm-sc">
+          <div class="adm-row"><span class="adm-chip" style="background:var(--lilac)"><svg class="ico"><use href="#i-users"/></svg></span><span class="adm-lb">Khách hàng</span></div>
+          <div class="adm-v"><%= fmt(activeUsers) %></div>
+          <div class="adm-sub">Tài khoản khách hàng</div>
+        </article>
+      </section>
+
+      <div class="adm-g2">
+        <section class="adm-pn" aria-labelledby="h-rev">
+          <header><h3 id="h-rev">Doanh thu 7 ngày</h3><span class="adm-hint">Đơn vị: VND</span></header>
+          <div class="adm-bd">
+            <div class="adm-chart" role="img" aria-label="Biểu đồ doanh thu 7 ngày">
+              <canvas id="chart" height="240"></canvas>
+              <p class="adm-chart-fallback" data-chart-fallback hidden></p>
+            </div>
+          </div>
+        </section>
+        <section class="adm-pn" aria-labelledby="h-stock">
+          <header><h3 id="h-stock">Tình trạng tồn kho</h3><a class="adm-more" href="/catalog">Xem sản phẩm</a></header>
+          <div class="adm-bd">
+            <div class="adm-chart" role="img" aria-label="Biểu đồ tình trạng tồn kho">
+              <canvas id="donut" height="240"></canvas>
+              <p class="adm-chart-fallback" data-chart-fallback hidden></p>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <div class="adm-g3">
+        <section class="adm-pn" aria-labelledby="h-ord">
+          <header><h3 id="h-ord">Đơn hàng gần đây</h3><span class="adm-hint">10 đơn mới nhất</span></header>
+          <% if (recentOrders.length > 0) { %>
+            <div class="adm-tw" role="region" aria-label="Bảng đơn hàng gần đây" tabindex="0">
+              <table class="adm-table">
+                <thead>
+                  <tr><th>Mã đơn</th><th>Khách hàng</th><th>Ngày đặt</th><th class="adm-r">Tổng tiền</th></tr>
+                </thead>
+                <tbody>
+                  <% recentOrders.forEach(function (order) { %>
+                    <tr>
+                      <td><span class="adm-code"><%= order.code || 'Đơn hàng' %></span></td>
+                      <td><%= order.customerName || 'Khách hàng' %></td>
+                      <td><%= formatDate(order.createdAt) %></td>
+                      <td class="adm-r"><%= fmt(order.total) %>₫</td>
+                    </tr>
+                  <% }) %>
+                </tbody>
+              </table>
+            </div>
+          <% } else { %>
+            <p class="adm-empty-item">Chưa có đơn hàng nào.</p>
+          <% } %>
+        </section>
+
+        <section class="adm-pn" aria-labelledby="h-low">
+          <header><h3 id="h-low">Tồn kho thấp</h3><a class="adm-more" href="/catalog">Xem sản phẩm</a></header>
+          <% if (lowStockProducts.length > 0) { %>
+            <ul class="adm-ls">
+              <% lowStockProducts.forEach(function (product) { %>
+                <% var stock = Number(product.stock) || 0; %>
+                <li>
+                  <div class="adm-ls-t"><b><%= product.name %></b><span>Còn lại trong kho</span></div>
+                  <span class="adm-qty<%= stock <= 0 ? ' is-zero' : '' %>"><%= stock <= 0 ? 'Hết' : stock %></span>
+                </li>
+              <% }) %>
+            </ul>
+          <% } else { %>
+            <p class="adm-empty-item">Không có sản phẩm nào sắp hết hàng.</p>
+          <% } %>
+        </section>
+      </div>
+    </main>
+  </div>
+
   <script type="application/json" id="admin-chart-data"><%- JSON.stringify(chartData).replace(/</g, '\\u003c') %></script>
   <script src="/js/api.js"></script>
   <script src="/js/ui.js"></script>
-  <!-- Chart.js 4.4.1 - chờ nhóm duyệt CDN -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <script src="/js/admin.js"></script>
 </body>

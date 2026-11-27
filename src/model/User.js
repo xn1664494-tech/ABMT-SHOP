@@ -66,7 +66,15 @@ const userSchema = new mongoose.Schema(
     phone: {
       type: String,
       trim: true,
-      match: [/^(0|\+84)[0-9]{9,10}$/, 'So dien thoai khong hop le'],
+      match: [/^0(3|5|7|8|9)[0-9]{8}$/, "So dien thoai khong hop le"],
+    },
+    phoneVerified: {
+      type: Boolean,
+      default: false,
+    },
+    phoneVerifiedAt: {
+      type: Date,
+      default: null,
     },
     addresses: {
       type: [addressSchema],

@@ -32,7 +32,10 @@
       }
     };
   %>
-  <main id="main-content" class="main-content checkout-page">
+  <% if (typeof phoneVerified !== 'undefined' && phoneVerified === false) { %>
+  <div class="form-alert" role="alert">Ban can xac minh so dien thoai truoc khi dat hang. <a href="/account?tab=profile">Xac minh ngay</a></div>
+<% } %>
+<main id="main-content" class="main-content checkout-page">
     <div class="container page-shell">
       <nav class="breadcrumb" aria-label="Breadcrumb">
         <a href="/">Trang chủ</a>

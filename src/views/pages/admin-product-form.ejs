@@ -5,154 +5,194 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title><%= title %></title>
   <link rel="stylesheet" href="/css/app.css">
+  <link rel="stylesheet" href="/css/shop.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" media="all">
 </head>
-<body>
-  <%- include('../partials/header') %>
+<body class="shop">
   <div data-flash data-type="info" hidden></div>
   <%
     var L = (locals && locals.locals) ? locals.locals : (locals || {});
     var categories = Array.isArray(L.categories) ? L.categories : [];
     var colorOptions = Array.isArray(L.colors) ? L.colors : ['Đen', 'Trắng', 'Xanh', 'Đỏ', 'Xanh dương', 'Hồng', 'Tím', 'Nâu'];
-  %>
-  <main id="main-content" class="main-content admin-form-page">
-    <div class="container page-shell">
-      <nav class="breadcrumb" aria-label="Breadcrumb">
-        <a href="/">Trang chủ</a>
-        <span class="sep">/</span>
-        <a href="/admin">Quản trị</a>
-        <span class="sep">/</span>
-        <span aria-current="page">Thêm sản phẩm</span>
-      </nav>
 
-      <div class="page-head">
+    var adminUser = (typeof currentUser !== 'undefined' && currentUser) ? currentUser : {};
+    var adminName = adminUser.name || 'Quản trị viên';
+    var adminInitial = String(adminName).trim().charAt(0).toUpperCase() || 'A';
+  %>
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <symbol id="i-dash" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-store" viewBox="0 0 24 24"><path d="M4 9l1.5-5h13L20 9"/><path d="M4 9a2.7 2.7 0 005.3 0 2.7 2.7 0 005.4 0A2.7 2.7 0 0020 9"/><path d="M5 12v8h14v-8"/></symbol>
+    <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.6-3.6 3.2-5.5 6.5-5.5s5.9 1.9 6.5 5.5"/><circle cx="17.5" cy="9" r="2.6"/><path d="M17 14.5c2.6.2 4.2 1.9 4.6 4.5"/></symbol>
+    <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></symbol>
+    <symbol id="i-out" viewBox="0 0 24 24"><path d="M10 4H6a2 2 0 00-2 2v12a2 2 0 002 2h4"/><path d="M16 8l4 4-4 4M20 12H9"/></symbol>
+    <symbol id="i-chev" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></symbol>
+    <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+  </svg>
+
+  <aside class="adm-sb" id="sb" aria-label="Menu quản trị">
+    <div class="adm-brand">
+      ABMT<small>Admin</small>
+      <button type="button" class="adm-sb-close" data-adm-close aria-label="Đóng menu">×</button>
+    </div>
+    <nav class="adm-nav">
+      <h2 class="adm-nav-h">Tổng quan</h2>
+      <a href="/admin"><svg class="ico"><use href="#i-dash"/></svg>Tổng quan</a>
+      <h2 class="adm-nav-h">Cửa hàng</h2>
+      <a href="/admin/products/new" aria-current="page"><svg class="ico"><use href="#i-plus"/></svg>Thêm sản phẩm</a>
+      <a href="/catalog"><svg class="ico"><use href="#i-store"/></svg>Xem cửa hàng</a>
+      <h2 class="adm-nav-h">Tài khoản</h2>
+      <a href="/account"><svg class="ico"><use href="#i-users"/></svg>Tài khoản</a>
+    </nav>
+    <div class="adm-who">
+      Đăng nhập với tư cách
+      <b><%= adminName %></b>
+      <button type="button" class="adm-logout" data-adm-logout><svg class="ico" style="width:16px;height:16px"><use href="#i-out"/></svg>Đăng xuất</button>
+    </div>
+  </aside>
+  <div class="adm-scrim" id="scrim"></div>
+
+  <div class="adm-main">
+    <header class="adm-top">
+      <button type="button" id="tg" class="adm-tg" aria-label="Mở menu quản trị" aria-controls="sb" aria-expanded="false"><svg class="ico"><use href="#i-menu"/></svg></button>
+      <div class="adm-sp"></div>
+      <a class="adm-store" href="/catalog"><svg class="ico" style="width:18px;height:18px"><use href="#i-store"/></svg><span>Xem cửa hàng</span></a>
+      <div class="adm-user"><span class="adm-av"><%= adminInitial %></span><span class="adm-nm"><%= adminName %></span><svg class="ico"><use href="#i-chev"/></svg></div>
+    </header>
+
+    <main class="adm-wrap">
+      <div class="adm-ph">
         <div>
-          <h1 class="page-title">Thêm sản phẩm</h1>
-          <p class="page-sub">Nhập thông tin sản phẩm và các biến thể Size/Màu</p>
+          <p class="adm-crumb">Quản trị / Thêm sản phẩm</p>
+          <h1>Thêm sản phẩm</h1>
+          <p class="adm-subtext">Nhập thông tin sản phẩm và các biến thể Size/Màu</p>
         </div>
-        <a href="/admin" class="page-back">Quay lại quản trị</a>
+        <a class="adm-btn adm-btn--outline" href="/admin"><svg class="ico" style="width:16px;height:16px"><use href="#i-arrow"/></svg>Quay lại tổng quan</a>
       </div>
 
-      <form id="pForm" class="admin-form-card" data-api="json" autocomplete="off">
-        <div class="admin-form-grid two">
-          <div class="field span-two">
-            <label class="label" for="p-name">Tên sản phẩm</label>
-            <input type="text" id="p-name" name="name" class="input" maxlength="120" required placeholder="Ví dụ: Áo sơ mi linen">
-            <small class="field-error-msg"></small>
-          </div>
+      <form id="pForm" class="adm-form" data-api="json" autocomplete="off">
+        <section class="adm-pn">
+          <header><h3>Thông tin sản phẩm</h3><span class="adm-hint">Các trường có dấu * là bắt buộc</span></header>
+          <div class="adm-bd">
+            <div class="adm-form-grid">
+              <div class="adm-field adm-span-two">
+                <label class="adm-label" for="p-name">Tên sản phẩm *</label>
+                <input type="text" id="p-name" name="name" class="adm-input" maxlength="120" required placeholder="Ví dụ: Áo sơ mi linen">
+              </div>
 
-          <div class="field">
-            <label class="label" for="p-category">Danh mục</label>
-            <select id="p-category" name="category" class="select" required>
-              <option value="">-- Chọn danh mục --</option>
-              <% categories.forEach(function (cat) { %>
-                <option value="<%= String(cat._id) %>"><%= cat.name %></option>
-              <% }) %>
-            </select>
-            <small class="field-error-msg"></small>
-          </div>
+              <div class="adm-field">
+                <label class="adm-label" for="p-category">Danh mục *</label>
+                <select id="p-category" name="category" class="adm-select" required>
+                  <option value="">-- Chọn danh mục --</option>
+                  <% categories.forEach(function (cat) { %>
+                    <option value="<%= String(cat._id) %>"><%= cat.name %></option>
+                  <% }) %>
+                </select>
+              </div>
 
-          <div class="field">
-            <label class="label" for="p-material">Chất liệu</label>
-            <input type="text" id="p-material" name="material" class="input" maxlength="120" placeholder="Cotton, linen, kaki...">
-          </div>
+              <div class="adm-field">
+                <label class="adm-label" for="p-material">Chất liệu</label>
+                <input type="text" id="p-material" name="material" class="adm-input" maxlength="120" placeholder="Cotton, linen, kaki...">
+              </div>
 
-          <div class="field">
-            <label class="label" for="price">Giá bán</label>
-            <input type="text" id="price" name="basePrice" class="input" inputmode="numeric" data-integer required placeholder="0">
-            <small class="field-error-msg"></small>
-          </div>
+              <div class="adm-field">
+                <label class="adm-label" for="price">Giá bán *</label>
+                <input type="text" id="price" name="basePrice" class="adm-input" inputmode="numeric" data-integer required placeholder="0">
+              </div>
 
-          <div class="field span-two">
-            <label class="label" for="p-desc">Mô tả</label>
-            <textarea id="p-desc" name="description" class="textarea" rows="4" maxlength="2000" placeholder="Mô tả chất liệu, form dáng, cách bảo quản..."></textarea>
+              <div class="adm-field adm-span-two">
+                <label class="adm-label" for="p-desc">Mô tả</label>
+                <textarea id="p-desc" name="description" class="adm-textarea" rows="4" maxlength="2000" placeholder="Mô tả chất liệu, form dáng, cách bảo quản..."></textarea>
+              </div>
+            </div>
           </div>
-        </div>
+        </section>
 
-        <div class="form-section">
-          <div class="form-section-head">
-            <h2 class="form-section-title">Biến thể sản phẩm</h2>
-            <span class="form-section-note">Mỗi dòng là một cặp Size/Màu duy nhất</span>
-          </div>
+        <section class="adm-pn">
+          <header><h3>Biến thể sản phẩm</h3><span class="adm-hint">Mỗi dòng là một cặp Size/Màu duy nhất</span></header>
+          <div class="adm-bd">
+            <div id="variant-rows" class="adm-variant-rows">
+              <template id="variant-row-tpl">
+                <div class="adm-variant-row variant-row">
+                  <div class="adm-variant-field variant-field">
+                    <label>Màu sắc</label>
+                    <select class="adm-select" data-field="color">
+                      <option value="">-- Màu --</option>
+                      <% colorOptions.forEach(function (color) { %>
+                        <option value="<%= color %>"><%= color %></option>
+                      <% }) %>
+                    </select>
+                  </div>
+                  <div class="adm-variant-field variant-field">
+                    <label>Kích cỡ</label>
+                    <input type="text" class="adm-input" data-field="size" placeholder="M" maxlength="10">
+                  </div>
+                  <div class="adm-variant-field variant-field">
+                    <label>SKU</label>
+                    <input type="text" class="adm-input" data-field="sku" placeholder="SP-AO-001-M-DEN" maxlength="40">
+                  </div>
+                  <div class="adm-variant-field variant-field">
+                    <label>Giá</label>
+                    <input type="text" class="adm-input" data-field="price" data-integer inputmode="numeric" value="0" placeholder="0">
+                  </div>
+                  <div class="adm-variant-field variant-field">
+                    <label>Tồn kho</label>
+                    <input type="text" class="adm-input" data-field="stock" data-integer inputmode="numeric" value="0" placeholder="0">
+                  </div>
+                  <div class="adm-variant-actions variant-actions">
+                    <button type="button" class="adm-btn adm-btn--danger adm-btn--sm variant-remove" data-remove-variant>Xóa</button>
+                  </div>
+                  <p class="adm-variant-error variant-error" aria-live="polite"></p>
+                </div>
+              </template>
 
-          <div id="variant-rows" class="variant-rows">
-            <template id="variant-row-tpl">
-              <div class="variant-row">
-                <div class="variant-field">
+              <div class="adm-variant-row variant-row">
+                <div class="adm-variant-field variant-field">
                   <label>Màu sắc</label>
-                  <select class="select" data-field="color">
+                  <select class="adm-select" name="variants[0][color]" data-field="color">
                     <option value="">-- Màu --</option>
                     <% colorOptions.forEach(function (color) { %>
                       <option value="<%= color %>"><%= color %></option>
                     <% }) %>
                   </select>
                 </div>
-                <div class="variant-field">
+                <div class="adm-variant-field variant-field">
                   <label>Kích cỡ</label>
-                  <input type="text" class="input" data-field="size" placeholder="M" maxlength="10">
+                  <input type="text" class="adm-input" name="variants[0][size]" data-field="size" placeholder="M" maxlength="10">
                 </div>
-                <div class="variant-field">
+                <div class="adm-variant-field variant-field">
                   <label>SKU</label>
-                  <input type="text" class="input" data-field="sku" placeholder="SP-AO-001-M-DEN" maxlength="40">
+                  <input type="text" class="adm-input" name="variants[0][sku]" data-field="sku" placeholder="SP-AO-001-M-DEN" maxlength="40">
                 </div>
-                <div class="variant-field">
+                <div class="adm-variant-field variant-field">
                   <label>Giá</label>
-                  <input type="text" class="input" data-field="price" data-integer inputmode="numeric" value="0" placeholder="0">
+                  <input type="text" class="adm-input" name="variants[0][price]" data-field="price" data-integer inputmode="numeric" value="0" placeholder="0">
                 </div>
-                <div class="variant-field">
+                <div class="adm-variant-field variant-field">
                   <label>Tồn kho</label>
-                  <input type="text" class="input" data-field="stock" data-integer inputmode="numeric" value="0" placeholder="0">
+                  <input type="text" class="adm-input" name="variants[0][stock]" data-field="stock" data-integer inputmode="numeric" value="0" placeholder="0">
                 </div>
-                <div class="variant-actions">
-                  <button type="button" class="btn btn-danger btn-sm variant-remove" data-remove-variant>Xóa</button>
+                <div class="adm-variant-actions variant-actions">
+                  <button type="button" class="adm-btn adm-btn--danger adm-btn--sm variant-remove" data-remove-variant>Xóa</button>
                 </div>
-                <p class="variant-error" aria-live="polite"></p>
+                <p class="adm-variant-error variant-error" aria-live="polite"></p>
               </div>
-            </template>
-
-            <div class="variant-row">
-              <div class="variant-field">
-                <label>Màu sắc</label>
-                <select class="select" name="variants[0][color]" data-field="color">
-                  <option value="">-- Màu --</option>
-                  <% colorOptions.forEach(function (color) { %>
-                    <option value="<%= color %>"><%= color %></option>
-                  <% }) %>
-                </select>
-              </div>
-              <div class="variant-field">
-                <label>Kích cỡ</label>
-                <input type="text" class="input" name="variants[0][size]" data-field="size" placeholder="M" maxlength="10">
-              </div>
-              <div class="variant-field">
-                <label>SKU</label>
-                <input type="text" class="input" name="variants[0][sku]" data-field="sku" placeholder="SP-AO-001-M-DEN" maxlength="40">
-              </div>
-              <div class="variant-field">
-                <label>Giá</label>
-                <input type="text" class="input" name="variants[0][price]" data-field="price" data-integer inputmode="numeric" value="0" placeholder="0">
-              </div>
-              <div class="variant-field">
-                <label>Tồn kho</label>
-                <input type="text" class="input" name="variants[0][stock]" data-field="stock" data-integer inputmode="numeric" value="0" placeholder="0">
-              </div>
-              <div class="variant-actions">
-                <button type="button" class="btn btn-danger btn-sm variant-remove" data-remove-variant>Xóa</button>
-              </div>
-              <p class="variant-error" aria-live="polite"></p>
             </div>
+
+            <button type="button" id="addVariant" class="adm-btn adm-btn--outline adm-add-variant"><svg class="ico" style="width:16px;height:16px"><use href="#i-plus"/></svg>Thêm biến thể</button>
           </div>
+        </section>
 
-          <button type="button" id="addVariant" class="btn btn-soft">Thêm biến thể</button>
-        </div>
-
-        <div class="admin-form-actions">
-          <button type="submit" class="btn btn-primary">Lưu sản phẩm</button>
-          <a href="/admin" class="btn btn-ghost">Hủy</a>
+        <div class="adm-form-actions">
+          <button type="submit" class="adm-btn">Lưu sản phẩm</button>
+          <a href="/admin" class="adm-btn adm-btn--ghost">Hủy</a>
         </div>
       </form>
-    </div>
-  </main>
-  <%- include('../partials/footer') %>
+    </main>
+  </div>
+
   <script src="/js/api.js"></script>
   <script src="/js/ui.js"></script>
   <script src="/js/admin.js"></script>

@@ -12,6 +12,7 @@ const ErrorResponse = require('../utils/appError');
 const { getFlash } = require('../utils/flash');
 const { ensureCartItemIds } = require('../utils/cartItems');
 const presentation = require('../utils/productPresentation');
+const { maskPhone } = require('../utils/maskPhone');
 
 const router = express.Router();
 
@@ -185,8 +186,12 @@ router.get('/account', asyncHandler(async (req, res, next) => {
 
   res.set('Cache-Control', 'no-store');
   res.render('pages/account', {
+    user: {
+      ...user,
+      phoneMasked: maskPhone(user.phone || null),
+      phoneVerified: Boolean(user.phoneVerified),
+    },
     title: 'Tài khoản của tôi',
-    user,
     orders,
     recentOrders,
     counts,
@@ -235,7 +240,7 @@ router.get('/profile', asyncHandler(async (req, res, next) => {
 
   const current = res.locals.currentUser;
   const fullUser = await User.findById(current.id)
-    .select('name email role addresses createdAt')
+    .select('name email role addresses phone phoneVerified phoneVerifiedAt createdAt')
     .lean();
 
   const user = {
@@ -244,6 +249,9 @@ router.get('/profile', asyncHandler(async (req, res, next) => {
     email: (fullUser && fullUser.email) || '',
     role: (fullUser && fullUser.role) || current.role || 'customer',
     addresses: (fullUser && Array.isArray(fullUser.addresses)) ? fullUser.addresses : [],
+    phone: (fullUser && fullUser.phone) || current.phone || '',
+    phoneVerified: Boolean((fullUser && fullUser.phoneVerified) || current.phoneVerified),
+    phoneMasked: maskPhone((fullUser && fullUser.phone) || current.phone || null),
     createdAt: (fullUser && fullUser.createdAt) || null,
   };
 
@@ -601,7 +609,7 @@ router.get('/checkout', asyncHandler(async (req, res, next) => {
   const { subtotal, shippingFee, total, count } = calcCartSummary(items);
 
   // Lấy địa chỉ đã lưu của user
-  const user = await User.findById(res.locals.currentUser.id).select('addresses').lean();
+  const user = await User.findById(res.locals.currentUser.id).select('addresses phone phoneVerified phoneVerifiedAt').lean();
   const savedAddresses = (user && user.addresses) || [];
 
   const lines = items.map((item) => ({
@@ -624,6 +632,7 @@ router.get('/checkout', asyncHandler(async (req, res, next) => {
       paymentMethods,
       itemId: selectedItemId || '',
     },
+    phoneVerified: Boolean((user && user.phoneVerified) || false),
     cartCount: count,
   });
   setCartCookie(res, cartId);

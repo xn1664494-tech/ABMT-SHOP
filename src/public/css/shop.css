@@ -927,3 +927,492 @@
   .shop .acc-detail-item { align-items: flex-start; }
   .shop .acc-detail-item-total { align-self: flex-end; }
 }
+
+.shop .acc-badge--verified { background: #E7F5EE; color: #2F7A5B; border-color: #BFE3D2; }
+.shop .acc-badge--unverified { background: #FDF3E1; color: #9A6715; border-color: #F0D7A6; }
+
+/* =========================================================
+   ABMT ADMIN — Tổng quan & Thêm sản phẩm
+   Port từ mockup v1. Toàn bộ selector được scope dưới .shop
+   và dùng tiền tố .adm- để không ảnh hưởng trang khác.
+   ========================================================= */
+.shop { --adm-sbw: 248px; }
+
+/* ----- Sidebar ----- */
+.shop .adm-sb {
+  position: fixed;
+  inset: 0 auto 0 0;
+  width: var(--adm-sbw);
+  background: var(--ink);
+  color: var(--line-strong);
+  display: flex;
+  flex-direction: column;
+  z-index: 40;
+  transition: transform .25s;
+}
+.shop .adm-sb .adm-brand {
+  height: 60px;
+  display: flex;
+  align-items: center;
+  padding: 0 22px;
+  font-weight: 600;
+  font-size: 20px;
+  letter-spacing: .08em;
+  color: var(--canvas);
+  border-bottom: 1px solid rgba(253, 252, 249, .1);
+}
+.shop .adm-sb .adm-brand small {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: .04em;
+  margin-left: 10px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(143, 185, 168, .2);
+  color: var(--accent);
+}
+.shop .adm-sb .adm-sb-close {
+  display: none;
+  margin-left: auto;
+  width: 32px;
+  height: 32px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-size: 18px;
+  line-height: 1;
+  color: var(--canvas);
+  border: 1px solid rgba(253, 252, 249, .25);
+}
+.shop .adm-sb .adm-nav { flex: 1; overflow: auto; padding: 8px 12px 16px; }
+.shop .adm-sb .adm-nav-h {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--line-strong);
+  opacity: .7;
+  padding: 18px 12px 8px;
+  margin: 0;
+}
+.shop .adm-sb .adm-nav a {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 42px;
+  padding: 0 12px;
+  border-radius: 12px;
+  color: var(--line-strong);
+  font-size: 14px;
+}
+.shop .adm-sb .adm-nav a:hover { background: rgba(253, 252, 249, .07); color: var(--canvas); }
+.shop .adm-sb .adm-nav a[aria-current="page"] {
+  background: rgba(143, 185, 168, .18);
+  color: var(--accent);
+  font-weight: 600;
+}
+.shop .adm-sb .adm-cnt {
+  margin-left: auto;
+  min-width: 22px;
+  height: 20px;
+  padding: 0 7px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--ink);
+  font-size: 11px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.shop .adm-sb .adm-who {
+  padding: 14px 20px;
+  border-top: 1px solid rgba(253, 252, 249, .1);
+  font-size: 12px;
+  color: var(--line-strong);
+}
+.shop .adm-sb .adm-who b {
+  display: block;
+  font-size: 14px;
+  color: var(--canvas);
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.shop .adm-sb .adm-logout {
+  margin-top: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--accent);
+  font-size: 13px;
+}
+.shop .adm-sb .adm-logout:hover { color: var(--canvas); }
+.shop .adm-scrim {
+  position: fixed;
+  inset: 0;
+  background: rgba(20, 24, 29, .45);
+  z-index: 35;
+  display: none;
+}
+.shop .adm-scrim.is-open { display: block; }
+
+/* ----- Top bar + shell ----- */
+.shop .adm-main { margin-left: var(--adm-sbw); min-height: 100vh; }
+.shop .adm-top {
+  height: 60px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 0 24px;
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+.shop .adm-top .adm-tg {
+  display: none;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--line-strong);
+  color: var(--ink);
+}
+.shop .adm-top .adm-sp { flex: 1; }
+.shop .adm-store {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 36px;
+  padding: 0 16px;
+  border-radius: 999px;
+  border: 1px solid var(--line-strong);
+  font-size: 13.5px;
+  color: var(--ink-strong);
+}
+.shop .adm-store:hover { background: var(--canvas); }
+.shop .adm-user {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 38px;
+  padding: 0 10px 0 4px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  font-size: 13px;
+  color: var(--ink-strong);
+}
+.shop .adm-av {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--mint);
+  color: var(--accent-deep);
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+}
+.shop .adm-top .adm-user .ico { width: 16px; height: 16px; }
+.shop .adm-wrap { padding: 24px; max-width: 1400px; }
+
+/* ----- Page head ----- */
+.shop .adm-ph {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+.shop .adm-ph h1 { font-size: 28px; font-weight: 700; color: var(--ink-strong); line-height: 1.2; margin: 0; }
+.shop .adm-crumb { font-size: 12.5px; color: var(--muted); margin: 0 0 4px; }
+.shop .adm-subtext { font-size: 13px; color: var(--muted); margin: 4px 0 0; }
+
+/* ----- Stat cards ----- */
+.shop .adm-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 16px;
+}
+.shop .adm-sc {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+.shop .adm-sc .adm-row { display: flex; align-items: center; gap: 12px; }
+.shop .adm-chip {
+  width: 42px;
+  height: 42px;
+  border-radius: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ink-strong);
+  flex: none;
+}
+.shop .adm-lb { font-size: 13px; color: var(--muted); }
+.shop .adm-v { font-size: 26px; font-weight: 700; color: var(--ink-strong); line-height: 1.2; margin-top: 6px; }
+.shop .adm-sub { font-size: 12.5px; color: var(--ink-soft); }
+.shop .adm-sub b { color: var(--accent-deep); font-weight: 600; }
+.shop .adm-go {
+  margin-top: auto;
+  padding-top: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink-strong);
+  border-top: 1px solid var(--line);
+}
+.shop .adm-go .ico { width: 16px; height: 16px; }
+
+/* ----- Panels + grids ----- */
+.shop .adm-pn {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  min-width: 0;
+  overflow: hidden;
+}
+.shop .adm-pn > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--line);
+}
+.shop .adm-pn h3 { font-size: 15px; font-weight: 700; color: var(--ink-strong); margin: 0; }
+.shop .adm-hint { font-size: 12.5px; color: var(--muted); }
+.shop .adm-more { font-size: 13px; color: var(--ink-soft); border-bottom: 1px solid var(--line-strong); }
+.shop .adm-more:hover { color: var(--ink-strong); }
+.shop .adm-bd { padding: 16px 20px 20px; }
+.shop .adm-g2 {
+  display: grid;
+  grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr);
+  gap: 16px;
+  margin-bottom: 16px;
+}
+.shop .adm-g3 {
+  display: grid;
+  grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr);
+  gap: 16px;
+}
+.shop .adm-chart { position: relative; height: 260px; }
+.shop .adm-chart canvas { width: 100% !important; height: 100% !important; display: block; }
+.shop .adm-chart canvas[hidden] { display: none !important; }
+.shop .adm-chart-fallback {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  padding: 16px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--muted);
+}
+.shop .adm-chart-fallback[hidden] { display: none; }
+
+/* ----- Table ----- */
+.shop .adm-tw { overflow-x: auto; }
+.shop .adm-table { width: 100%; border-collapse: collapse; min-width: 560px; }
+.shop .adm-table th {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  color: var(--muted);
+  text-align: left;
+  padding: 10px 16px;
+  background: var(--canvas);
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line-strong);
+  white-space: nowrap;
+}
+.shop .adm-table td {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--line);
+  font-size: 13.5px;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+.shop .adm-table tr:last-child td { border-bottom: 0; }
+.shop .adm-table tbody tr:hover { background: var(--canvas); }
+.shop .adm-table .adm-code { font-weight: 600; color: var(--ink-strong); }
+.shop .adm-table .adm-s2 { display: block; font-size: 12px; color: var(--muted); }
+.shop .adm-table .adm-r { text-align: right; }
+
+/* ----- Low stock list ----- */
+.shop .adm-ls { list-style: none; margin: 0; padding: 0; }
+.shop .adm-ls li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--line);
+}
+.shop .adm-ls li:last-child { border-bottom: 0; }
+.shop .adm-ls .adm-ls-t { min-width: 0; flex: 1; }
+.shop .adm-ls .adm-ls-t b {
+  display: block;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--ink-strong);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.shop .adm-ls .adm-ls-t span { font-size: 12px; color: var(--muted); }
+.shop .adm-qty {
+  min-width: 34px;
+  height: 26px;
+  padding: 0 10px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12.5px;
+  font-weight: 700;
+  background: var(--peach);
+  color: var(--ink-strong);
+}
+.shop .adm-qty.is-zero { background: var(--danger); color: var(--canvas); }
+.shop .adm-empty-item {
+  margin: 0;
+  padding: 24px 20px;
+  text-align: center;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+/* ----- Buttons ----- */
+.shop .adm-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 36px;
+  padding: 0 16px;
+  border-radius: 999px;
+  font-size: 13.5px;
+  font-weight: 500;
+  border: 1px solid var(--ink);
+  background: var(--ink);
+  color: var(--canvas);
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color .15s ease, color .15s ease, border-color .15s ease;
+}
+.shop .adm-btn:hover { background: var(--ink-strong); border-color: var(--ink-strong); }
+.shop .adm-btn:disabled { opacity: .55; cursor: not-allowed; }
+.shop .adm-btn--outline { background: transparent; color: var(--ink); }
+.shop .adm-btn--outline:hover { background: var(--canvas); color: var(--ink-strong); }
+.shop .adm-btn--ghost { background: transparent; border-color: var(--line-strong); color: var(--ink-soft); }
+.shop .adm-btn--ghost:hover { background: var(--canvas); color: var(--ink-strong); }
+.shop .adm-btn--danger { background: transparent; border-color: var(--danger); color: var(--danger); }
+.shop .adm-btn--danger:hover { background: var(--danger); border-color: var(--danger); color: var(--canvas); }
+.shop .adm-btn--sm { height: 32px; padding: 0 12px; font-size: 12.5px; }
+
+/* ----- Product form ----- */
+.shop .adm-form { display: flex; flex-direction: column; gap: 16px; max-width: 1040px; }
+.shop .adm-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+.shop .adm-span-two { grid-column: 1 / -1; }
+.shop .adm-field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.shop .adm-label { font-size: 13px; font-weight: 600; color: var(--ink-strong); }
+.shop .adm-input,
+.shop .adm-select,
+.shop .adm-textarea {
+  width: 100%;
+  background: var(--canvas);
+  border: 1px solid var(--line-strong);
+  border-radius: 12px;
+  padding: 10px 12px;
+  font: inherit;
+  font-size: 13.5px;
+  color: var(--ink);
+  outline: none;
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+.shop .adm-input::placeholder,
+.shop .adm-textarea::placeholder { color: var(--muted); }
+.shop .adm-input:focus,
+.shop .adm-select:focus,
+.shop .adm-textarea:focus {
+  border-color: var(--accent-deep);
+  box-shadow: 0 0 0 3px var(--ring);
+}
+.shop .adm-textarea { resize: vertical; min-height: 96px; }
+.shop .adm-variant-rows { display: grid; gap: 10px; margin-bottom: 12px; }
+.shop .adm-variant-row {
+  display: grid;
+  grid-template-columns: 1.1fr .7fr 1.4fr .8fr .7fr auto;
+  gap: 10px;
+  align-items: end;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--canvas);
+}
+.shop .adm-variant-row.has-error { border-color: var(--danger); background: var(--peach); }
+.shop .adm-variant-field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.shop .adm-variant-field > label { font-size: 12px; font-weight: 600; color: var(--muted); }
+.shop .adm-variant-actions { display: flex; align-items: end; }
+.shop .adm-variant-error {
+  grid-column: 1 / -1;
+  margin: 0;
+  font-size: 12px;
+  color: var(--danger);
+}
+.shop .adm-variant-error:empty { display: none; }
+.shop .adm-add-variant { margin-top: 2px; }
+.shop .adm-form-actions { display: flex; flex-wrap: wrap; gap: 12px; padding-top: 4px; }
+
+/* ----- Responsive ----- */
+@media (max-width: 1180px) {
+  .shop .adm-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .shop .adm-g2,
+  .shop .adm-g3 { grid-template-columns: 1fr; }
+}
+@media (max-width: 1000px) {
+  .shop .adm-variant-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .shop .adm-variant-actions { align-items: center; }
+}
+@media (max-width: 900px) {
+  .shop .adm-sb { transform: translateX(-105%); }
+  .shop .adm-sb.is-open { transform: none; }
+  .shop .adm-sb .adm-sb-close { display: inline-flex; }
+  .shop .adm-main { margin-left: 0; }
+  .shop .adm-top .adm-tg { display: inline-flex; }
+  .shop .adm-wrap { padding: 16px; }
+}
+@media (max-width: 560px) {
+  .shop .adm-stats { grid-template-columns: 1fr; }
+  .shop .adm-store span { display: none; }
+  .shop .adm-user .adm-nm { display: none; }
+  .shop .adm-ph h1 { font-size: 24px; }
+  .shop .adm-form-grid { grid-template-columns: 1fr; }
+  .shop .adm-variant-row { grid-template-columns: 1fr; }
+  .shop .adm-chart { height: 220px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .shop .adm-sb { transition: none; }
+}

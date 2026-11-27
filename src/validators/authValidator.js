@@ -96,6 +96,19 @@ const changePasswordSchema = z
     path: ['newPassword'],
   });
 
+const phoneUpdateSchema = z.object({
+  phone: z
+    .string({ error: 'So dien thoai khong duoc de trong' })
+    .trim()
+    .regex(/^(?:\+?84|0)(3|5|7|8|9)[0-9]{8}$/, "So dien thoai khong hop le"),
+}).strict('Chi duoc gui so dien thoai');
+
+const phoneVerifyCodeSchema = z.object({
+  code: z
+    .string({ error: 'Ma xac minh khong duoc de trong' })
+    .regex(/^[0-9]{6}$/, "Ma xac minh phai gom 6 so"),
+}).strict('Chi duoc gui ma xac minh');
+
 module.exports = {
   registerSchema,
   loginSchema,
@@ -104,4 +117,6 @@ module.exports = {
   updateProfileSchema,
   changePasswordSchema,
   passwordSchema,
+  phoneUpdateSchema,
+  phoneVerifyCodeSchema,
 };
