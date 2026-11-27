@@ -33,23 +33,25 @@ const SEED_SKUS = [
 
 const SEED_ADMIN_PASSWORD = 'admin123';
 
+// Ten con phai unique sau slugify de khong vi pham index slug_1.
+// (truoc day ca 2 nhanh deu co "Ao" -> cung slug "ao" -> E11000 index build failed)
 const CATEGORIES = [
   { name: 'Nam', order: 1, children: [
-    { name: 'Áo', order: 1 },
-    { name: 'Quần', order: 2 },
+    { name: 'Áo nam', order: 1 },
+    { name: 'Quần nam', order: 2 },
   ]},
   { name: 'Nữ', order: 2, children: [
-    { name: 'Áo', order: 1 },
-    { name: 'Quần', order: 2 },
-    { name: 'Váy', order: 3 },
-    { name: 'Đầm', order: 4 },
+    { name: 'Áo nữ', order: 1 },
+    { name: 'Quần nữ', order: 2 },
+    { name: 'Váy nữ', order: 3 },
+    { name: 'Đầm nữ', order: 4 },
   ]},
 ];
 
 const PRODUCTS = [
   {
     name: 'Áo thun cotton cổ tròn nam',
-    categoryPath: ['Nam', 'Áo'],
+    categoryPath: ['Nam', 'Áo nam'],
     description: 'Áo thun cotton thấm hút mát mẻ.',
     basePrice: 299000,
     images: ['https://cdn.example.com/ao-thun-cotton-nam.jpg'],
@@ -60,7 +62,7 @@ const PRODUCTS = [
   },
   {
     name: 'Áo sơ mi linen tay dài nam',
-    categoryPath: ['Nam', 'Áo'],
+    categoryPath: ['Nam', 'Áo nam'],
     description: 'Áo sơ mi linen form ngần.',
     basePrice: 449000,
     images: ['https://cdn.example.com/ao-so-mi-nam.jpg'],
@@ -71,7 +73,7 @@ const PRODUCTS = [
   },
   {
     name: 'Quần jeans ống đứng nam',
-    categoryPath: ['Nam', 'Quần'],
+    categoryPath: ['Nam', 'Quần nam'],
     description: 'Quần jeans Skinny dáng form.',
     basePrice: 549000,
     images: ['https://cdn.example.com/quan-jeans-nam.jpg'],
@@ -82,7 +84,7 @@ const PRODUCTS = [
   },
   {
     name: 'Áo thun cotton nữ',
-    categoryPath: ['Nữ', 'Áo'],
+    categoryPath: ['Nữ', 'Áo nữ'],
     description: 'Áo thun cotton-basic dành cho nữ.',
     basePrice: 329000,
     images: ['https://cdn.example.com/ao-thun-nu.jpg'],
@@ -93,7 +95,7 @@ const PRODUCTS = [
   },
   {
     name: 'Quần culottes ống rộng nữ',
-    categoryPath: ['Nữ', 'Quần'],
+    categoryPath: ['Nữ', 'Quần nữ'],
     description: 'Quần culottes vải cao su.',
     basePrice: 399000,
     images: ['https://cdn.example.com/quan-culottes.jpg'],
@@ -104,7 +106,7 @@ const PRODUCTS = [
   },
   {
     name: 'Váy midi dáng chữ A',
-    categoryPath: ['Nữ', 'Váy'],
+    categoryPath: ['Nữ', 'Váy nữ'],
     description: 'Váy midi dáng chữ A thanh lịch.',
     basePrice: 499000,
     images: ['https://cdn.example.com/vay-midi.jpg'],
@@ -115,7 +117,7 @@ const PRODUCTS = [
   },
   {
     name: 'Đầm cưới trắng thanh lịch',
-    categoryPath: ['Nữ', 'Đầm'],
+    categoryPath: ['Nữ', 'Đầm nữ'],
     description: 'Đầm cưới trắng vải sagio.',
     basePrice: 1599000,
     images: ['https://cdn.example.com/dam-cuoi.jpg'],

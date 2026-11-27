@@ -74,6 +74,12 @@ jobs:
 
       - name: Integration tests (real MongoDB)
         run: npm run test:integration
+        # integration tu seed du lieu rieng (RUN_ID); khong duoc dung chung DB
+        # voi steps seed/seed-verify neu khong low-stock/revenue se nhiem data seed.
+        env:
+          MONGODB_URI: mongodb://127.0.0.1:27017/abmt_shop_ci_integration_test
+          MONGODB_URI_TEST: mongodb://127.0.0.1:27017/abmt_shop_ci_integration_test
+          TEST_MONGODB_URI: mongodb://127.0.0.1:27017/abmt_shop_ci_integration_test
 
       - name: Postman collections (newman)
         run: npm run test:postman
@@ -86,5 +92,8 @@ jobs:
         run: npm run test:jest
         # Jest setup refuses MONGODB_URI === MONGODB_URI_TEST; it reassigns
         # MONGODB_URI to the test URI itself, so clear the seed-only value here.
+        # Dung DB rieng de fixture SKU cua jest khong va cham du lieu seed.
         env:
           MONGODB_URI: ''
+          MONGODB_URI_TEST: mongodb://127.0.0.1:27017/abmt_shop_ci_jest_test
+          TEST_MONGODB_URI: mongodb://127.0.0.1:27017/abmt_shop_ci_jest_test
