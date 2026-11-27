@@ -83,7 +83,6 @@ const logout = asyncHandler(async (req, res) => {
  */
 const forgotPassword = asyncHandler(async (req, res) => {
   const result = await requestPasswordReset({ email: req.body.email });
-
   const payload = {
     success: true,
     message: 'Neu email ton tai, huong dan dat lai mat khau da duoc gui',
