@@ -109,7 +109,7 @@ Các header Helmet khác (HSTS, `X-Content-Type-Options`, `Referrer-Policy`, `X-
 | Sau khi sync `origin/main` (PR #110): `node --test test/security-headers.test.js test/error-handler.test.js` | 12 tests / 12 pass / 0 fail / 0 skip | 0 |
 | Sau khi sync `origin/main` (PR #110): `npm test` | 363 tests / 357 pass / 0 fail / 6 skip | 0 |
 | CI `main` sau PR #110 — https://github.com/xn1664494-tech/ABMT-SHOP/actions/runs/46024539029 | `success`; mọi step pass (seed, unit, integration, Postman, Jest) | 0 |
-| CI PR #109 sau sync PR #110 | Đã push lại branch; chờ kết quả — xem PR checks | — |
+| CI PR #109 sau sync PR #110 — https://github.com/xn1664494-tech/ABMT-SHOP/actions/runs/46026946122 | `success`; mọi step pass (seed, unit, integration, Postman, Jest) | 0 |
 
 > 6 test `skip` trong `npm test` **không được tính là PASS**; baseline trước task là 359 tests / 353 pass / 0 fail / 6 skip, sau task tăng đúng 4 test mới.
 
@@ -165,7 +165,7 @@ Không chạy DB thật, migration, cron, seed production; không đọc `.env`,
 | Conflict merge với `origin/main` (PR #108) | Đã resolve trong commit merge `9a17270`: giữ nguyên template mới của #108 rồi áp lại nonce cho `admin-chart-data`, đồng thời thêm nonce cho `phone-verify-modal.ejs` do #108 thêm mới |
 | 6 test fail sau merge PR #108 — đã khắc phục trên `main` | PR #110 khôi phục 2 import bị rơi và 3 link admin; PR #111 sửa fixture `phoneVerified`. Không phải hồi quy từ CSP và không nằm trong phạm vi T7-1-1, nên branch này chỉ sync lại từ `main`, không tự sửa |
 | Conflict merge với `origin/main` (PR #110) | Đã resolve trong commit merge `c91ed8d`: lấy bản UTF-8 đúng từ `main` (có 3 link admin) rồi áp lại duy nhất nonce CSP cho `admin-chart-data`; không rebase/force push |
-| CI PR #109 sau sync PR #110 | Đã push lại branch để chạy lại CI; chờ kết quả. Không merge khi chưa xanh và chưa có phê duyệt riêng |
+| CI PR #109 sau sync PR #110 | Đã **xanh** (run `46026946122`); vẫn chờ phê duyệt riêng trước khi merge |
 
 ---
 
@@ -209,7 +209,7 @@ https://github.com/xn1664494-tech/ABMT-SHOP/pull/109
 | Task | T7-1-1 Security Review |
 | Trạng thái code | Hoàn thành, đã sync `origin/main` mới nhất (`68705ec`) qua merge commit `c91ed8d`; conflict PR #108 và PR #110 đều đã resolve |
 | DoD code | Đạt (với các giới hạn đã nêu rõ tại §10) |
-| CI | `main` đã **xanh**: https://github.com/xn1664494-tech/ABMT-SHOP/actions/runs/46024539029 (`success`, mọi step pass). CI PR #109 sau sync PR #110 đang chờ kết quả; CI cũ https://github.com/xn1664494-tech/ABMT-SHOP/actions/runs/46011823304 có 6 fail đã được `main` khắc phục |
+| CI | **Xanh**: `main` https://github.com/xn1664494-tech/ABMT-SHOP/actions/runs/46024539029 và PR #109 https://github.com/xn1664494-tech/ABMT-SHOP/actions/runs/46026946122 đều `success`, mọi step pass. CI cũ https://github.com/xn1664494-tech/ABMT-SHOP/actions/runs/46011823304 có 6 fail đã được `main` khắc phục |
 | Merge | **Chưa merge** — tuân thủ điều kiện "chỉ merge khi CI xanh, không conflict" và chờ phê duyệt riêng |
 | Chờ phê duyệt | Cần owner phê duyệt riêng để merge PR #109 sau khi CI mới xanh |
 | Task tiếp theo | Chưa bắt đầu T7-1-2; chỉ chuyển sau khi có xác nhận merge thành công T7-1-1 như yêu cầu |
