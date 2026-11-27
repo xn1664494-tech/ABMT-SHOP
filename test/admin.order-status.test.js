@@ -245,6 +245,37 @@ test('PR-4: admin pending -> confirmed tra 200 va dung 1 audit event', async () 
   assert.deepEqual(events[0].after, { status: 'confirmed' });
 });
 
+test('PR6: audit publish loi van tra 200 va khong rollback status', async () => {
+  const admin = await seedUser({ role: 'admin' });
+  const order = makeOrder('pending');
+  ctx.orders = [order];
+
+  const logs = [];
+  const originalError = console.error;
+  console.error = (line) => logs.push(line);
+  setAuditPublisher(async () => {
+    throw new Error('audit down');
+  });
+
+  let res;
+  try {
+    res = await patchStatus({
+      actor: admin,
+      orderId: order._id,
+      body: { status: 'confirmed' },
+    });
+  } finally {
+    setAuditPublisher(undefined);
+    console.error = originalError;
+  }
+
+  assert.equal(res.status, 200);
+  assert.equal(res.body.success, true);
+  assert.equal(ctx.orders[0].status, 'confirmed');
+  assert.equal(logs.length, 1);
+  assert.equal(JSON.parse(logs[0]).message, 'audit down');
+});
+
 test('PR-4: admin pending -> shipping tra 409, khong audit', async () => {
   const admin = await seedUser({ role: 'admin' });
   const order = makeOrder('pending');

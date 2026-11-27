@@ -1,7 +1,12 @@
 const asyncHandler = require('../utils/asyncHandler');
 const sendResponse = require('../utils/sendResponse');
 const { transitionOrderStatus } = require('../services/orderStateMachine');
-const { buildAuditEvent, publishAuditEvent } = require('../services/auditEvent');
+const {
+  AUDIT_ACTIONS,
+  TARGET_TYPES,
+  buildAuditEvent,
+  publishAuditEvent,
+} = require('../services/auditEvent');
 
 const AdminOrderController = {
   /**
@@ -11,8 +16,6 @@ const AdminOrderController = {
   updateStatus: asyncHandler(async (req, res) => {
     const actorId = req.user._id || req.user.id;
 
-    // PR-4 chua co PR-3: action/targetType dung literal string.
-    // PR-3 se them AUDIT_ACTIONS.ADMIN_ORDER_STATUS_CHANGED va TARGET_TYPES.ORDER.
     const { order, from } = await transitionOrderStatus({
       orderId: req.params.orderId,
       to: req.body.status,
@@ -24,8 +27,8 @@ const AdminOrderController = {
     const event = buildAuditEvent({
       actorId,
       actorRole: 'admin',
-      action: 'admin.order.status.changed',
-      targetType: 'Order',
+      action: AUDIT_ACTIONS.ADMIN_ORDER_STATUS_CHANGED,
+      targetType: TARGET_TYPES.ORDER,
       targetId: req.params.orderId,
       before: { status: from },
       after: { status: order.status },

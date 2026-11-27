@@ -1,10 +1,11 @@
 /**
- * Contract su kien audit. buildAuditEvent van giu nguyen 7 field; T6-1-2 chi
- * bo sung constant va thay the publisher no-op bang AuditLog publisher.
+ * Contract su kien audit. buildAuditEvent giu nguyen 7 field; publisher duoc
+ * bao boi fail-open co log de loi ghi audit khong lam business mutation fail.
  */
 const AUDIT_ACTIONS = Object.freeze({
   ADMIN_ROLE_CHANGED: 'admin.user.role.changed',
   ADMIN_ORDER_STATUS_CHANGED: 'admin.order.status.changed',
+  SYSTEM_ORDER_EXPIRED: 'system.order.expired',
 });
 
 const TARGET_TYPES = Object.freeze({
@@ -50,7 +51,35 @@ const setAuditPublisher = (fn) => {
   publisher = typeof fn === 'function' ? fn : noopPublisher;
 };
 
-const publishAuditEvent = async (event) => publisher(event);
+// Fail-open co log: audit khong duoc lam business operation fail sau khi DB da ghi.
+// Chi log metadata + message; khong log before/after vi co the chua du lieu nhay cam.
+const logAuditFailure = (event, error) => {
+  const message =
+    error && typeof error.message === 'string'
+      ? error.message.slice(0, 200)
+      : String(error);
+  console.error(
+    JSON.stringify({
+      level: 'error',
+      scope: 'audit',
+      action: event && event.action,
+      targetType: event && event.targetType,
+      targetId: event && event.targetId,
+      actorId: event && event.actorId,
+      actorRole: event && event.actorRole,
+      message,
+    })
+  );
+};
+
+const publishAuditEvent = async (event) => {
+  try {
+    return await publisher(event);
+  } catch (error) {
+    logAuditFailure(event, error);
+    return undefined;
+  }
+};
 
 module.exports = {
   AUDIT_ACTIONS,

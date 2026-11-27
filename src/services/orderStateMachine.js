@@ -76,8 +76,8 @@ async function transitionOrderStatus({ orderId, to, actorRole, actorId, note } =
   const userNote = typeof note === 'string' ? note : '';
   const historyNote = `${roleMarker}${userNote ? ` ${userNote}` : ''}`;
 
-  // statusHistorySchema chưa có field actorRole (không được sửa Order.js ở PR này):
-  // gửi actorRole trong payload để ghi nhận đầy đủ, đồng thời prefix note bằng marker ổn định.
+  // actorRole da co trong statusHistorySchema (PR-5); van prefix note bang marker
+  // de tuong thich voi statusHistory/log cu.
   const historyEntry = {
     status: to,
     at,
@@ -103,7 +103,7 @@ async function transitionOrderStatus({ orderId, to, actorRole, actorId, note } =
     );
   }
 
-  // PR-4 dùng from + order.status để build audit event before/after.
+  // from + order.status duoc controller dung de build audit event before/after.
   return { order: updated, from };
 }
 

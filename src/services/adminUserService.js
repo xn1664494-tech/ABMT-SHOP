@@ -115,8 +115,7 @@ const updateUserRole = async ({ targetUserId, role, actor }) => {
     throw new ErrorResponse('Nguoi dung khong ton tai', 404);
   }
 
-  // T6-1-2 se cai dat publisher that (ghi AuditLog) tai diem cam nay.
-  // Hien tai publishAuditEvent la no-op nen khong doi hanh vi T5-1-3.
+  // Audit publish fail-open: loi ghi log khong rollback viec doi role da luu.
   await publishAuditEvent(
     buildAuditEvent({
       actorId: actor._id || actor.id,
