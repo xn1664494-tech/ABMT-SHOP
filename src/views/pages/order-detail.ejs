@@ -14,72 +14,24 @@
     var L = (locals && locals.locals) ? locals.locals : (locals || {});
     var order = L.order || {};
     var items = Array.isArray(order.items) ? order.items : [];
-    var shipping = order.shippingAddress || {};
-
-    var STATUS_LABELS = {
-      pending: 'Chờ xử lý',
-      confirmed: 'Đã xác nhận',
-      shipping: 'Đang giao',
-      delivered: 'Đã giao',
-      cancelled: 'Đã hủy'
-    };
-    var PAYMENT_METHOD_LABELS = {
-      cod: 'Thanh toán khi nhận hàng (COD)',
-      bank_transfer: 'Chuyển khoản ngân hàng'
-    };
-    var PAYMENT_STATUS_LABELS = {
-      unpaid: 'Chưa thanh toán',
-      paid: 'Đã thanh toán',
-      refunded: 'Đã hoàn tiền'
-    };
-
-    function money(value) {
-      return (Number(value) || 0).toLocaleString('vi-VN') + 'đ';
-    }
-    function pad2(value) {
-      return String(value).padStart(2, '0');
-    }
-    function fmtDate(value) {
-      if (!value) return '—';
-      var date = new Date(value);
-      if (isNaN(date.getTime())) return '—';
-      return pad2(date.getDate()) + '/' + pad2(date.getMonth() + 1) + '/' + date.getFullYear()
-        + ' ' + pad2(date.getHours()) + ':' + pad2(date.getMinutes());
-    }
-    function statusLabel(value) {
-      return STATUS_LABELS[value] || value || '—';
-    }
-    function statusClass(value) {
-      return 'acc-badge acc-badge--' + (STATUS_LABELS[value] ? value : 'muted');
-    }
-    function paymentStatusLabel(value) {
-      return PAYMENT_STATUS_LABELS[value] || value || '—';
-    }
-    function paymentStatusClass(value) {
-      return 'acc-badge acc-badge--' + (PAYMENT_STATUS_LABELS[value] ? value : 'muted');
-    }
-    function hasImage(url) {
-      return typeof url === 'string' && /^(\/|https?:\/\/)/i.test(url);
-    }
-    function lineTotal(item) {
-      if (item && item.lineTotal !== undefined && item.lineTotal !== null) {
-        return Number(item.lineTotal) || 0;
-      }
-      return (Number(item && item.unitPrice) || 0) * (Number(item && item.qty) || 0);
-    }
-
+    var shipping = order.shipping || {};
     var history = Array.isArray(order.statusHistory) ? order.statusHistory.slice() : [];
     history.sort(function (a, b) {
       return (new Date((a && a.at) || 0).getTime() || 0) - (new Date((b && b.at) || 0).getTime() || 0);
     });
     if (history.length === 0) {
-      history = [{ status: order.status, at: order.createdAt, note: '' }];
+      history = [{
+        status: order.status,
+        statusLabel: order.statusLabel,
+        at: order.createdAt,
+        atLabel: order.createdAtLabel,
+        note: ''
+      }];
     }
 
-    var shippingFull = [shipping.detail, shipping.ward, shipping.district, shipping.province]
-      .filter(Boolean)
-      .join(', ');
-    var discount = Number(order.discount) || 0;
+    function hasImage(url) {
+      return typeof url === 'string' && /^(\/|https?:\/\/)/i.test(url);
+    }
   %>
   <main id="main-content" class="main-content">
     <div class="wrap page-shell">
@@ -94,9 +46,9 @@
       <div class="acc-detail-head">
         <div>
           <h1 class="acc-detail-code">Đơn hàng <%= order.code || '—' %></h1>
-          <p class="acc-detail-date">Ngày đặt: <%= fmtDate(order.createdAt) %></p>
+          <p class="acc-detail-date">Ngày đặt: <%= order.createdAtLabel || '—' %></p>
         </div>
-        <span class="<%= statusClass(order.status) %>"><%= statusLabel(order.status) %></span>
+        <span class="badge <%= order.statusClass %>" data-status-label="<%= order.status %>"><%= order.statusLabel %></span>
       </div>
 
       <div class="acc-detail-grid">
@@ -110,8 +62,8 @@
                 <li class="acc-timeline-item<%= index === history.length - 1 ? ' is-current' : '' %>">
                   <span class="acc-timeline-dot" aria-hidden="true"></span>
                   <div>
-                    <p class="acc-timeline-status"><%= statusLabel(entry.status) %></p>
-                    <p class="acc-timeline-date"><%= fmtDate(entry.at) %></p>
+                    <p class="acc-timeline-status" data-history-status="<%= entry.status %>"><%= entry.statusLabel %></p>
+                    <p class="acc-timeline-date"><%= entry.atLabel %></p>
                     <% if (entry.note) { %>
                       <p class="acc-timeline-note"><%= entry.note %></p>
                     <% } %>
@@ -144,10 +96,10 @@
                       <% if (item.sku) { %><span> · SKU: <%= item.sku %></span><% } %>
                     </p>
                     <p class="acc-detail-item-price">
-                      Đơn giá: <%= money(item.unitPrice) %> × <%= Number(item.qty) || 1 %>
+                      Đơn giá: <%= item.unitPriceLabel %> × <%= item.qty %>
                     </p>
                   </div>
-                  <p class="acc-detail-item-total"><%= money(lineTotal(item)) %></p>
+                  <p class="acc-detail-item-total"><%= item.lineTotalLabel %></p>
                 </div>
               <% }) %>
             </div>
@@ -170,7 +122,7 @@
               </div>
               <div class="acc-info-row">
                 <span class="acc-info-label">Địa chỉ</span>
-                <span class="acc-info-value"><%= shippingFull || '—' %></span>
+                <span class="acc-info-value"><%= shipping.address || '—' %></span>
               </div>
             </div>
           </section>
@@ -178,16 +130,16 @@
           <section class="acc-panel" aria-labelledby="acc-payment-title">
             <div class="acc-panel-head">
               <h2 class="acc-panel-title" id="acc-payment-title">Thanh toán</h2>
-              <span class="<%= paymentStatusClass(order.paymentStatus) %>"><%= paymentStatusLabel(order.paymentStatus) %></span>
+              <span class="badge badge-soft"><%= order.paymentStatusLabel %></span>
             </div>
             <div class="acc-info-list">
               <div class="acc-info-row">
                 <span class="acc-info-label">Phương thức</span>
-                <span class="acc-info-value"><%= PAYMENT_METHOD_LABELS[order.paymentMethod] || order.paymentMethod || '—' %></span>
+                <span class="acc-info-value"><%= order.paymentMethodLabel %></span>
               </div>
               <div class="acc-info-row">
                 <span class="acc-info-label">Trạng thái</span>
-                <span class="acc-info-value"><%= paymentStatusLabel(order.paymentStatus) %></span>
+                <span class="acc-info-value"><%= order.paymentStatusLabel %></span>
               </div>
             </div>
           </section>
@@ -199,19 +151,19 @@
             <dl class="acc-summary">
               <div class="acc-summary-row">
                 <dt>Tạm tính</dt>
-                <dd><%= money(order.subtotal) %></dd>
+                <dd><%= order.subtotalLabel %></dd>
               </div>
               <div class="acc-summary-row">
                 <dt>Phí vận chuyển</dt>
-                <dd><%= money(order.shippingFee) %></dd>
+                <dd><%= order.shippingFeeLabel %></dd>
               </div>
               <div class="acc-summary-row">
                 <dt>Giảm giá</dt>
-                <dd><%= discount > 0 ? '-' + money(discount) : '0đ' %></dd>
+                <dd><%= order.discount > 0 ? '-' + order.discountLabel : order.discountLabel %></dd>
               </div>
               <div class="acc-summary-row is-total">
                 <dt>Tổng cộng</dt>
-                <dd><%= money(order.total) %></dd>
+                <dd><%= order.totalLabel %></dd>
               </div>
             </dl>
           </section>
@@ -219,11 +171,17 @@
       </div>
 
       <div class="acc-detail-actions">
+        <% if (order.canCancel) { %>
+          <button type="button" class="btn btn-danger" data-action="cancel-order" data-order-id="<%= order.id %>">Hủy đơn hàng</button>
+        <% } %>
         <a class="btn btn-ghost" href="/account?tab=orders">Quay lại danh sách</a>
         <a class="btn btn-primary" href="/catalog">Tiếp tục mua sắm</a>
       </div>
     </div>
   </main>
   <%- include('../partials/footer') %>
+  <script src="/js/api.js"></script>
+  <script src="/js/ui.js"></script>
+  <script src="/js/orders.js"></script>
 </body>
 </html>

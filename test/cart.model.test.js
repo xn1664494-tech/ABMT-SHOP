@@ -130,7 +130,7 @@ test('T2-2-1: chan SKU trung trong cung gio hang', async () => {
   assert.match(errors.items.message, /trùng/i);
 });
 
-test('T2-2-1: Cart co index unique partial va TTL 30 ngay', () => {
+test('T2-2-1: Cart co index unique partial va TTL expireAfterSeconds=0', () => {
   const indexes = Cart.schema.indexes();
 
   assert.ok(
@@ -155,9 +155,9 @@ test('T2-2-1: Cart co index unique partial va TTL 30 ngay', () => {
     indexes.some(
       ([fields, options]) =>
         fields.expiresAt === 1 &&
-        options.expireAfterSeconds === Cart.GUEST_CART_TTL_SECONDS,
+        options.expireAfterSeconds === 0,
     ),
-    'thieu TTL index cho expiresAt',
+    'TTL index expiresAt phai co expireAfterSeconds=0',
   );
 });
 

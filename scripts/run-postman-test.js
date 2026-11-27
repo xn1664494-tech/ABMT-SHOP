@@ -1,5 +1,6 @@
 const { MongoMemoryServer } = require('mongodb-memory-server');
 const mongoose = require('mongoose');
+const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const newman = require('newman');
 const app = require('../src/server');
@@ -33,6 +34,26 @@ const COLLECTIONS = [
     name: 'ProductPagination',
     collection: require('../postman/ProductPagination.postman_collection.json'),
   },
+  {
+    name: 'Cart',
+    collection: require('../postman/Cart.postman_collection.json'),
+  },
+  {
+    name: 'AdminUsers',
+    collection: require('../postman/AdminUsers.postman_collection.json'),
+  },
+  {
+    name: 'AdminOrders',
+    collection: require('../postman/AdminOrders.postman_collection.json'),
+  },
+  {
+    name: 'AdminAuditLogs',
+    collection: require('../postman/AdminAuditLogs.postman_collection.json'),
+  },
+  {
+    name: 'OrderCancel',
+    collection: require('../postman/OrderCancel.postman_collection.json'),
+  },
 ];
 
 const runCollection = (collection, environment) =>
@@ -51,22 +72,93 @@ const runCollection = (collection, environment) =>
   const Category = require('../src/model/Category');
   const Product = require('../src/model/Products');
   const User = require('../src/model/User');
+  const Order = require('../src/model/Order');
   await Category.init();
   await Product.init();
   await User.init();
+  await Order.init();
 
-  // Tao thuc te admin va customer user trong DB de authenticate (main) lay duoc
+  // Seed san pham co dinh cho collection Cart (gia/variant/sku dung cho assert).
+  const cartCategory = await Category.create({
+    name: 'Cart Postman Category',
+    slug: 'cart-postman-category',
+  });
+  const cartProduct = await Product.create({
+    name: 'Ao Cart Postman',
+    slug: 'ao-cart-postman',
+    category: cartCategory._id,
+    basePrice: 199000,
+    variants: [
+      { size: 'M', color: 'Den', sku: 'SP-AO-950-M-DEN', stock: 10, price: 199000 },
+    ],
+    isActive: true,
+  });
+  const cartVariant = cartProduct.variants[0];
+
+  // Tao thuc te admin va customer user trong DB de authenticate (main) lay duoc.
+  // Mat khau duoc hash de collection Cart co the dang nhap bang email/password.
+  const passwordHash = await bcrypt.hash('password123', 10);
   const adminUser = await User.create({
     name: 'Admin Test',
     email: 'postman.admin@test.com',
-    password: 'password123',
+    password: passwordHash,
     role: 'admin',
   });
   const customerUser = await User.create({
     name: 'Customer Test',
     email: 'postman.customer@test.com',
-    password: 'password123',
+    password: passwordHash,
     role: 'customer',
+  });
+
+  // Don pending de collection AdminOrders kiem thu state machine + audit event.
+  const adminSeedOrder = await Order.create({
+    user: customerUser._id,
+    items: [
+      {
+        product: cartProduct._id,
+        name: cartProduct.name,
+        sku: cartVariant.sku,
+        size: 'M',
+        color: 'Den',
+        unitPrice: cartVariant.price,
+        qty: 1,
+      },
+    ],
+    shippingAddress: {
+      fullName: 'Postman Order Test',
+      phone: '0900000000',
+      province: 'TP HCM',
+      ward: 'Ward 1',
+      detail: '1 Test Street',
+    },
+    paymentMethod: 'cod',
+    status: 'pending',
+  });
+
+  // Don pending rieng de collection OrderCancel kiem thu huy don + hoan kho.
+  const cancelSeedOrder = await Order.create({
+    user: customerUser._id,
+    items: [
+      {
+        product: cartProduct._id,
+        name: cartProduct.name,
+        sku: cartVariant.sku,
+        size: 'M',
+        color: 'Den',
+        unitPrice: cartVariant.price,
+        qty: 1,
+      },
+    ],
+    shippingAddress: {
+      fullName: 'Postman Cancel Test',
+      phone: '0900000000',
+      province: 'TP HCM',
+      ward: 'Ward 1',
+      detail: '2 Test Street',
+    },
+    paymentMethod: 'cod',
+    status: 'pending',
   });
 
   const server = app.listen(3099);
@@ -83,6 +175,16 @@ const runCollection = (collection, environment) =>
       { key: 'baseUrl', value: 'http://localhost:3099', enabled: true },
       { key: 'adminToken', value: adminToken, enabled: true },
       { key: 'customerToken', value: customerToken, enabled: true },
+      { key: 'adminUserId', value: adminUser._id.toString(), enabled: true },
+      { key: 'adminOrderId', value: adminSeedOrder._id.toString(), enabled: true },
+      { key: 'cancelOrderId', value: cancelSeedOrder._id.toString(), enabled: true },
+      { key: 'cartProductId', value: cartProduct._id.toString(), enabled: true },
+      {
+        key: 'cartProductPrice',
+        value: String(cartVariant.price != null ? cartVariant.price : cartProduct.basePrice),
+        enabled: true,
+      },
+      { key: 'cartSku', value: cartVariant.sku, enabled: true },
     ],
   };
 

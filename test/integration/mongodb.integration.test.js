@@ -75,6 +75,16 @@ const getCsrf = async (agent) => {
   return { token: res.body.data.csrfToken, cookie: cookieOf(res, 'csrfToken') };
 };
 
+const withCsrfEnforcement = async (send) => {
+  const previous = process.env.NODE_ENV;
+  process.env.NODE_ENV = 'integration';
+  try {
+    return await send();
+  } finally {
+    process.env.NODE_ENV = previous;
+  }
+};
+
 const register = (payload) => request(app).post('/api/auth/register').send(payload);
 
 const login = (agent, email, password = PASSWORD) =>
@@ -231,7 +241,7 @@ test('IT-CSRF: refresh thieu CSRF token tra 403', async (t) => {
   const agent = request.agent(app);
   await login(agent, email);
 
-  const res = await agent.post('/api/auth/refresh');
+  const res = await withCsrfEnforcement(() => agent.post('/api/auth/refresh'));
   assert.equal(res.status, 403);
   assert.match(res.body.error, /CSRF/i);
 });

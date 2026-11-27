@@ -1,14 +1,16 @@
 /**
- * Contract su kien audit cho T6-1-2.
- * T5-1-3 CHI chuan hoa payload va de mot diem cam (no-op). Khong ghi DB,
- * khong co AuditLog model/service/route o task nay.
+ * Contract su kien audit. buildAuditEvent giu nguyen 7 field; publisher duoc
+ * bao boi fail-open co log de loi ghi audit khong lam business mutation fail.
  */
 const AUDIT_ACTIONS = Object.freeze({
   ADMIN_ROLE_CHANGED: 'admin.user.role.changed',
+  ADMIN_ORDER_STATUS_CHANGED: 'admin.order.status.changed',
+  SYSTEM_ORDER_EXPIRED: 'system.order.expired',
 });
 
 const TARGET_TYPES = Object.freeze({
   USER: 'User',
+  ORDER: 'Order',
 });
 
 /**
@@ -40,8 +42,8 @@ const buildAuditEvent = ({
   after,
 });
 
-// No-op mac dinh. T6-1-2 se thay the bang emitter ghi AuditLog (append-only,
-// snapshot da sanitize). Khong doi hanh vi T5-1-3.
+// No-op mac dinh. App wiring (khong chay trong env test) thay the bang
+// AuditLog publisher; khong doi hanh vi buildAuditEvent cua T5-1-3.
 const noopPublisher = async () => {};
 let publisher = noopPublisher;
 
@@ -49,7 +51,35 @@ const setAuditPublisher = (fn) => {
   publisher = typeof fn === 'function' ? fn : noopPublisher;
 };
 
-const publishAuditEvent = async (event) => publisher(event);
+// Fail-open co log: audit khong duoc lam business operation fail sau khi DB da ghi.
+// Chi log metadata + message; khong log before/after vi co the chua du lieu nhay cam.
+const logAuditFailure = (event, error) => {
+  const message =
+    error && typeof error.message === 'string'
+      ? error.message.slice(0, 200)
+      : String(error);
+  console.error(
+    JSON.stringify({
+      level: 'error',
+      scope: 'audit',
+      action: event && event.action,
+      targetType: event && event.targetType,
+      targetId: event && event.targetId,
+      actorId: event && event.actorId,
+      actorRole: event && event.actorRole,
+      message,
+    })
+  );
+};
+
+const publishAuditEvent = async (event) => {
+  try {
+    return await publisher(event);
+  } catch (error) {
+    logAuditFailure(event, error);
+    return undefined;
+  }
+};
 
 module.exports = {
   AUDIT_ACTIONS,

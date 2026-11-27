@@ -91,6 +91,65 @@ const ensureCategoryValid = async (categoryId) => {
   return category;
 };
 
+/**
+ * Trừ kho điều kiện cho danh sách dòng hàng.
+ * items: Array<{ productId, variantSku, qty }>
+ * CAS trên đúng (_id, sku) với stock >= qty để tránh oversell.
+ * Tự hoàn các dòng đã trừ nếu có dòng lỗi, rồi ném ErrorResponse.
+ */
+async function decrementStock(items) {
+  const deducted = [];
+
+  for (const item of items || []) {
+    if (!Number.isInteger(item.qty) || item.qty <= 0) {
+      await restoreStock(deducted);
+      throw new ErrorResponse('Số lượng đặt hàng không hợp lệ', 400);
+    }
+
+    const updateResult = await Product.updateOne(
+      {
+        _id: item.productId,
+        'variants.sku': item.variantSku,
+        'variants.stock': { $gte: item.qty },
+        isDeleted: false,
+      },
+      { $inc: { 'variants.$.stock': -item.qty } }
+    );
+
+    if (updateResult.modifiedCount === 0) {
+      await restoreStock(deducted);
+      throw new ErrorResponse(
+        `Không đủ tồn kho cho SKU ${item.variantSku}`,
+        409
+      );
+    }
+
+    deducted.push({ ...item });
+  }
+
+  return { ok: true };
+}
+
+/**
+ * Hoàn kho cho danh sách dòng hàng.
+ * items: Array<{ productId, variantSku, qty }>
+ * Dùng khi hủy đơn hoặc rollback tạo đơn thất bại.
+ * Caller phải chặn double-restore bằng Order.stockRestoredAt (xem T6-1-3).
+ */
+async function restoreStock(items) {
+  for (const item of items || []) {
+    if (!Number.isInteger(item.qty) || item.qty <= 0) {
+      throw new ErrorResponse('Số lượng hoàn kho không hợp lệ', 400);
+    }
+
+    await Product.updateOne(
+      { _id: item.productId, 'variants.sku': item.variantSku },
+      { $inc: { 'variants.$.stock': item.qty } }
+    );
+  }
+  return { ok: true };
+}
+
 module.exports = {
   async list(filters = {}, options = {}) {
     // Validate toàn bộ tham số trước, kể cả khi slug danh mục không tồn tại.
@@ -224,4 +283,7 @@ module.exports = {
     await product.save();
     return product.toJSON();
   },
+
+  decrementStock,
+  restoreStock,
 };

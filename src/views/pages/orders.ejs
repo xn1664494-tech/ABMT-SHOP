@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title %></title>
+  <link rel="stylesheet" href="/css/app.css">
+  <style>
+    .orders-table th, .orders-table td { padding: 12px 10px; text-align: left; border-bottom: 1px solid var(--line); }
+    .orders-table th { color: var(--ink-strong); font-weight: 600; white-space: nowrap; }
+    .orders-table td { color: var(--ink); vertical-align: middle; }
+    .orders-table th:last-child, .orders-table td:last-child { text-align: right; }
+    .orders-table tbody tr:last-child td { border-bottom: none; }
+    .orders-code { color: var(--ink-strong); font-weight: 600; text-decoration: none; }
+    .orders-code:hover { text-decoration: underline; }
+    .orders-actions { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
+    @media (max-width: 575.98px) { .orders-actions { flex-direction: column; align-items: stretch; } }
+  </style>
+</head>
+<body>
+  <%- include('../partials/header') %>
+  <%- include('../partials/flash') %>
+  <%
+    const L = (locals && locals.locals) ? locals.locals : (locals || {});
+    const orders = Array.isArray(L.orders) ? L.orders : [];
+  %>
+  <main id="main-content" class="main-content">
+    <div class="container page-shell">
+      <nav class="breadcrumb" aria-label="Breadcrumb">
+        <a href="/">Trang chủ</a>
+        <span class="sep">/</span>
+        <a href="/account">Tài khoản</a>
+        <span class="sep">/</span>
+        <span aria-current="page">Đơn hàng của tôi</span>
+      </nav>
+
+      <div class="page-head">
+        <div>
+          <h1 class="page-title">Đơn hàng của tôi</h1>
+          <p class="page-sub">Xem trạng thái và chi tiết các đơn bạn đã đặt</p>
+        </div>
+        <a href="/catalog" class="btn btn-ghost btn-sm">Mua thêm</a>
+      </div>
+
+      <% if (orders.length === 0) { %>
+        <div class="empty-state">
+          <p class="empty-state-title">Bạn chưa có đơn hàng nào</p>
+          <p class="empty-state-text">Các đơn bạn đặt sẽ xuất hiện tại đây.</p>
+          <a href="/catalog" class="btn btn-primary">Khám phá sản phẩm</a>
+        </div>
+      <% } else { %>
+        <section class="card" style="padding: 0; overflow: hidden;" aria-label="Danh sách đơn hàng">
+          <div style="overflow-x: auto;">
+            <table class="orders-table" style="width: 100%; border-collapse: collapse;">
+              <thead>
+                <tr>
+                  <th>Mã đơn</th>
+                  <th>Ngày đặt</th>
+                  <th>Tổng tiền</th>
+                  <th>Trạng thái</th>
+                  <th>Thao tác</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% orders.forEach(function (order) { %>
+                  <tr data-order-id="<%= order.id %>" data-order-status="<%= order.status %>">
+                    <td><a class="orders-code" href="/orders/<%= encodeURIComponent(order.id) %>"><%= order.code %></a></td>
+                    <td><%= order.createdAtLabel %></td>
+                    <td><%= order.totalLabel %></td>
+                    <td><span class="badge <%= order.statusClass %>" data-status-label="<%= order.status %>"><%= order.statusLabel %></span></td>
+                    <td>
+                      <div class="orders-actions">
+                        <a href="/orders/<%= encodeURIComponent(order.id) %>" class="btn btn-ghost btn-sm">Chi tiết</a>
+                        <% if (order.canCancel) { %>
+                          <button type="button" class="btn btn-danger btn-sm" data-action="cancel-order" data-order-id="<%= order.id %>">Hủy</button>
+                        <% } %>
+                      </div>
+                    </td>
+                  </tr>
+                <% }) %>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      <% } %>
+    </div>
+  </main>
+  <%- include('../partials/footer') %>
+  <script src="/js/api.js"></script>
+  <script src="/js/ui.js"></script>
+  <script src="/js/orders.js"></script>
+</body>
+</html>

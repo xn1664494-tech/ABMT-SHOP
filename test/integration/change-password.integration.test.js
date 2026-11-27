@@ -72,6 +72,16 @@ const changePassword = (agent, csrf, body) => {
   return (csrf ? req.set('X-CSRF-Token', csrf) : req).send(body);
 };
 
+const withCsrfEnforcement = async (send) => {
+  const previous = process.env.NODE_ENV;
+  process.env.NODE_ENV = 'integration';
+  try {
+    return await send();
+  } finally {
+    process.env.NODE_ENV = previous;
+  }
+};
+
 const seedUser = async (name) => {
   const email = emailFor(name);
   await register({ name: `V2 ${name}`, email, password: OLD_PASSWORD }).expect(201);
@@ -144,10 +154,12 @@ test('V2-2: doi mat khau thieu CSRF token tra 403', async (t) => {
   const agent = request.agent(app);
   await login(agent, email).expect(200);
 
-  const res = await changePassword(agent, null, {
-    currentPassword: OLD_PASSWORD,
-    newPassword: NEW_PASSWORD,
-  });
+  const res = await withCsrfEnforcement(() =>
+    changePassword(agent, null, {
+      currentPassword: OLD_PASSWORD,
+      newPassword: NEW_PASSWORD,
+    }),
+  );
 
   assert.equal(res.status, 403);
 });
@@ -160,10 +172,12 @@ test('V2-3: doi mat khau voi CSRF token sai tra 403', async (t) => {
   await login(agent, email).expect(200);
   await csrfFor(agent);
 
-  const res = await changePassword(agent, 'sai-token', {
-    currentPassword: OLD_PASSWORD,
-    newPassword: NEW_PASSWORD,
-  });
+  const res = await withCsrfEnforcement(() =>
+    changePassword(agent, 'sai-token', {
+      currentPassword: OLD_PASSWORD,
+      newPassword: NEW_PASSWORD,
+    }),
+  );
 
   assert.equal(res.status, 403);
 });

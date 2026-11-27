@@ -14,6 +14,7 @@
   <div data-flash data-type="info" hidden></div>
   <%
     var L = (locals && locals.locals) ? locals.locals : (locals || {});
+    var active = L.active || 'products';
     var categories = Array.isArray(L.categories) ? L.categories : [];
     var colorOptions = Array.isArray(L.colors) ? L.colors : ['Đen', 'Trắng', 'Xanh', 'Đỏ', 'Xanh dương', 'Hồng', 'Tím', 'Nâu'];
 
@@ -71,6 +72,19 @@
         </div>
         <a class="adm-btn adm-btn--outline" href="/admin"><svg class="ico" style="width:16px;height:16px"><use href="#i-arrow"/></svg>Quay lại tổng quan</a>
       </div>
+      <div class="admin-scrim" id="scrim"></div>
+      <div class="admin-layout">
+        <aside class="admin-sidebar" id="sb" aria-label="Điều hướng quản trị">
+          <%- include('../partials/admin-sidebar', { active: active }) %>
+        </aside>
+        <div class="admin-main">
+          <nav class="breadcrumb" aria-label="Breadcrumb">
+            <a href="/">Trang chủ</a>
+            <span class="sep">/</span>
+            <a href="/admin">Quản trị</a>
+            <span class="sep">/</span>
+            <span aria-current="page">Thêm sản phẩm</span>
+          </nav>
 
       <form id="pForm" class="adm-form" data-api="json" autocomplete="off">
         <section class="adm-pn">

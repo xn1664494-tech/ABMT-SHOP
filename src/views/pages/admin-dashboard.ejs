@@ -14,6 +14,7 @@
   <div data-flash data-type="info" hidden></div>
   <%
     var L = (locals && locals.locals) ? locals.locals : (locals || {});
+    var active = L.active || 'dashboard';
     var stats = (L && L.stats) ? L.stats : {};
     var recentOrders = Array.isArray(L.recentOrders) ? L.recentOrders : [];
     var lowStockProducts = Array.isArray(L.lowStockProducts) ? L.lowStockProducts : [];

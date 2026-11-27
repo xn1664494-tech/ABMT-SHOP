@@ -147,6 +147,8 @@ const statusHistorySchema = new mongoose.Schema(
       default: null,
     },
     note: { type: String, trim: true, maxlength: 500, default: '' },
+    // PR-2 gửi actorRole trong payload nhưng schema cũ chưa có field này.
+    actorRole: { type: String, trim: true, default: '' },
   },
   { _id: false },
 );
@@ -247,6 +249,16 @@ const orderSchema = new mongoose.Schema(
       },
     },
     note: { type: String, trim: true, maxlength: [500, 'Ghi chú tối đa 500 ký tự'] },
+    stockRestoredAt: {
+      type: Date,
+      default: null,
+      description: 'Thời gian hoàn kho, dùng để tránh double-restock khi hủy đơn',
+    },
+    expiresAt: {
+      type: Date,
+      default: null,
+      description: 'Thời điểm hết hạn giữ kho của đơn pending/unpaid',
+    },
   },
   {
     timestamps: true,
@@ -302,6 +314,13 @@ orderSchema.index({ user: 1, createdAt: 1 });
 
 // Admin lọc đơn theo trạng thái.
 orderSchema.index({ status: 1, createdAt: 1 });
+
+// Job hủy đơn quá hạn. Không dùng sparse: đơn legacy thiếu expiresAt vẫn phải
+// nằm trong index để migration/job quan sát được sau khi backfill.
+orderSchema.index({ status: 1, paymentStatus: 1, expiresAt: 1 });
+
+orderSchema.statics.PENDING_TTL_MINUTES =
+  Number(process.env.ORDER_PENDING_TTL_MINUTES) || 30;
 
 orderSchema.statics.ORDER_STATUSES = ORDER_STATUSES;
 orderSchema.statics.ORDER_STATUS_FLOW = ORDER_STATUS_FLOW;

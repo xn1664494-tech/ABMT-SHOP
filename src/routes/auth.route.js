@@ -25,8 +25,8 @@ router.get('/csrf', issueCsrfToken);
 
 router.post('/register', authLimiter, csrfProtection, validate(registerSchema), register);
 router.post('/login', authLimiter, csrfProtection, validate(loginSchema), login);
-router.post('/forgot-password', authLimiter, validate(forgotPasswordSchema), forgotPassword);
-router.post('/reset-password', authLimiter, validate(resetPasswordSchema), resetPassword);
+router.post('/forgot-password', authLimiter, csrfProtection, validate(forgotPasswordSchema), forgotPassword);
+router.post('/reset-password', authLimiter, csrfProtection, validate(resetPasswordSchema), resetPassword);
 router.post('/refresh', authLimiter, csrfProtection, refresh);
 router.post('/logout', authLimiter, csrfProtection, logout);
 router.get('/me', authenticate, me);

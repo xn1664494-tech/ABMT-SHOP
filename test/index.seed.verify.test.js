@@ -118,8 +118,9 @@ test('VERIFY-SEED: so luong du lieu seed (chay sau script seed)', async (t) => {
   if (skipIfUnavailable(t)) return;
   const adminCount = await User.countDocuments({ role: 'admin' });
   assert.ok(adminCount >= 1, 'phai co it nhat 1 admin');
+  // Seed tao 2 root + 6 con = 8 danh muc, va 7 san pham.
   const catCount = await Category.countDocuments();
-  assert.equal(catCount, 6, 'phai co 6 danh muc');
+  assert.equal(catCount, 8, 'phai co 8 danh muc (2 root + 6 con)');
   const prodCount = await Product.countDocuments();
-  assert.equal(prodCount, 6, 'phai co 6 san pham');
+  assert.equal(prodCount, 7, 'phai co 7 san pham');
 });

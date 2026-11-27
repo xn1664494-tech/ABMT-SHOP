@@ -4,11 +4,22 @@ const { csrfProtection } = require('../middleware/csrf');
 const validate = require('../middleware/validate');
 const asyncHandler = require('../utils/asyncHandler');
 const { getStats } = require('../services/adminService');
+const {
+  getDashboard,
+  getRevenueSeries,
+  getTopCategories,
+  getLowStockVariants,
+} = require('../services/dashboardService');
+const { dashboardQuerySchema } = require('../validators/dashboardValidator');
 const AdminUserController = require('../controllers/adminUserController');
+const AdminOrderController = require('../controllers/adminOrderController');
 const {
   listUsersQuerySchema,
   updateUserRoleSchema,
 } = require('../validators/adminUserValidator');
+const { updateOrderStatusSchema } = require('../validators/adminOrderValidator');
+const AuditLogController = require('../controllers/auditLogController');
+const { auditLogsQuerySchema } = require('../validators/auditLogValidator');
 
 const router = express.Router();
 
@@ -46,6 +57,53 @@ router.get(
 );
 
 /**
+ * GET /api/admin/dashboard - JSON aggregation cho bieu do dashboard.
+ */
+router.get(
+  '/dashboard',
+  authenticate,
+  authorize('admin'),
+  validate(dashboardQuerySchema, 'query'),
+  asyncHandler(async (req, res) => {
+    const data = await getDashboard(req.validatedQuery);
+    return res.status(200).json({ success: true, data });
+  }),
+);
+
+router.get(
+  '/dashboard/revenue',
+  authenticate,
+  authorize('admin'),
+  validate(dashboardQuerySchema, 'query'),
+  asyncHandler(async (req, res) => {
+    const data = await getRevenueSeries(req.validatedQuery);
+    return res.status(200).json({ success: true, data });
+  }),
+);
+
+router.get(
+  '/dashboard/top-categories',
+  authenticate,
+  authorize('admin'),
+  validate(dashboardQuerySchema, 'query'),
+  asyncHandler(async (req, res) => {
+    const data = await getTopCategories(req.validatedQuery);
+    return res.status(200).json({ success: true, data });
+  }),
+);
+
+router.get(
+  '/dashboard/low-stock',
+  authenticate,
+  authorize('admin'),
+  validate(dashboardQuerySchema, 'query'),
+  asyncHandler(async (req, res) => {
+    const data = await getLowStockVariants(req.validatedQuery);
+    return res.status(200).json({ success: true, data });
+  }),
+);
+
+/**
  * GET /api/admin/users - Danh sach nguoi dung (phan trang + tim kiem)
  * Chi admin. Khong tra password/token/field noi bo.
  */
@@ -68,6 +126,31 @@ router.patch(
   csrfProtection,
   validate(updateUserRoleSchema),
   AdminUserController.updateRole,
+);
+
+/**
+ * GET /api/admin/audit-logs - Nhat ky kiem toan (doc-only, khong can CSRF).
+ * Chi admin; khong co route update/delete log.
+ */
+router.get(
+  '/audit-logs',
+  authenticate,
+  authorize('admin'),
+  validate(auditLogsQuerySchema, 'query'),
+  AuditLogController.list,
+);
+
+/**
+ * PATCH /api/admin/orders/:orderId/status - Cap nhat trang thai don hang.
+ * Chi admin + CSRF; body duoc validate truoc khi vao state machine.
+ */
+router.patch(
+  '/orders/:orderId/status',
+  authenticate,
+  authorize('admin'),
+  csrfProtection,
+  validate(updateOrderStatusSchema),
+  AdminOrderController.updateStatus,
 );
 
 module.exports = router;

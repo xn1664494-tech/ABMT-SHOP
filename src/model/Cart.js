@@ -1,7 +1,6 @@
 const mongoose = require('mongoose');
 
 const GUEST_CART_TTL_MS = 30 * 24 * 60 * 60 * 1000;
-const GUEST_CART_TTL_SECONDS = Math.floor(GUEST_CART_TTL_MS / 1000);
 
 const cartItemSchema = new mongoose.Schema(
   {
@@ -35,6 +34,17 @@ const cartItemSchema = new mongoose.Schema(
         validator: Number.isInteger,
         message: 'Đơn giá trong giỏ hàng phải là số nguyên (VND)',
       },
+    },
+    // Thời điểm dòng hàng được gộp từ giỏ khách sau khi đăng nhập.
+    mergedAt: {
+      type: Date,
+      default: null,
+    },
+    // Nguồn gộp của dòng hàng (hiện tại là 'guest').
+    mergedFrom: {
+      type: String,
+      trim: true,
+      default: null,
     },
   },
   { _id: true },
@@ -131,13 +141,12 @@ cartSchema.index(
   },
 );
 
-// Tự xóa giỏ khách hết hạn.
+// Tự xóa giỏ khách đúng tại thời điểm expiresAt (đã = tạo + 30 ngày).
 cartSchema.index(
   { expiresAt: 1 },
-  { expireAfterSeconds: GUEST_CART_TTL_SECONDS },
+  { expireAfterSeconds: 0 },
 );
 
 cartSchema.statics.GUEST_CART_TTL_MS = GUEST_CART_TTL_MS;
-cartSchema.statics.GUEST_CART_TTL_SECONDS = GUEST_CART_TTL_SECONDS;
 
 module.exports = mongoose.models.Cart || mongoose.model('Cart', cartSchema);

@@ -85,22 +85,47 @@ test('T3-1-2: login thanh cong tra 200, dat cookie HttpOnly va khong lo token tr
   assert.equal(payload.exp - payload.iat, 15 * 60);
 });
 
-test.skip('T3-1-2: cookie co Secure=true o production', async () => {
+test('T3-1-2: cookie co Secure=true o production', async () => {
   await seedUser();
   const originalEnv = process.env.NODE_ENV;
   process.env.NODE_ENV = 'production';
 
   try {
+    // Production bat CSRF: lay token tu body va gui lai bang cookie + header.
+    const csrfRes = await request(app).get('/api/auth/csrf');
+    const csrfToken = csrfRes.body.data.csrfToken;
+    assert.ok(csrfToken);
+
     const res = await request(app)
       .post('/api/auth/login')
+      .set('Cookie', `csrfToken=${csrfToken}`)
+      .set('X-CSRF-Token', csrfToken)
       .send({ email: 'customer@example.com', password: PASSWORD });
 
+    assert.equal(res.status, 200);
     const cookies = cookiesOf(res);
     const accessCookie = cookies.find((item) => item.startsWith('accessToken='));
+    assert.ok(accessCookie, 'phai co accessToken cookie');
     assert.match(accessCookie, /Secure/i);
+    assert.match(accessCookie, /HttpOnly/i);
+    assert.match(accessCookie, /SameSite=Strict/i);
   } finally {
     process.env.NODE_ENV = originalEnv;
   }
+});
+
+test('T3-1-2: response body khong chua bat ky token bao mat nao', async () => {
+  await seedUser();
+
+  const res = await request(app)
+    .post('/api/auth/login')
+    .send({ email: 'customer@example.com', password: PASSWORD });
+
+  assert.equal(res.status, 200);
+  const serialized = JSON.stringify(res.body);
+  assert.doesNotMatch(serialized, /accessToken|refreshToken|resetToken|"token"/i);
+  assert.equal(res.body.data.accessToken, undefined);
+  assert.equal(res.body.data.refreshToken, undefined);
 });
 
 test('T3-1-2: sai email tra 401 voi thong bao chung', async () => {

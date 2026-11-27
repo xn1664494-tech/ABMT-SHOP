@@ -1,12 +1,11 @@
 const express = require('express');
-const crypto = require('crypto');
 const HomeController = require('../controllers/HomeController');
 const Cart = require('../model/Cart');
 const Product = require('../model/Products');
 const User = require('../model/User');
 const Order = require('../model/Order');
 const { ACCESS_COOKIE, verifyToken } = require('../services/tokenService');
-const { calculateShippingFee } = require('../model/Order');
+const CartService = require('../services/CartService');
 const asyncHandler = require('../utils/asyncHandler');
 const ErrorResponse = require('../utils/appError');
 const { getFlash } = require('../utils/flash');
@@ -28,24 +27,6 @@ const extractAccessToken = (req) => {
   return null;
 };
 
-const getCartId = (req) => {
-  let cartId = req.cookies ? req.cookies.cartId : undefined;
-  if (!cartId) {
-    cartId = require('crypto').randomBytes(16).toString('hex');
-  }
-  return cartId;
-};
-
-const setCartCookie = (res, cartId) => {
-  res.cookie('cartId', cartId, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'Lax',
-    path: '/',
-    maxAge: 30 * 24 * 60 * 60 * 1000, // 30 ngày
-  });
-};
-
 const isValidObjectId = (id) => require('mongoose').Types.ObjectId.isValid(id);
 
 const isSafeNext = (next) => {
@@ -61,13 +42,67 @@ const isSafeNext = (next) => {
   return true;
 };
 
-// Helper: tính toán tóm tắt giỏ hàng từ items
-const calcCartSummary = (items) => {
-  const subtotal = items.reduce((sum, item) => sum + (item.unitPrice * item.qty), 0);
-  const shippingFee = calculateShippingFee(subtotal);
-  const total = subtotal + shippingFee;
-  const count = items.reduce((sum, item) => sum + item.qty, 0);
-  return { subtotal, shippingFee, total, count };
+const buildOrderSummary = (order, role, isOwner = true) => {
+  const status = order.status || 'pending';
+  return {
+    id: String(order._id),
+    code: order.code || '-',
+    createdAtLabel: orderPresentation.formatDate(order.createdAt),
+    totalLabel: orderPresentation.formatCurrency(order.total),
+    status,
+    statusLabel: orderPresentation.getStatusLabel(status),
+    statusClass: orderPresentation.getStatusClass(status),
+    canCancel: canCancelOrder({ actorRole: role, isOwner, from: status }),
+  };
+};
+
+const buildOrderDetail = (order, role, isOwner) => {
+  const status = order.status || 'pending';
+  const address = order.shippingAddress || {};
+  const addressLines = [address.detail, address.ward, address.district, address.province]
+    .filter(Boolean)
+    .join(', ');
+
+  return {
+    id: String(order._id),
+    code: order.code || '-',
+    createdAtLabel: orderPresentation.formatDate(order.createdAt),
+    updatedAtLabel: orderPresentation.formatDate(order.updatedAt),
+    status,
+    statusLabel: orderPresentation.getStatusLabel(status),
+    statusClass: orderPresentation.getStatusClass(status),
+    paymentStatusLabel: orderPresentation.getPaymentStatusLabel(order.paymentStatus),
+    paymentMethodLabel: orderPresentation.getPaymentMethodLabel(order.paymentMethod),
+    items: (order.items || []).map((item) => ({
+      name: item.name || 'Sản phẩm',
+      image: item.image || '',
+      sku: item.sku || '-',
+      size: item.size || '-',
+      color: item.color || '-',
+      qty: Number(item.qty) || 0,
+      unitPriceLabel: orderPresentation.formatCurrency(item.unitPrice),
+      lineTotalLabel: orderPresentation.formatCurrency(item.lineTotal),
+    })),
+    shipping: {
+      fullName: address.fullName || '-',
+      phone: address.phone || '-',
+      address: addressLines || '-',
+    },
+    note: order.note || '',
+    subtotalLabel: orderPresentation.formatCurrency(order.subtotal),
+    shippingFeeLabel: orderPresentation.formatCurrency(order.shippingFee),
+    discount: Number(order.discount) || 0,
+    discountLabel: orderPresentation.formatCurrency(order.discount),
+    totalLabel: orderPresentation.formatCurrency(order.total),
+    statusHistory: (order.statusHistory || []).map((entry) => ({
+      status: entry.status || 'pending',
+      statusLabel: orderPresentation.getStatusLabel(entry.status),
+      at: entry.at,
+      atLabel: orderPresentation.formatDate(entry.at),
+      note: entry.note || '',
+    })),
+    canCancel: canCancelOrder({ actorRole: role, isOwner, from: status }),
+  };
 };
 
 // Trang chủ (UI)
@@ -229,7 +264,13 @@ router.get('/account/orders/:code', asyncHandler(async (req, res, next) => {
   res.set('Cache-Control', 'no-store');
   res.render('pages/order-detail', {
     title: 'Đơn hàng ' + order.code,
-    order,
+    flash: getFlash(req),
+    locals: {
+      order: buildOrderDetail(order, res.locals.currentUser.role, true),
+      isOwner: true,
+      isAdmin: res.locals.currentUser.role === 'admin',
+      flash: getFlash(req),
+    },
   });
 }));
 
@@ -266,47 +307,35 @@ router.get('/profile', asyncHandler(async (req, res, next) => {
 // Trang giỏ hàng (HTML)
 router.get('/cart', asyncHandler(async (req, res, next) => {
   res.set('Cache-Control', 'no-store');
-  const cartId = getCartId(req);
-  let cart = await Cart.findOne({ sessionId: cartId });
+  const currentUser = res.locals.currentUser;
+  const cartId = req.cookies ? req.cookies.cartId : undefined;
 
-  // Nếu đã đăng nhập, ưu tiên giỏ theo user, gộp giỏ sessionId vào nếu có
-  if (res.locals.currentUser) {
-    const userCart = await Cart.findOne({ user: res.locals.currentUser.id });
-    if (cart && cart.items && cart.items.length > 0) {
-      if (!userCart) {
-        await Cart.updateOne(
-          { sessionId: cartId },
-          { $set: { user: res.locals.currentUser.id, sessionId: null, expiresAt: null } }
-        );
-        cart = await Cart.findOne({ user: res.locals.currentUser.id });
-      } else {
-        // Gộp items từ guest cart vào user cart
-        const existingSkus = new Set((userCart.items || []).map((i) => i.sku));
-        (cart.items || []).forEach((item) => {
-          if (!existingSkus.has(item.sku)) {
-            userCart.items.push(item);
-          }
-        });
-        await userCart.save();
-        await Cart.deleteOne({ sessionId: cartId });
-        res.clearCookie('cartId');
-      }
-    }
-    cart = userCart || cart;
-  }
-
-  if (cart && ensureCartItemIds(cart)) {
-    await cart.save();
-  }
+  // Xác định giỏ: ưu tiên user, chuyển/gộp giỏ guest nếu cần.
+  const cart = await CartService.resolveCartForRequest({
+    userId: currentUser ? currentUser.id : null,
+    cartId,
+    createIfMissing: true,
+    res,
+    mergeOnConflict: 'clamp',
+  });
 
   const viewCart = cart
     ? await Cart.findOne({ _id: cart._id }).populate('items.product', 'name slug images variants')
     : null;
   const items = viewCart ? viewCart.items : [];
-  const { subtotal, shippingFee, total, count } = calcCartSummary(items);
+  const { subtotal, shippingFee, total, count } = CartService.buildSummary(items);
+
+  const flash = getFlash(req);
+  if (cart && cart.mergeAdjusted) {
+    flash.push({
+      type: 'info',
+      message: 'Một số sản phẩm đã được điều chỉnh số lượng',
+    });
+  }
 
   res.render('pages/cart', {
     title: 'Giỏ hàng',
+    flash,
     locals: {
       empty: items.length === 0,
       items,
@@ -314,10 +343,10 @@ router.get('/cart', asyncHandler(async (req, res, next) => {
       shippingFee,
       total,
       count,
+      flash,
     },
     cartCount: count,
   });
-  setCartCookie(res, cartId);
 }));
 
 // Trang catalog (HTML)
@@ -554,36 +583,16 @@ router.get('/checkout', asyncHandler(async (req, res, next) => {
     return res.redirect(302, '/login?next=/checkout');
   }
 
-  const cartId = getCartId(req);
-  let cart = await Cart.findOne({ sessionId: cartId });
+  const cartId = req.cookies ? req.cookies.cartId : undefined;
 
-  if (res.locals.currentUser) {
-    const userCart = await Cart.findOne({ user: res.locals.currentUser.id });
-    if (cart && cart.items && cart.items.length > 0) {
-      if (!userCart) {
-        await Cart.updateOne(
-          { sessionId: cartId },
-          { $set: { user: res.locals.currentUser.id, sessionId: null, expiresAt: null } }
-        );
-        cart = await Cart.findOne({ sessionId: cartId });
-      } else {
-        const existingSkus = new Set((userCart.items || []).map((i) => i.sku));
-        (cart.items || []).forEach((item) => {
-          if (!existingSkus.has(item.sku)) {
-            userCart.items.push(item);
-          }
-        });
-        await userCart.save();
-        await Cart.deleteOne({ sessionId: cartId });
-        res.clearCookie('cartId');
-      }
-    }
-    cart = userCart || cart;
-  }
-
-  if (cart && ensureCartItemIds(cart)) {
-    await cart.save();
-  }
+  // Xác định giỏ: ưu tiên user, chuyển/gộp giỏ guest nếu cần.
+  const cart = await CartService.resolveCartForRequest({
+    userId: res.locals.currentUser.id,
+    cartId,
+    createIfMissing: false,
+    res,
+    mergeOnConflict: 'clamp',
+  });
 
   const rawItemId = req.query.item;
   let selectedItemId = null;
@@ -606,7 +615,7 @@ router.get('/checkout', asyncHandler(async (req, res, next) => {
     return res.redirect(302, '/cart');
   }
 
-  const { subtotal, shippingFee, total, count } = calcCartSummary(items);
+  const { subtotal, shippingFee, total, count } = CartService.buildSummary(items);
 
   // Lấy địa chỉ đã lưu của user
   const user = await User.findById(res.locals.currentUser.id).select('addresses phone phoneVerified phoneVerifiedAt').lean();
@@ -620,9 +629,18 @@ router.get('/checkout', asyncHandler(async (req, res, next) => {
 
   const paymentMethods = ['cod', 'bank_transfer'];
 
+  const flash = getFlash(req);
+  if (cart && cart.mergeAdjusted) {
+    flash.push({
+      type: 'info',
+      message: 'Một số sản phẩm đã được điều chỉnh số lượng',
+    });
+  }
+
   res.set('Cache-Control', 'no-store');
   res.render('pages/checkout', {
     title: 'Thanh toán',
+    flash,
     locals: {
       lines,
       subtotal,
@@ -631,11 +649,81 @@ router.get('/checkout', asyncHandler(async (req, res, next) => {
       savedAddresses,
       paymentMethods,
       itemId: selectedItemId || '',
+      flash,
     },
     phoneVerified: Boolean((user && user.phoneVerified) || false),
     cartCount: count,
   });
-  setCartCookie(res, cartId);
+}));
+
+router.get('/orders', asyncHandler(async (req, res, next) => {
+  const currentUser = res.locals.currentUser;
+  if (!currentUser) {
+    return res.redirect(302, '/login?next=/orders');
+  }
+
+  const orders = await Order.find({ user: currentUser.id })
+    .sort({ createdAt: -1 })
+    .limit(50)
+    .lean();
+
+  const flash = getFlash(req);
+  res.set('Cache-Control', 'no-store');
+  return res.render('pages/orders', {
+    title: 'Đơn hàng của tôi',
+    flash,
+    locals: {
+      orders: orders.map((order) => buildOrderSummary(order, currentUser.role)),
+      flash,
+    },
+  });
+}));
+
+router.get('/orders/:id', asyncHandler(async (req, res, next) => {
+  const currentUser = res.locals.currentUser;
+  if (!currentUser) {
+    return res.redirect(302, `/login?next=/orders/${encodeURIComponent(req.params.id)}`);
+  }
+
+  if (!isValidObjectId(req.params.id)) {
+    return res.status(404).render('error', {
+      title: 'Không tìm thấy đơn hàng',
+      statusCode: 404,
+      message: 'Đơn hàng không tồn tại.',
+    });
+  }
+
+  const order = await Order.findById(req.params.id).lean();
+  if (!order) {
+    return res.status(404).render('error', {
+      title: 'Không tìm thấy đơn hàng',
+      statusCode: 404,
+      message: 'Đơn hàng không tồn tại.',
+    });
+  }
+
+  const isOwner = String(order.user) === String(currentUser.id);
+  const isAdmin = currentUser.role === 'admin';
+  if (!isOwner && !isAdmin) {
+    return res.status(403).render('error', {
+      title: 'Lỗi 403',
+      statusCode: 403,
+      message: 'Bạn không có quyền xem đơn hàng này.',
+    });
+  }
+
+  const flash = getFlash(req);
+  res.set('Cache-Control', 'no-store');
+  return res.render('pages/order-detail', {
+    title: 'Chi tiết đơn hàng',
+    flash,
+    locals: {
+      order: buildOrderDetail(order, currentUser.role, isOwner),
+      isOwner,
+      isAdmin,
+      flash,
+    },
+  });
 }));
 
 // Trang thêm địa chỉ mới (HTML) - yêu cầu đăng nhập
@@ -667,6 +755,7 @@ router.get('/admin', asyncHandler(async (req, res, next) => {
   res.render('pages/admin-dashboard', {
     title: 'Trang quản trị',
     locals: {
+      active: 'dashboard',
       stats: stats.stats,
       recentOrders: stats.recentOrders,
       lowStockProducts: stats.lowStockProducts,
@@ -693,8 +782,134 @@ router.get('/admin/products/new', asyncHandler(async (req, res, next) => {
   res.render('pages/admin-product-form', {
     title: 'Thêm sản phẩm',
     locals: {
+      active: 'products',
       categories,
       colors: ['Đen', 'Trắng', 'Xanh', 'Đỏ', 'Xanh dương', 'Hồng', 'Tím', 'Nâu'],
+    },
+  });
+}));
+
+router.get('/admin/categories', asyncHandler(async (req, res, next) => {
+  if (!res.locals.currentUser) {
+    return res.redirect(302, '/login?next=/admin/categories');
+  }
+  if (res.locals.currentUser.role !== 'admin') {
+    return res.status(403).render('error', {
+      title: 'Lỗi 403',
+      statusCode: 403,
+      message: 'Bạn không có quyền truy cập trang này.',
+    });
+  }
+
+  const categories = await require('../services/categoryService').list();
+  const flash = getFlash(req);
+  res.set('Cache-Control', 'no-store');
+  return res.render('pages/admin-categories', {
+    title: 'Quản lý danh mục',
+    flash,
+    locals: {
+      active: 'categories',
+      categories,
+      flash,
+    },
+  });
+}));
+
+router.get('/admin/orders', asyncHandler(async (req, res, next) => {
+  if (!res.locals.currentUser) {
+    return res.redirect(302, '/login?next=/admin/orders');
+  }
+  if (res.locals.currentUser.role !== 'admin') {
+    return res.status(403).render('error', {
+      title: 'Lỗi 403',
+      statusCode: 403,
+      message: 'Bạn không có quyền truy cập trang này.',
+    });
+  }
+
+  const statusValues = Object.keys(orderPresentation.ORDER_STATUS_LABELS);
+  const requestedStatus = typeof req.query.status === 'string' ? req.query.status : 'all';
+  const activeStatus =
+    requestedStatus === 'all' || statusValues.includes(requestedStatus)
+      ? requestedStatus
+      : 'all';
+  const filter = activeStatus === 'all' ? {} : { status: activeStatus };
+
+  const [orders, counts] = await Promise.all([
+    Order.find(filter).sort({ createdAt: -1 }).limit(100).lean(),
+    Promise.all(statusValues.map((status) => Order.countDocuments({ status }))),
+  ]);
+
+  const statusTabs = [
+    {
+      value: 'all',
+      label: 'Tất cả',
+      count: counts.reduce((sum, count) => sum + (Number(count) || 0), 0),
+      isActive: activeStatus === 'all',
+    },
+    ...statusValues.map((status, index) => ({
+      value: status,
+      label: orderPresentation.getStatusLabel(status),
+      count: Number(counts[index]) || 0,
+      isActive: activeStatus === status,
+    })),
+  ];
+
+  const flash = getFlash(req);
+  res.set('Cache-Control', 'no-store');
+  return res.render('pages/admin-orders', {
+    title: 'Quản lý đơn hàng',
+    flash,
+    locals: {
+      active: 'orders',
+      orders: orders.map((order) =>
+        buildOrderSummary(order, res.locals.currentUser.role, String(order.user) === String(res.locals.currentUser.id))
+      ),
+      statusTabs,
+      activeStatus,
+      flash,
+    },
+  });
+}));
+
+router.get('/admin/users', asyncHandler(async (req, res, next) => {
+  if (!res.locals.currentUser) {
+    return res.redirect(302, '/login?next=/admin/users');
+  }
+  if (res.locals.currentUser.role !== 'admin') {
+    return res.status(403).render('error', {
+      title: 'Lỗi 403',
+      statusCode: 403,
+      message: 'Bạn không có quyền truy cập trang này.',
+    });
+  }
+
+  const parsePositive = (value, fallback) => {
+    const parsed = parseInt(value, 10);
+    return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback;
+  };
+  const page = parsePositive(req.query.page, 1);
+  const limit = Math.min(100, parsePositive(req.query.limit, 20));
+  const q = typeof req.query.q === 'string' ? req.query.q.trim().slice(0, 100) : '';
+
+  const data = await require('../services/adminUserService').listUsers({
+    page: String(page),
+    limit: String(limit),
+    q,
+  });
+
+  const flash = getFlash(req);
+  res.set('Cache-Control', 'no-store');
+  return res.render('pages/admin-users', {
+    title: 'Quản lý người dùng',
+    flash,
+    locals: {
+      active: 'users',
+      users: data.items,
+      pagination: data.pagination,
+      q,
+      currentUserId: res.locals.currentUser.id,
+      flash,
     },
   });
 }));

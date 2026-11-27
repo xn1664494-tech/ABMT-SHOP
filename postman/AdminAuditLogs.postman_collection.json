@@ -1,0 +1,292 @@
+{
+  "info": {
+    "name": "T6-1-2 Admin Audit Logs API",
+    "description": "Collection kiem thu GET /api/admin/audit-logs: chi admin, phan trang, loc chinh xac, khong co route sua/xoa, va cac action audit cua Phase 3 Dev 1 (doi role, doi status don, system.order.expired).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_postman_id": "t6-1-2-admin-audit-logs-api"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3099", "type": "string" },
+    { "key": "adminToken", "value": "", "type": "string" },
+    { "key": "customerToken", "value": "", "type": "string" },
+    { "key": "adminUserId", "value": "", "type": "string" },
+    { "key": "adminOrderId", "value": "", "type": "string" },
+    { "key": "csrfToken", "value": "", "type": "string" },
+    { "key": "runId", "value": "", "type": "string" },
+    { "key": "targetUserId", "value": "", "type": "string" },
+    { "key": "targetEmail", "value": "", "type": "string" },
+    { "key": "auditLogId", "value": "", "type": "string" }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "if (!['GET', 'HEAD', 'OPTIONS'].includes(pm.request.method)) {",
+          "  var token = pm.collectionVariables.get('csrfToken');",
+          "  if (token && !pm.request.headers.get('X-CSRF-Token')) {",
+          "    pm.request.headers.add({ key: 'X-CSRF-Token', value: token });",
+          "  }",
+          "}"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "AdminAudit - Lay CSRF token",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/auth/csrf"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status la 200', function () { pm.response.to.have.status(200); });",
+              "pm.test('Luu csrf token va runId', function () {",
+              "  pm.collectionVariables.set('csrfToken', pm.response.json().data.csrfToken);",
+              "  pm.collectionVariables.set('runId', String(Date.now()));",
+              "  pm.collectionVariables.set('targetEmail', 'audituser.' + pm.collectionVariables.get('runId') + '@example.com');",
+              "  pm.expect(pm.collectionVariables.get('csrfToken')).to.not.be.empty;",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "AdminAudit - Tao user de tao audit event",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"name\": \"Audit Target\", \"email\": \"{{targetEmail}}\", \"password\": \"Secret123\"}"
+        },
+        "url": "{{baseUrl}}/api/auth/register"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status la 201', function () { pm.response.to.have.status(201); });",
+              "pm.test('Luu targetUserId', function () {",
+              "  var user = pm.response.json().data.user;",
+              "  pm.expect(user.id).to.not.be.empty;",
+              "  pm.collectionVariables.set('targetUserId', user.id);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "AdminAudit - Guest xem nhat ky (401)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/admin/audit-logs"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status la 401', function () { pm.response.to.have.status(401); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "AdminAudit - Customer xem nhat ky (403)",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{customerToken}}" }],
+        "url": "{{baseUrl}}/api/admin/audit-logs"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status la 403', function () { pm.response.to.have.status(403); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "AdminAudit - Query khong hop le (400)",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+        "url": "{{baseUrl}}/api/admin/audit-logs?page=0&limit=abc"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status la 400', function () { pm.response.to.have.status(400); });",
+              "pm.test('Co details validate', function () {",
+              "  pm.expect(pm.response.json().success).to.equal(false);",
+              "  pm.expect(pm.response.json().details).to.be.an('array');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "AdminAudit - Admin doi role de tao event",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+        ],
+        "body": { "mode": "raw", "raw": "{\"role\": \"admin\"}" },
+        "url": "{{baseUrl}}/api/admin/users/{{targetUserId}}/role"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status la 200 va doi role thanh cong', function () {",
+              "  pm.response.to.have.status(200);",
+              "  pm.expect(pm.response.json().data.changed).to.equal(true);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "AdminAudit - Doc audit doi role",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+        "url": "{{baseUrl}}/api/admin/audit-logs?action=admin.user.role.changed&targetType=User&targetId={{targetUserId}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 200 va pagination hop le', function () {",
+              "  pm.response.to.have.status(200);",
+              "  var pagination = pm.response.json().data.pagination;",
+              "  pm.expect(pagination.total).to.be.at.least(1);",
+              "  pm.expect(pagination.page).to.equal(1);",
+              "});",
+              "pm.test('Event doi role co actor/target/before/after', function () {",
+              "  var items = pm.response.json().data.items;",
+              "  var event = items.find(function (i) { return i.targetId === pm.collectionVariables.get('targetUserId'); });",
+              "  pm.expect(event).to.exist;",
+              "  pm.expect(event.action).to.equal('admin.user.role.changed');",
+              "  pm.expect(event.actorId).to.equal(pm.variables.get('adminUserId'));",
+              "  pm.expect(event.actorRole).to.equal('admin');",
+              "  pm.expect(event.before.role).to.equal('customer');",
+              "  pm.expect(event.after.role).to.equal('admin');",
+              "  pm.expect(event.timestamp).to.exist;",
+              "  pm.collectionVariables.set('auditLogId', event.id);",
+              "});",
+              "pm.test('Audit log khong chua secret', function () {",
+              "  var raw = JSON.stringify(pm.response.json()).toLowerCase();",
+              "  pm.expect(raw).to.not.include('password');",
+              "  pm.expect(raw).to.not.include('csrftoken');",
+              "  pm.expect(raw).to.not.include('authorization');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "AdminAudit - Doc audit doi status don",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+        "url": "{{baseUrl}}/api/admin/audit-logs?action=admin.order.status.changed&targetType=Order&targetId={{adminOrderId}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 200', function () { pm.response.to.have.status(200); });",
+              "pm.test('Event doi status co before/after', function () {",
+              "  var items = pm.response.json().data.items;",
+              "  var orderId = pm.variables.get('adminOrderId');",
+              "  var toConfirmed = items.find(function (i) { return i.targetId === orderId && i.after.status === 'confirmed'; });",
+              "  var toShipping = items.find(function (i) { return i.targetId === orderId && i.after.status === 'shipping'; });",
+              "  pm.expect(toConfirmed).to.exist;",
+              "  pm.expect(toConfirmed.before.status).to.equal('pending');",
+              "  pm.expect(toShipping).to.exist;",
+              "  pm.expect(toShipping.action).to.equal('admin.order.status.changed');",
+              "  pm.expect(toShipping.actorRole).to.equal('admin');",
+              "  pm.expect(toShipping.before.status).to.equal('confirmed');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "AdminAudit - Action system.order.expired co the truy van",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+        "url": "{{baseUrl}}/api/admin/audit-logs?action=system.order.expired"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 200 va items la mang', function () {",
+              "  pm.response.to.have.status(200);",
+              "  pm.expect(pm.response.json().data.items).to.be.an('array');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "AdminAudit - Khong co route xoa audit log (404)",
+      "request": {
+        "method": "DELETE",
+        "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+        "url": "{{baseUrl}}/api/admin/audit-logs/{{auditLogId}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status la 404', function () { pm.response.to.have.status(404); });"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
