@@ -6,7 +6,7 @@
   <title><%= title %></title>
   <link rel="stylesheet" href="/css/app.css">
   <link rel="stylesheet" href="/css/shop.css">
-  <style>
+  <style nonce="<%= cspNonce %>">
     .profile-layout { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px; align-items: start; }
     .profile-list { margin: 0; padding: 0; }
     .profile-row { display: grid; grid-template-columns: 140px 1fr; gap: 8px 16px; border-bottom: 1px solid var(--line); padding: 10px 0; }

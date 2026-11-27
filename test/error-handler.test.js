@@ -16,6 +16,7 @@ installFakeUserModel(fakeUserModel);
 const app = require('../src/app');
 const notFound = require('../src/middleware/404');
 const errorHandler = require('../src/middleware/errorHandler');
+const securityHeaders = require('../src/middleware/securityHeaders');
 
 const seedUser = () =>
   fakeUserModel.create({
@@ -145,6 +146,8 @@ test('T5: loi 500 production (HTML) khong lo error.message hoac stack trace', as
     const mini = express();
     mini.set('view engine', 'ejs');
     mini.set('views', require('path').join(__dirname, '..', 'src', 'views'));
+    // error.ejs include header.ejs, van ban cap nonce tu middleware CSP nhu app that.
+    mini.use(securityHeaders);
     mini.get('/boom', () => {
       const err = new Error('SECRET_INTERNAL_DETAIL');
       err.stack = 'SECRET_STACK_TRACE';

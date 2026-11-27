@@ -1,5 +1,5 @@
 <%- include('./svg-sprite') %>
-<style>
+<style nonce="<%= cspNonce %>">
   .header-actions {
     display: flex;
     align-items: center;
@@ -362,7 +362,7 @@
   </div>
 </header>
 
-<script>
+<script nonce="<%= cspNonce %>">
   (function () {
     var searchToggle = document.getElementById('header-search-toggle');
     var searchBar = document.getElementById('header-search-bar');

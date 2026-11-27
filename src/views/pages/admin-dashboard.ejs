@@ -167,7 +167,7 @@
     </div>
   </main>
   <%- include('../partials/footer') %>
-  <script type="application/json" id="admin-chart-data"><%- JSON.stringify(chartData).replace(/</g, '\\u003c') %></script>
+  <script type="application/json" id="admin-chart-data" nonce="<%= cspNonce %>"><%- JSON.stringify(chartData).replace(/</g, '\\u003c') %></script>
   <script src="/js/api.js"></script>
   <script src="/js/ui.js"></script>
   <!-- Chart.js 4.4.1 - chờ nhóm duyệt CDN -->
