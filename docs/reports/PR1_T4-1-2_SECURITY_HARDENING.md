@@ -56,6 +56,12 @@ Thứ tự middleware giữ nguyên pattern của register/login/refresh/logout:
 
 Staged edit có sẵn trên `main` tại `src/controllers/authController.js` (xoá một dòng trắng trong `forgotPassword`) được giữ nguyên và đưa vào commit PR-1, đúng chỉ đạo Lead. Không đưa sang PR-6.
 
+### 1.7 Sửa integration test FP-4 sau khi CI phát hiện regression
+
+CI của PR #99 chạy `test/integration/forgot-password.integration.test.js` và báo `FP-4: production khong tra token` nhận **403 thay vì 202** — do test cũ gọi forgot-password ở `NODE_ENV=production` mà không gửi CSRF token (trước PR-1 endpoint này chưa có CSRF).
+
+Đã sửa ca FP-4: lấy token từ `GET /api/auth/csrf` **trước** khi đổi sang production (để cookie chưa mang cờ `Secure`), rồi gửi cả `Cookie: csrfToken=...` và `X-CSRF-Token` trong request production. Không dùng `test.skip`. Không tự chạy integration test tại máy (không có `TEST_MONGODB_URI` riêng, theo ràng buộc); CI sẽ verify.
+
 ---
 
 ## 2. Test evidence
