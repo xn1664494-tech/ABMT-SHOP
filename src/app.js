@@ -5,6 +5,7 @@ const apiRoutes = require('./routes/api');
 const notFound = require('./middleware/404');
 const errorHandler = require('./middleware/errorHandler');
 const { currentUser } = require('./middleware/currentUser');
+const securityHeaders = require('./middleware/securityHeaders');
 const configViewEngine = require('./config/viewEngine');
 const { installAuditLogPublisher } = require('./services/auditLogService');
 
@@ -42,6 +43,9 @@ const configureTrustProxy = (expressApp) => {
 };
 
 configureTrustProxy(app);
+
+// T7-1-1: security headers + CSP nonce cho moi request, dat truoc static/routes.
+app.use(securityHeaders);
 
 // View engine (EJS) + static files — bổ sung từ nhánh UI
 configViewEngine(app);
