@@ -40,10 +40,40 @@ const canCancelOrder = ({ actorRole, isOwner, from }) => {
   }
 };
 
-async function cancelOrder({ orderId, actorRole, actorId, isOwner, note }) {
+async function cancelOrder({
+  orderId,
+  actorRole,
+  actorId,
+  isOwner,
+  note,
+  expectedPaymentStatus = null,
+}) {
   const order = await Order.findById(orderId);
   if (!order) {
     throw orderError('ORDER_NOT_FOUND', 'Đơn hàng không tồn tại', 404);
+  }
+
+  // Chỉ hệ thống (job quá hạn) mới khóa paymentStatus. Customer/admin giữ
+  // nguyên rule cũ: check sớm sai thì báo conflict, CAS cũng lặp điều kiện đó
+  // để chặn race thanh toán giữa lúc đọc và lúc ghi.
+  const guardPaymentStatus =
+    actorRole === 'system' && expectedPaymentStatus != null;
+
+  // Hệ thống không hủy đơn đã thanh toán, kể cả caller quên truyền expected.
+  if (actorRole === 'system' && order.paymentStatus !== 'unpaid') {
+    throw orderError(
+      'ORDER_PAYMENT_CONFLICT',
+      'Trạng thái thanh toán đã thay đổi, không thể hủy đơn',
+      409
+    );
+  }
+
+  if (guardPaymentStatus && order.paymentStatus !== expectedPaymentStatus) {
+    throw orderError(
+      'ORDER_PAYMENT_CONFLICT',
+      'Trạng thái thanh toán đã thay đổi, không thể hủy đơn',
+      409
+    );
   }
 
   const from = order.status;
@@ -71,8 +101,15 @@ async function cancelOrder({ orderId, actorRole, actorId, isOwner, note }) {
       ? 'Hủy đơn bởi hệ thống'
       : `Hủy đơn bởi ${actorRole}`);
 
+  const casFilter = {
+    _id: orderId,
+    status: from,
+    stockRestoredAt: null,
+    ...(guardPaymentStatus ? { paymentStatus: expectedPaymentStatus } : {}),
+  };
+
   const cancelled = await Order.findOneAndUpdate(
-    { _id: orderId, status: from, stockRestoredAt: null },
+    casFilter,
     {
       $set: { status: 'cancelled', stockRestoredAt: at },
       $push: {
@@ -81,6 +118,7 @@ async function cancelOrder({ orderId, actorRole, actorId, isOwner, note }) {
           at,
           by: historyBy,
           note: historyNote,
+          actorRole: actorRole || '',
         },
       },
     },

@@ -23,6 +23,9 @@ async function createOrder({ userId, orderPayload, selectedItemId }) {
       user: userId,
       paymentStatus: 'unpaid',
       status: 'pending',
+      expiresAt: new Date(
+        Date.now() + Order.PENDING_TTL_MINUTES * 60 * 1000
+      ),
       statusHistory: [
         {
           status: 'pending',
