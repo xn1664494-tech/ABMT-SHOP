@@ -1,5 +1,13 @@
 const Order = require('../model/Order');
 const { cancelOrder } = require('../services/OrderCancellationService');
+const {
+  AUDIT_ACTIONS,
+  TARGET_TYPES,
+  buildAuditEvent,
+  publishAuditEvent,
+} = require('../services/auditEvent');
+
+const SYSTEM_ACTOR_ID = 'system';
 
 // Conflict là kết quả bình thường khi 2 worker/chạy lại job cùng gặp một đơn:
 // đơn đã đổi status/payment hoặc đã có marker hoàn kho -> bỏ qua, không retry mù quáng.
@@ -34,13 +42,27 @@ async function cancelOverdueOrders({ now = new Date(), batchSize = 100 } = {}) {
 
   for (const order of orders || []) {
     try {
-      await cancelOrder({
+      const cancelled = await cancelOrder({
         orderId: order._id,
         actorRole: 'system',
-        actorId: null,
+        actorId: SYSTEM_ACTOR_ID,
         expectedPaymentStatus: 'unpaid',
         note: 'Huy don qua han',
       });
+
+      // Chi ghi audit sau CAS cancel + hoan kho thanh cong. Publisher fail-open
+      // nen loi AuditLog khong lam summary.failed tang.
+      await publishAuditEvent(
+        buildAuditEvent({
+          actorId: SYSTEM_ACTOR_ID,
+          actorRole: 'system',
+          action: AUDIT_ACTIONS.SYSTEM_ORDER_EXPIRED,
+          targetType: TARGET_TYPES.ORDER,
+          targetId: order._id,
+          before: { status: 'pending', paymentStatus: 'unpaid' },
+          after: { status: 'cancelled', stockRestoredAt: cancelled.stockRestoredAt },
+        })
+      );
       summary.cancelled += 1;
     } catch (error) {
       const code = error && error.code ? String(error.code) : 'UNKNOWN';

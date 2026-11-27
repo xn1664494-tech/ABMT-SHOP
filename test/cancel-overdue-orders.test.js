@@ -214,6 +214,11 @@ installFakeModel('../../src/model/Cart', cart);
 
 const { cancelOrder } = require('../src/services/OrderCancellationService');
 const {
+  AUDIT_ACTIONS,
+  TARGET_TYPES,
+  setAuditPublisher,
+} = require('../src/services/auditEvent');
+const {
   cancelOverdueOrders,
   overdueFilter,
 } = require('../src/jobs/cancelOverdueOrders');
@@ -250,6 +255,8 @@ const silent = (fn) =>
     fn
   );
 
+let auditEvents = [];
+
 test.beforeEach(() => {
   orders.state.orders.length = 0;
   orders.state.snapshot = null;
@@ -258,6 +265,15 @@ test.beforeEach(() => {
   }
   products.state.calls.length = 0;
   cart.carts.length = 0;
+
+  auditEvents = [];
+  setAuditPublisher(async (event) => {
+    auditEvents.push(event);
+  });
+});
+
+test.afterEach(() => {
+  setAuditPublisher(undefined);
 });
 
 test('PR5: schema co expiresAt, actorRole va index moi khong sparse', () => {
@@ -327,6 +343,47 @@ test('PR5: order qua han unpaid bi huy va hoan kho dung 1 lan', async () => {
   assert.equal(cas.filter.stockRestoredAt, null);
   assert.equal(cas.update.$push.statusHistory.actorRole, 'system');
   assert.equal(cas.update.$push.statusHistory.note, 'Huy don qua han');
+});
+
+test('PR6: order qua han bi huy co audit system.order.expired', async () => {
+  const order = makeOrder();
+  orders.state.orders.push(order);
+
+  const summary = await cancelOverdueOrders({ now: NOW, batchSize: 100 });
+
+  assert.equal(summary.cancelled, 1);
+  assert.equal(auditEvents.length, 1);
+  const [event] = auditEvents;
+  assert.equal(event.actorId, 'system');
+  assert.equal(event.actorRole, 'system');
+  assert.equal(event.action, AUDIT_ACTIONS.SYSTEM_ORDER_EXPIRED);
+  assert.equal(event.targetType, TARGET_TYPES.ORDER);
+  assert.equal(event.targetId, String(order._id));
+  assert.deepEqual(event.before, { status: 'pending', paymentStatus: 'unpaid' });
+  assert.deepEqual(event.after, {
+    status: 'cancelled',
+    stockRestoredAt: orders.state.orders[0].stockRestoredAt,
+  });
+});
+
+test('PR6: audit publish loi khong lam job fail', async () => {
+  orders.state.orders.push(makeOrder());
+  setAuditPublisher(async () => {
+    throw new Error('audit down');
+  });
+
+  const summary = await silent(() =>
+    cancelOverdueOrders({ now: NOW, batchSize: 100 })
+  );
+
+  assert.deepEqual(summary, {
+    found: 1,
+    cancelled: 1,
+    skipped: 0,
+    failed: 0,
+    errors: [],
+  });
+  assert.equal(orders.state.orders[0].status, 'cancelled');
 });
 
 test('PR5: order paid du expiresAt qua han van khong bi job chon', async () => {
