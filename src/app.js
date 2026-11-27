@@ -6,6 +6,15 @@ const notFound = require('./middleware/404');
 const errorHandler = require('./middleware/errorHandler');
 const { currentUser } = require('./middleware/currentUser');
 const configViewEngine = require('./config/viewEngine');
+const { installAuditLogPublisher } = require('./services/auditLogService');
+
+/**
+ * T6-1-2: chi cai dat publisher that khi khong chay test. Trong suite DB-free
+ * cac test fake model se tu cai publisher cua rieng test, khong roi vao DB that.
+ */
+if (process.env.NODE_ENV !== 'test') {
+  installAuditLogPublisher();
+}
 
 const app = express();
 
