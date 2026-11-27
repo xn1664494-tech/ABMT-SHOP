@@ -159,7 +159,7 @@ test.before(async () => {
       {
         size: 'M',
         color: 'DEN',
-        sku: 'SP-AO-001-M-DEN',
+        sku: 'SP-AO-901-M-DEN',
         stock: 2,
         price: 199000,
       },
@@ -182,11 +182,11 @@ test.before(async () => {
     ]);
 
     await seedOrder({
-      items: [itemOf(productA, 'SP-AO-001-M-DEN', 2, 199000)],
+      items: [itemOf(productA, 'SP-AO-901-M-DEN', 2, 199000)],
       createdAt: '2026-11-23T10:00:00.000Z',
     });
     await seedOrder({
-      items: [itemOf(productA, 'SP-AO-001-M-DEN', 1, 199000)],
+      items: [itemOf(productA, 'SP-AO-901-M-DEN', 1, 199000)],
       createdAt: '2026-11-24T09:00:00.000Z',
     });
     await seedOrder({
@@ -194,12 +194,12 @@ test.before(async () => {
       createdAt: '2026-11-24T11:00:00.000Z',
     });
     await seedOrder({
-      items: [itemOf(productA, 'SP-AO-001-M-DEN', 9, 199000)],
+      items: [itemOf(productA, 'SP-AO-901-M-DEN', 9, 199000)],
       createdAt: '2026-11-24T12:00:00.000Z',
       status: 'pending',
     });
     await seedOrder({
-      items: [itemOf(productA, 'SP-AO-001-M-DEN', 9, 199000)],
+      items: [itemOf(productA, 'SP-AO-901-M-DEN', 9, 199000)],
       createdAt: '2026-11-20T12:00:00.000Z',
     });
 
@@ -273,7 +273,7 @@ test('IT-T6-2-2: low-stock tra bien the stock = 0, bo qua bien the con nhieu', a
     .expect(200);
 
   const skus = res.body.data.items.map((item) => item.sku);
-  assert.ok(skus.includes('SP-AO-001-M-DEN'));
+  assert.ok(skus.includes('SP-AO-901-M-DEN'));
   assert.ok(skus.includes('SP-QU-003-M-XAM'));
   assert.equal(skus.includes('SP-AO-002-L-DEN'), false);
   assert.deepEqual(res.body.data.datasets[0].label, 'Tồn kho ≤ 5');

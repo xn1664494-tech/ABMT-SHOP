@@ -61,8 +61,8 @@ const postOrder = (token, payload) =>
 describe('checkout mot item trong gio', () => {
   test('tra ve tong cua rieng item duoc chon, khong tin gia/qty tu client', async () => {
     const user = await createUser('single-item-1@test.com');
-    const skuA = 'SP-AO-001-M-DEN';
-    const skuB = 'SP-AO-002-M-DEN';
+    const skuA = 'SP-AO-911-M-DEN';
+    const skuB = 'SP-AO-912-M-DEN';
     const productA = await createProduct({ slug: 'ao-a', sku: skuA, name: 'Ao A', price: 199000, stock: 10 });
     const productB = await createProduct({ slug: 'ao-b', sku: skuB, name: 'Ao B', price: 350000, stock: 10 });
     const cart = await createCart(user, [
@@ -97,8 +97,8 @@ describe('checkout mot item trong gio', () => {
   test('tu choi item khong thuoc gio cua user hien tai va id khong hop le', async () => {
     const user = await createUser('single-item-2@test.com');
     const otherUser = await createUser('single-item-2-other@test.com');
-    const skuA = 'SP-AO-003-M-DEN';
-    const skuB = 'SP-AO-004-M-DEN';
+    const skuA = 'SP-AO-913-M-DEN';
+    const skuB = 'SP-AO-914-M-DEN';
     const productA = await createProduct({ slug: 'ao-c', sku: skuA, name: 'Ao C', price: 199000, stock: 10 });
     const productB = await createProduct({ slug: 'ao-d', sku: skuB, name: 'Ao D', price: 350000, stock: 10 });
     await createCart(user, [cartItem(productA, skuA, 1, 199000)]);
@@ -116,8 +116,8 @@ describe('checkout mot item trong gio', () => {
 
   test('sau khi dat hang chi item duoc chon bi xoa khoi gio', async () => {
     const user = await createUser('single-item-3@test.com');
-    const skuA = 'SP-AO-005-M-DEN';
-    const skuB = 'SP-AO-006-M-DEN';
+    const skuA = 'SP-AO-915-M-DEN';
+    const skuB = 'SP-AO-916-M-DEN';
     const productA = await createProduct({ slug: 'ao-e', sku: skuA, name: 'Ao E', price: 199000, stock: 10 });
     const productB = await createProduct({ slug: 'ao-f', sku: skuB, name: 'Ao F', price: 350000, stock: 7 });
     const cart = await createCart(user, [
