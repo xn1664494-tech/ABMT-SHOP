@@ -400,7 +400,7 @@
           <% if (tab === 'profile') { %>
             <section class="acc-panel" aria-labelledby="acc-profile-title">
               <div class="acc-panel-head">
-                <h2 class="acc-panel-title" id="acc-profile-title">Hồ sơ &amp; mật khẩu</h2>
+                <h2 class="acc-panel-title" id="acc-profile-title">Hồ sơ</h2>
               </div>
               <dl class="acc-profile-list">
                 <div class="acc-profile-row">
@@ -413,7 +413,7 @@
                 </div>
                 <div class="acc-profile-row">
                   <dt class="acc-profile-label">Số điện thoại</dt>
-                  <dd class="acc-profile-value"><%= accountUser.phone || 'Chưa có' %></dd>
+                  <dd class="acc-profile-value"><span data-phone-value><%= accountUser.phoneMasked || '' %></span><% if (accountUser.phoneVerified) { %><span class="acc-badge acc-badge--verified" data-phone-badge="verified">Đã xác thực</span><% } else { %><span class="acc-badge acc-badge--unverified" data-phone-badge="unverified">Chưa xác thực</span><% } %></dd>
                 </div>
                 <div class="acc-profile-row">
                   <dt class="acc-profile-label">Ngày tham gia</dt>
@@ -422,7 +422,7 @@
               </dl>
               <div class="acc-profile-actions">
                 <a class="btn btn-primary" href="/profile">Chỉnh sửa hồ sơ</a>
-                <a class="btn btn-ghost" href="/profile#h-password-form">Đổi mật khẩu</a>
+                <button type="button" class="btn btn-soft" data-phone-cta="1"><%= accountUser.phone ? 'Xác thực ngay' : 'Cập nhật số điện thoại' %></button>
               </div>
             </section>
           <% } %>
@@ -431,9 +431,11 @@
     </div>
   </main>
   <%- include('../partials/footer') %>
+  <%- include('../partials/phone-verify-modal') %>
   <script src="/js/api.js"></script>
   <script src="/js/ui.js"></script>
   <script src="/js/account.js"></script>
   <script src="/js/account-page.js"></script>
+  <script src="/js/phone-verify.js" defer></script>
 </body>
 </html>

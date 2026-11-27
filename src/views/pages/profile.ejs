@@ -62,7 +62,7 @@
                 </div>
                 <div class="profile-row">
                   <dt class="profile-label">Số điện thoại</dt>
-                  <dd class="profile-value" data-profile="phone">Chưa có</dd>
+                  <dd class="profile-value"><span data-profile="phone" data-phone-value><%= profileUser.phoneMasked || '' %></span><% if (profileUser.phoneVerified) { %><span class="acc-badge acc-badge--verified" data-phone-badge="verified">Đã xác thực</span><% } else { %><span class="acc-badge acc-badge--unverified" data-phone-badge="unverified">Chưa xác thực</span><% } %></dd>
                 </div>
                 <div class="profile-row">
                   <dt class="profile-label">Ngày tạo</dt>
@@ -86,6 +86,7 @@
                   <p class="field-error" id="profileEmailError" hidden></p>
                 </div>
                 <p id="profileFormError" class="form-alert" role="alert" hidden></p>
+                <button type="button" class="btn btn-soft btn-block" data-phone-cta="1"><%= profileUser.phone ? 'Xác thực ngay' : 'Cập nhật số điện thoại' %></button>
                 <button type="submit" class="btn btn-primary btn-block">Lưu thay đổi</button>
               </form>
             </section>
@@ -126,10 +127,12 @@
     </div>
   </main>
   <%- include('../partials/footer') %>
+  <%- include('../partials/phone-verify-modal') %>
   <script src="/js/api.js"></script>
   <script src="/js/ui.js"></script>
   <script src="/js/password-toggle.js"></script>
   <script src="/js/account.js"></script>
   <script src="/js/profile.js"></script>
+  <script src="/js/phone-verify.js" defer></script>
 </body>
 </html>

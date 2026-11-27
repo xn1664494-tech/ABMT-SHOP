@@ -1,0 +1,36 @@
+<div class="phone-verify-overlay" id="phone-verify-overlay" hidden>
+  <div class="phone-verify-modal" role="dialog" aria-modal="true" aria-labelledby="phone-verify-title">
+    <button type="button" class="phone-verify-close" data-phone-modal-close aria-label="Đóng">x</button>
+    <h3 id="phone-verify-title">Xác minh số điện thoại</h3>
+    <div data-phone-step="1">
+      <p class="phone-verify-text">Nhập số điện thoại để nhận mã xác minh.</p>
+      <label class="phone-verify-label" for="phone-verify-phone">Số điện thoại</label>
+      <input id="phone-verify-phone" class="phone-verify-input" type="tel" inputmode="numeric" autocomplete="tel" placeholder="0912345678" />
+      <p class="phone-verify-error" data-phone-error hidden></p>
+      <button type="button" class="btn btn-primary btn-block" data-phone-send>Gửi mã</button>
+    </div>
+    <div data-phone-step="2" hidden>
+      <p class="phone-verify-text">Nhập mã 6 số đã gửi tới số điện thoại của bạn.</p>
+      <p class="phone-verify-display" data-phone-display></p>
+      <label class="phone-verify-label" for="phone-verify-code">Mã xác minh</label>
+      <input id="phone-verify-code" class="phone-verify-input" type="text" inputmode="numeric" maxlength="6" autocomplete="one-time-code" />
+      <p class="phone-verify-error" data-phone-error hidden></p>
+      <button type="button" class="btn btn-primary btn-block" data-phone-verify-submit>Xác nhận</button>
+      <button type="button" class="btn btn-ghost btn-block" data-phone-resend disabled>Gửi lại mã</button>
+      <p class="phone-verify-hint">Gửi lại mã sau <span data-phone-countdown>60</span> giây.</p>
+    </div>
+  </div>
+</div>
+<style nonce="<%= cspNonce %>">
+  [hidden] { display: none !important; }
+  .phone-verify-overlay { position: fixed; inset: 0; background: rgba(15,23,42,.55); display: flex; align-items: center; justify-content: center; padding: 16px; z-index: 1200; }
+  .phone-verify-modal { position: relative; background: #fff; border-radius: 14px; padding: 20px; width: 100%; max-width: 420px; box-shadow: 0 20px 50px rgba(0,0,0,.25); }
+  .phone-verify-title { margin: 0 0 12px; font-size: 18px; }
+  .phone-verify-text { font-size: 13px; color: #475569; margin: 0 0 12px; }
+  .phone-verify-label { display: block; font-size: 12px; color: #64748b; margin: 0 0 6px; }
+  .phone-verify-input { width: 100%; padding: 10px; font-size: 16px; border: 1px solid #cbd5e1; border-radius: 10px; margin-bottom: 12px; box-sizing: border-box; }
+  .phone-verify-error { color: #b23b32; font-size: 12px; margin: 0 0 12px; }
+  .phone-verify-display { font-size: 13px; color: #334155; margin: 0 0 12px; }
+  .phone-verify-hint { font-size: 12px; color: #64748b; margin: 10px 0 0; text-align: center; }
+  .phone-verify-close { position: absolute; top: 10px; right: 12px; border: 0; background: none; font-size: 20px; color: #64748b; cursor: pointer; }
+</style>

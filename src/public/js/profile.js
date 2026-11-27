@@ -100,7 +100,7 @@
     if (!user) return;
     setText('name', user.name || '—');
     setText('email', user.email || '—');
-    setText('phone', user.phone || 'Chưa có');
+    setText('phone', user.phoneMasked || '');
     setText('createdAt', formatDate(user.createdAt));
 
     var form = document.getElementById('profileForm');

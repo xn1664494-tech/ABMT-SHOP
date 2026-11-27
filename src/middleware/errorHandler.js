@@ -92,6 +92,9 @@ const errorHandler = (err, req, res, next) => {
     success: false,
     error: clientMessage,
   };
+  if (error && error.code) {
+    body.code = error.code;
+  }
 
   // Chỉ đính kèm details cho lỗi không phải 5xx để tránh rò rỉ thông tin nội bộ.
   if (!isServerError && error.details) {
