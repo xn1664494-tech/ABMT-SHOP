@@ -1,0 +1,207 @@
+{
+  "info": {
+    "name": "T6-1-1 Admin Order Status API",
+    "description": "Collection kiem thu PATCH /api/admin/orders/:orderId/status: chi admin, can CSRF, validate status, di qua orderStateMachine va ghi audit event.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_postman_id": "t6-1-1-admin-order-status-api"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3099", "type": "string" },
+    { "key": "adminToken", "value": "", "type": "string" },
+    { "key": "customerToken", "value": "", "type": "string" },
+    { "key": "csrfToken", "value": "", "type": "string" },
+    { "key": "adminOrderId", "value": "", "type": "string" }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "if (!['GET', 'HEAD', 'OPTIONS'].includes(pm.request.method)) {",
+          "  var token = pm.collectionVariables.get('csrfToken');",
+          "  if (token && !pm.request.headers.get('X-CSRF-Token')) {",
+          "    pm.request.headers.add({ key: 'X-CSRF-Token', value: token });",
+          "  }",
+          "}"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "AdminOrders - Lay CSRF token",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/auth/csrf"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status la 200', function () { pm.response.to.have.status(200); });",
+              "pm.test('Luu csrf token', function () {",
+              "  pm.collectionVariables.set('csrfToken', pm.response.json().data.csrfToken);",
+              "  pm.expect(pm.collectionVariables.get('csrfToken')).to.not.be.empty;",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "AdminOrders - Guest doi status (401)",
+      "request": {
+        "method": "PATCH",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\"status\": \"confirmed\"}" },
+        "url": "{{baseUrl}}/api/admin/orders/{{adminOrderId}}/status"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status la 401', function () { pm.response.to.have.status(401); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "AdminOrders - Customer doi status (403)",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{customerToken}}" }
+        ],
+        "body": { "mode": "raw", "raw": "{\"status\": \"confirmed\"}" },
+        "url": "{{baseUrl}}/api/admin/orders/{{adminOrderId}}/status"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status la 403', function () { pm.response.to.have.status(403); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "AdminOrders - Admin gui status khong hop le (400)",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+        ],
+        "body": { "mode": "raw", "raw": "{\"status\": \"pending\"}" },
+        "url": "{{baseUrl}}/api/admin/orders/{{adminOrderId}}/status"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status la 400', function () { pm.response.to.have.status(400); });",
+              "pm.test('Co details validate', function () { pm.expect(pm.response.json().details).to.be.an('array'); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "AdminOrders - Admin pending -> confirmed (200)",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+        ],
+        "body": { "mode": "raw", "raw": "{\"status\": \"confirmed\", \"note\": \"xac nhan don postman\"}" },
+        "url": "{{baseUrl}}/api/admin/orders/{{adminOrderId}}/status"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status la 200 va chuyen confirmed', function () {",
+              "  pm.response.to.have.status(200);",
+              "  pm.expect(pm.response.json().success).to.equal(true);",
+              "  pm.expect(pm.response.json().data.order.status).to.equal('confirmed');",
+              "});",
+              "pm.test('statusHistory co actorRole admin', function () {",
+              "  var history = pm.response.json().data.order.statusHistory;",
+              "  pm.expect(history[history.length - 1].actorRole).to.equal('admin');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "AdminOrders - Admin confirmed -> delivered (409)",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+        ],
+        "body": { "mode": "raw", "raw": "{\"status\": \"delivered\"}" },
+        "url": "{{baseUrl}}/api/admin/orders/{{adminOrderId}}/status"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status la 409 (sai flow)', function () { pm.response.to.have.status(409); });",
+              "pm.test('Body loi success=false va co message', function () {",
+              "  pm.expect(pm.response.json().success).to.equal(false);",
+              "  pm.expect(pm.response.json().error).to.be.a('string').and.not.be.empty;",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "AdminOrders - Admin confirmed -> shipping (200)",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+        ],
+        "body": { "mode": "raw", "raw": "{\"status\": \"shipping\"}" },
+        "url": "{{baseUrl}}/api/admin/orders/{{adminOrderId}}/status"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status la 200 va chuyen shipping', function () {",
+              "  pm.response.to.have.status(200);",
+              "  pm.expect(pm.response.json().data.order.status).to.equal('shipping');",
+              "});"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

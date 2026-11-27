@@ -1,0 +1,127 @@
+{
+  "info": {
+    "name": "T6-1-1 Order Cancel API",
+    "description": "Collection kiem thu POST /api/orders/:id/cancel: require auth + CSRF, chi owner (hoac admin/system) duoc huy don pending, CAS tranh huy lap va hoan kho mot lan.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_postman_id": "t6-1-1-order-cancel-api"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3099", "type": "string" },
+    { "key": "customerToken", "value": "", "type": "string" },
+    { "key": "csrfToken", "value": "", "type": "string" },
+    { "key": "cancelOrderId", "value": "", "type": "string" }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "if (!['GET', 'HEAD', 'OPTIONS'].includes(pm.request.method)) {",
+          "  var token = pm.collectionVariables.get('csrfToken');",
+          "  if (token && !pm.request.headers.get('X-CSRF-Token')) {",
+          "    pm.request.headers.add({ key: 'X-CSRF-Token', value: token });",
+          "  }",
+          "}"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "OrderCancel - Lay CSRF token",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/auth/csrf"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status la 200', function () { pm.response.to.have.status(200); });",
+              "pm.test('Luu csrf token', function () {",
+              "  pm.collectionVariables.set('csrfToken', pm.response.json().data.csrfToken);",
+              "  pm.expect(pm.collectionVariables.get('csrfToken')).to.not.be.empty;",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "OrderCancel - Guest huy don (401)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{}" },
+        "url": "{{baseUrl}}/api/orders/{{cancelOrderId}}/cancel"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status la 401', function () { pm.response.to.have.status(401); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "OrderCancel - Owner huy don pending (200)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{customerToken}}" }
+        ],
+        "body": { "mode": "raw", "raw": "{\"note\": \"huy qua postman\"}" },
+        "url": "{{baseUrl}}/api/orders/{{cancelOrderId}}/cancel"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status la 200', function () { pm.response.to.have.status(200); });",
+              "pm.test('Don chuyen cancelled va co stockRestoredAt', function () {",
+              "  var data = pm.response.json().data;",
+              "  pm.expect(data.status).to.equal('cancelled');",
+              "  pm.expect(data.stockRestoredAt).to.not.be.null;",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "OrderCancel - Huy lap (409)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{customerToken}}" }
+        ],
+        "body": { "mode": "raw", "raw": "{}" },
+        "url": "{{baseUrl}}/api/orders/{{cancelOrderId}}/cancel"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status la 409', function () { pm.response.to.have.status(409); });",
+              "pm.test('Khong thanh cong', function () { pm.expect(pm.response.json().success).to.equal(false); });"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
