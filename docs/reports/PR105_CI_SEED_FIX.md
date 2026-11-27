@@ -48,6 +48,13 @@ Job `Jest tests` fail ở `checkout-one-item.test.js`: các SKU cứng `SP-AO-00
 | `test/index.seed.verify.test.js` | Kỳ vọng đúng `8` category / `7` product. |
 | `test/integration/dashboard.integration.test.js` | `SP-AO-001-M-DEN` → `SP-AO-901-M-DEN` (6 chỗ, gồm assertion). Giữ `SP-AO-002-L-DEN` vì seed tạo `SP-AO-002-L-TRANG` — không trùng. |
 | `tests/checkout-one-item.test.js` | `SP-AO-001..006` → `SP-AO-911..916` (dải riêng, không trùng seed `001..006` lẫn dashboard `901`). |
+| `.github/workflows/api-test-gates.yml` | Tách DB riêng cho 2 step: integration → `abmt_shop_ci_integration_test`, jest → `abmt_shop_ci_jest_test`. Seed/seed-verify giữ `abmt_shop_ci_test`. |
+
+### 2.1 Lần CI đầu tiên sau fix (run `45968266637`)
+
+- `Seed test database`, `Seed + index verification`, `Unit tests`: **success** — slug unique, verify chạy thật với `8/7`.
+- `Integration tests`: chạy thật thay vì SKIP, nhưng **fail 1 ca** `IT-T6-2-2: GET /api/admin/dashboard tra 3 chart JSON cho admin` — `lowStock.items` trả `[0,2,2,3,4,5]` thay vì `[0,2]`. Nguyên nhân: integration dùng chung `abmt_shop_ci_test` với seed nên truy vấn low-stock gom cả product seed. Đây là lỗi bị che bởi mass-SKIP trước đó.
+- Đã tách DB riêng cho integration (và jest) như bảng trên; không đổi assertion của test.
 
 Kiểm chứng slug sinh ra (không cần DB):
 
