@@ -184,6 +184,30 @@
       ]
     },
     {
+      "name": "Cart - Kiem tra gio da gop ngay sau login",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/cart"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status la 200', function () { pm.response.to.have.status(200); });",
+              "pm.test('Login da gop gio guest (khong can goi /merge)', function () {",
+              "  var data = pm.response.json().data;",
+              "  pm.expect(data.items.map(function (i) { return i.sku; })).to.include(pm.variables.get('cartSku'));",
+              "  pm.expect(data.count).to.equal(3);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
       "name": "Cart - Gop gio guest vao user",
       "request": {
         "method": "POST",
