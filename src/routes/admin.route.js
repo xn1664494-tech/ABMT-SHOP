@@ -12,10 +12,12 @@ const {
 } = require('../services/dashboardService');
 const { dashboardQuerySchema } = require('../validators/dashboardValidator');
 const AdminUserController = require('../controllers/adminUserController');
+const AdminOrderController = require('../controllers/adminOrderController');
 const {
   listUsersQuerySchema,
   updateUserRoleSchema,
 } = require('../validators/adminUserValidator');
+const { updateOrderStatusSchema } = require('../validators/adminOrderValidator');
 const AuditLogController = require('../controllers/auditLogController');
 const { auditLogsQuerySchema } = require('../validators/auditLogValidator');
 
@@ -136,6 +138,19 @@ router.get(
   authorize('admin'),
   validate(auditLogsQuerySchema, 'query'),
   AuditLogController.list,
+);
+
+/**
+ * PATCH /api/admin/orders/:orderId/status - Cap nhat trang thai don hang.
+ * Chi admin + CSRF; body duoc validate truoc khi vao state machine.
+ */
+router.patch(
+  '/orders/:orderId/status',
+  authenticate,
+  authorize('admin'),
+  csrfProtection,
+  validate(updateOrderStatusSchema),
+  AdminOrderController.updateStatus,
 );
 
 module.exports = router;
