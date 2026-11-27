@@ -26,7 +26,15 @@ const orderPayload = (extra = {}) => ({
 });
 
 const createUser = (email) =>
-  User.create({ name: 'Test User', email, password: 'password123', role: 'customer' });
+  User.create({
+    name: 'Test User',
+    email,
+    password: 'password123',
+    role: 'customer',
+    phone: '0901234567',
+    phoneVerified: true,
+    phoneVerifiedAt: new Date(),
+  });
 
 const createProduct = ({ slug, sku, name, price, stock }) =>
   Product.create({
