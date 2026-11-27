@@ -9,6 +9,7 @@ const {
   requestPasswordReset,
   resetPassword: resetPasswordWithToken,
 } = require('../services/resetPasswordService');
+const CartService = require('../services/CartService');
 
 /**
  * POST /api/auth/register
@@ -35,6 +36,24 @@ const login = asyncHandler(async (req, res) => {
   const { user, accessToken, refreshToken } = await loginUser({ email, password });
 
   setAuthCookies(res, accessToken, refreshToken);
+
+  // Gộp giỏ khách (cookie cartId) vào giỏ của user ngay sau khi đăng nhập.
+  // loginUser trả public user (có id, không có _id) nên lấy cả hai dạng.
+  // Helper tự clear cookie cartId khi gộp/xử lý xong; thất bại chỉ log message,
+  // không làm đăng nhập hợp lệ bị lỗi và không báo merge thành công.
+  try {
+    await CartService.resolveCartForRequest({
+      userId: user._id || user.id,
+      cartId: req.cookies && req.cookies.cartId,
+      res,
+      mergeOnConflict: 'clamp',
+    });
+  } catch (error) {
+    console.warn(
+      '[auth/login] cart merge skipped:',
+      (error && error.message) || 'unknown error',
+    );
+  }
 
   return res.status(200).json({
     success: true,
