@@ -140,9 +140,18 @@ test('FP-4: production khong tra token', async (t) => {
   if (skipIfUnavailable(t)) return;
   const email = await seedUser('prod');
   const previous = process.env.NODE_ENV;
+  // T4-1-2: forgot-password da co CSRF. Lay token truoc khi chuyen sang
+  // production (cookie luc nay chua Secure), roi gui ca cookie + header.
+  const csrfRes = await request(app).get('/api/auth/csrf');
+  const csrfToken = csrfRes.body.data.csrfToken;
+  assert.ok(csrfToken);
   process.env.NODE_ENV = 'production';
   try {
-    const res = await forgot(email);
+    const res = await request(app)
+      .post('/api/auth/forgot-password')
+      .set('Cookie', `csrfToken=${csrfToken}`)
+      .set('X-CSRF-Token', csrfToken)
+      .send({ email });
     assert.equal(res.status, 202);
     assert.equal(res.body.data, undefined);
   } finally {

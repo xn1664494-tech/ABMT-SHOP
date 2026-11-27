@@ -18,6 +18,8 @@ const {
   updateUserRoleSchema,
 } = require('../validators/adminUserValidator');
 const { updateOrderStatusSchema } = require('../validators/adminOrderValidator');
+const AuditLogController = require('../controllers/auditLogController');
+const { auditLogsQuerySchema } = require('../validators/auditLogValidator');
 
 const router = express.Router();
 
@@ -124,6 +126,18 @@ router.patch(
   csrfProtection,
   validate(updateUserRoleSchema),
   AdminUserController.updateRole,
+);
+
+/**
+ * GET /api/admin/audit-logs - Nhat ky kiem toan (doc-only, khong can CSRF).
+ * Chi admin; khong co route update/delete log.
+ */
+router.get(
+  '/audit-logs',
+  authenticate,
+  authorize('admin'),
+  validate(auditLogsQuerySchema, 'query'),
+  AuditLogController.list,
 );
 
 /**

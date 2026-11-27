@@ -1,14 +1,15 @@
 /**
- * Contract su kien audit cho T6-1-2.
- * T5-1-3 CHI chuan hoa payload va de mot diem cam (no-op). Khong ghi DB,
- * khong co AuditLog model/service/route o task nay.
+ * Contract su kien audit. buildAuditEvent van giu nguyen 7 field; T6-1-2 chi
+ * bo sung constant va thay the publisher no-op bang AuditLog publisher.
  */
 const AUDIT_ACTIONS = Object.freeze({
   ADMIN_ROLE_CHANGED: 'admin.user.role.changed',
+  ADMIN_ORDER_STATUS_CHANGED: 'admin.order.status.changed',
 });
 
 const TARGET_TYPES = Object.freeze({
   USER: 'User',
+  ORDER: 'Order',
 });
 
 /**
@@ -40,8 +41,8 @@ const buildAuditEvent = ({
   after,
 });
 
-// No-op mac dinh. T6-1-2 se thay the bang emitter ghi AuditLog (append-only,
-// snapshot da sanitize). Khong doi hanh vi T5-1-3.
+// No-op mac dinh. App wiring (khong chay trong env test) thay the bang
+// AuditLog publisher; khong doi hanh vi buildAuditEvent cua T5-1-3.
 const noopPublisher = async () => {};
 let publisher = noopPublisher;
 

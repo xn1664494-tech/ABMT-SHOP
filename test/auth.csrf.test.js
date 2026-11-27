@@ -145,3 +145,54 @@ test('T4-1-2: login khong yeu cau CSRF token (khong dung cookie auth cu)', async
 
   assert.equal(res.status, 200);
 });
+
+test('T4-1-2: forgot-password thieu CSRF token tra 403 (production path)', async () => {
+  const res = await withCsrfEnforced(() =>
+    request(app)
+      .post('/api/auth/forgot-password')
+      .send({ email: 'nobody@example.com' }),
+  );
+
+  assert.equal(res.status, 403);
+  assert.match(res.body.error, /CSRF/i);
+});
+
+test('T4-1-2: forgot-password co CSRF token hop le duoc xu ly', async () => {
+  const agent = request.agent(app);
+  const { token } = await getCsrf(agent);
+
+  const res = await withCsrfEnforced(() =>
+    agent
+      .post('/api/auth/forgot-password')
+      .set('X-CSRF-Token', token)
+      .send({ email: 'nobody@example.com' }),
+  );
+
+  assert.equal(res.status, 202);
+  assert.equal(res.body.success, true);
+});
+
+test('T4-1-2: reset-password thieu CSRF token tra 403 (production path)', async () => {
+  const res = await withCsrfEnforced(() =>
+    request(app)
+      .post('/api/auth/reset-password')
+      .send({ token: 'not-a-token', newPassword: 'NewSecret123' }),
+  );
+
+  assert.equal(res.status, 403);
+  assert.match(res.body.error, /CSRF/i);
+});
+
+test('T4-1-2: reset-password co CSRF token khong bi chan boi CSRF', async () => {
+  const agent = request.agent(app);
+  const { token } = await getCsrf(agent);
+
+  const res = await withCsrfEnforced(() =>
+    agent
+      .post('/api/auth/reset-password')
+      .set('X-CSRF-Token', token)
+      .send({ token: 'not-a-token', newPassword: 'NewSecret123' }),
+  );
+
+  assert.notEqual(res.status, 403);
+});
