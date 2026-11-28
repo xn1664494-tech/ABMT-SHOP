@@ -27,22 +27,13 @@
     var defaultAddress = L.defaultAddress || null;
     var pagination = L.pagination || null;
 
-    var STATUS_LABELS = {
-      pending: 'Chờ xử lý',
-      confirmed: 'Đã xác nhận',
-      shipping: 'Đang giao',
-      delivered: 'Đã giao',
-      cancelled: 'Đã hủy'
-    };
-    var STATUS_ORDER = ['pending', 'confirmed', 'shipping', 'delivered', 'cancelled'];
-    var EMPTY_TITLES = {
-      '': 'Bạn chưa có đơn hàng nào',
-      pending: 'Không có đơn hàng chờ xử lý',
-      confirmed: 'Không có đơn hàng đã xác nhận',
-      shipping: 'Không có đơn hàng đang giao',
-      delivered: 'Không có đơn hàng đã giao',
-      cancelled: 'Không có đơn hàng đã hủy'
-    };
+    var STATUS_LABELS = L.statusLabels || {};
+    var TAB_LABELS = L.tabLabels || STATUS_LABELS;
+    var STATUS_ORDER = Array.isArray(L.statusOrder) ? L.statusOrder : Object.keys(STATUS_LABELS);
+    var EMPTY_TITLES = { '': 'Bạn chưa có đơn hàng nào' };
+    STATUS_ORDER.forEach(function (key) {
+      EMPTY_TITLES[key] = 'Không có đơn hàng ' + String(TAB_LABELS[key] || key).toLowerCase();
+    });
 
     function money(value) {
       return (Number(value) || 0).toLocaleString('vi-VN') + 'đ';
@@ -114,12 +105,10 @@
 
             <div class="acc-stats">
               <%
-                var statCards = [
-                  { key: 'pending', label: 'Chờ xử lý' },
-                  { key: 'confirmed', label: 'Đã xác nhận' },
-                  { key: 'shipping', label: 'Đang giao' },
-                  { key: 'delivered', label: 'Đã giao' }
-                ];
+                var statKeys = ['pending', 'confirmed', 'shipping', 'delivered'];
+                var statCards = statKeys.map(function (key) {
+                  return { key: key, label: STATUS_LABELS[key] || key };
+                });
               %>
               <% statCards.forEach(function (card) { %>
                 <a class="acc-stat acc-stat--<%= card.key %>" href="<%= tabHref(card.key) %>">
@@ -200,7 +189,7 @@
                 </a>
                 <% STATUS_ORDER.forEach(function (key) { %>
                   <a class="acc-tab<%= status === key ? ' is-active' : '' %>" href="<%= tabHref(key) %>" <%= status === key ? 'aria-current="page"' : '' %>>
-                    <%= STATUS_LABELS[key] %> <span class="acc-tab-count"><%= Number(counts[key]) || 0 %></span>
+                    <%= TAB_LABELS[key] %> <span class="acc-tab-count"><%= Number(counts[key]) || 0 %></span>
                   </a>
                 <% }) %>
               </nav>
@@ -244,13 +233,13 @@
                     var shown = items.slice(0, 3);
                     var rest = Math.max(0, items.length - shown.length);
                   %>
-                    <article class="acc-order-card">
+                    <article class="acc-order-card" data-order-card data-order-code="<%= order.code || '' %>">
                       <header class="acc-order-head">
                         <div>
                           <p class="acc-order-code"><%= order.code || '—' %></p>
                           <p class="acc-order-date"><%= fmtDate(order.createdAt) %></p>
                         </div>
-                        <span class="<%= statusClass(order.status) %>"><%= statusLabel(order.status) %></span>
+                        <span class="<%= statusClass(order.status) %>" data-order-status-label><%= order.statusLabel || statusLabel(order.status) %></span>
                       </header>
 
                       <div class="acc-order-items">
@@ -280,7 +269,12 @@
 
                       <footer class="acc-order-foot">
                         <p class="acc-order-total">Tổng tiền <strong><%= money(order.total) %></strong></p>
-                        <a class="btn btn-primary btn-sm" href="<%= orderHref(order.code) %>">Xem chi tiết</a>
+                        <div class="acc-order-actions">
+                          <% if (order.canConfirmReceived) { %>
+                            <button type="button" class="btn btn-primary btn-sm" data-action="confirm-received" data-order-code="<%= order.code %>">Đã nhận hàng</button>
+                          <% } %>
+                          <a class="btn btn-ghost btn-sm" href="<%= orderHref(order.code) %>">Xem chi tiết</a>
+                        </div>
                       </footer>
                     </article>
                   <% }) %>
@@ -436,6 +430,7 @@
   <script src="/js/ui.js"></script>
   <script src="/js/account.js"></script>
   <script src="/js/account-page.js"></script>
+  <script src="/js/order-actions.js"></script>
   <script src="/js/phone-verify.js" defer></script>
 </body>
 </html>

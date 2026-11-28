@@ -1,18 +1,7 @@
-const ORDER_STATUS_LABELS = Object.freeze({
-  pending: 'Chờ xử lý',
-  confirmed: 'Đã xác nhận',
-  shipping: 'Đang giao',
-  delivered: 'Đã giao',
-  cancelled: 'Đã hủy',
-});
+const orderStatus = require('./orderStatus');
 
-const ORDER_STATUS_CLASSES = Object.freeze({
-  pending: 'badge-soft',
-  confirmed: 'badge-outline',
-  shipping: 'badge-outline',
-  delivered: 'badge-soft',
-  cancelled: 'badge-danger',
-});
+const ORDER_STATUS_LABELS = orderStatus.ORDER_STATUS_LABELS;
+const ORDER_STATUS_CLASSES = orderStatus.ORDER_STATUS_CLASSES;
 
 const PAYMENT_STATUS_LABELS = Object.freeze({
   unpaid: 'Chưa thanh toán',
@@ -34,9 +23,8 @@ const formatDate = (value) => {
     : '-';
 };
 
-const getStatusLabel = (status) => ORDER_STATUS_LABELS[status] || status || 'Không xác định';
-
-const getStatusClass = (status) => ORDER_STATUS_CLASSES[status] || 'badge-soft';
+const getStatusLabel = orderStatus.getStatusLabel;
+const getStatusClass = orderStatus.getStatusClass;
 
 const getPaymentStatusLabel = (status) =>
   PAYMENT_STATUS_LABELS[status] || status || 'Không xác định';

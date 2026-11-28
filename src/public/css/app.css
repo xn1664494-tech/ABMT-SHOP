@@ -1269,6 +1269,7 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 .admin-nav { display: grid; gap: 4px; }
 .admin-nav a { display: block; padding: 10px 12px; border-radius: var(--r-field); font-size: 14px; color: var(--ink); }
 .admin-nav a:hover { background: var(--mint); color: var(--accent-deep); }
+.admin-nav .adm-cnt { margin-left: auto; min-width: 22px; height: 20px; padding: 0 7px; border-radius: 999px; background: var(--accent); color: var(--ink); font-size: 11px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; }
 .admin-nav a.is-active { background: var(--ink); color: var(--canvas); }
 .admin-scrim { position: fixed; inset: 0; z-index: 60; background: rgba(20,24,29,.55); opacity: 0; pointer-events: none; transition: opacity .2s ease; }
 .admin-scrim.is-open { opacity: 1; pointer-events: auto; }

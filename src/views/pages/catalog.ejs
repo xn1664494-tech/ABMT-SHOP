@@ -131,7 +131,7 @@
                 <select id="filter-category" name="category" class="select">
                   <option value="">Tất cả danh mục</option>
                     <% categoryList.forEach(function (cat) { %>
-                      <option value="<%= cat.slug %>" <%= (L.category === cat.slug || (cc && cat._id && cc._id.toString() === cc._id.toString())) ? 'selected' : '' %>><%= cat.name %></option>
+                      <option value="<%= cat.slug %>" <%= (L.category === cat.slug || (cc && cat._id && cc._id.toString() === cat._id.toString())) ? 'selected' : '' %>><%= cat.name %></option>
                     <% }) %>
                 </select>
               </div>

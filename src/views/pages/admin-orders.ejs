@@ -5,121 +5,212 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title><%= title %></title>
   <link rel="stylesheet" href="/css/app.css">
-  <style>
-    .admin-table { width: 100%; border-collapse: collapse; }
-    .admin-table th, .admin-table td { padding: 12px 10px; text-align: left; border-bottom: 1px solid var(--line); }
-    .admin-table th { color: var(--ink-strong); font-weight: 600; white-space: nowrap; }
-    .admin-table td { color: var(--ink); vertical-align: middle; }
-    .admin-table tbody tr:last-child td { border-bottom: none; }
-    .admin-code { color: var(--ink-strong); font-weight: 600; text-decoration: none; }
-    .admin-code:hover { text-decoration: underline; }
-    .admin-actions { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
-    .status-tabs { display: flex; gap: 8px; flex-wrap: wrap; margin: 0 0 18px; }
-    .status-tab { display: inline-flex; align-items: center; gap: 6px; padding: 8px 12px; border-radius: 999px; border: 1px solid var(--line); color: var(--ink); font-size: 14px; text-decoration: none; }
-    .status-tab:hover { border-color: var(--accent); }
-    .status-tab.is-active { background: var(--ink-strong); color: #fff; border-color: var(--ink-strong); }
-    .status-count { font-size: 12px; opacity: .75; }
-    @media (max-width: 575.98px) { .admin-actions { flex-direction: column; align-items: stretch; } }
-  </style>
+  <link rel="stylesheet" href="/css/shop.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" media="all">
 </head>
-<body>
-  <%- include('../partials/header') %>
-  <%- include('../partials/flash') %>
+<body class="shop">
+  <div data-flash data-type="info" hidden></div>
   <%
-    const L = (locals && locals.locals) ? locals.locals : (locals || {});
-    const active = L.active || 'orders';
-    const orders = Array.isArray(L.orders) ? L.orders : [];
-    const statusTabs = Array.isArray(L.statusTabs) ? L.statusTabs : [];
+    var L = (locals && locals.locals) ? locals.locals : (locals || {});
+    var active = L.active || 'orders';
+    var orders = Array.isArray(L.orders) ? L.orders : [];
+    var statusTabs = Array.isArray(L.statusTabs) ? L.statusTabs : [];
+    var pagination = L.pagination || { page: 1, total: 0, totalPages: 0, itemCount: 0 };
+    var activeStatus = L.activeStatus || 'all';
+    var q = L.q || '';
+    var pendingCount = Number(L.pendingCount) || 0;
+
+    var adminUser = (typeof currentUser !== 'undefined' && currentUser) ? currentUser : {};
+    var adminName = adminUser.name || 'Quản trị viên';
+    var adminInitial = String(adminName).trim().charAt(0).toUpperCase() || 'A';
+
+    function pageHref(page) {
+      var parts = [];
+      if (activeStatus && activeStatus !== 'all') parts.push('status=' + encodeURIComponent(activeStatus));
+      if (q) parts.push('q=' + encodeURIComponent(q));
+      parts.push('page=' + page);
+      return '/admin/orders?' + parts.join('&');
+    }
   %>
-  <main id="main-content" class="main-content">
-    <div class="container admin-shell">
-      <div class="admin-topbar">
-        <button type="button" id="tg" class="admin-menu-btn" aria-label="Mở menu quản trị" aria-controls="sb" aria-expanded="false">☰</button>
-        <span class="admin-brand">ABMT ADMIN</span>
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <symbol id="i-order" viewBox="0 0 24 24"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2V3z"/><path d="M9 8h6M9 12h6"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-store" viewBox="0 0 24 24"><path d="M4 9l1.5-5h13L20 9"/><path d="M4 9a2.7 2.7 0 005.3 0 2.7 2.7 0 005.4 0A2.7 2.7 0 0020 9"/><path d="M5 12v8h14v-8"/></symbol>
+    <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.6-3.6 3.2-5.5 6.5-5.5s5.9 1.9 6.5 5.5"/><circle cx="17.5" cy="9" r="2.6"/><path d="M17 14.5c2.6.2 4.2 1.9 4.6 4.5"/></symbol>
+    <symbol id="i-dash" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></symbol>
+    <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></symbol>
+    <symbol id="i-out" viewBox="0 0 24 24"><path d="M10 4H6a2 2 0 00-2 2v12a2 2 0 002 2h4"/><path d="M16 8l4 4-4 4M20 12H9"/></symbol>
+    <symbol id="i-chev" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6"/><path d="M16 16l4 4"/></symbol>
+  </svg>
+
+  <aside class="adm-sb" id="sb" aria-label="Menu quản trị">
+    <div class="adm-brand">
+      ABMT<small>Admin</small>
+      <button type="button" class="adm-sb-close" data-adm-close aria-label="Đóng menu">×</button>
+    </div>
+    <nav class="adm-nav">
+      <h2 class="adm-nav-h">Tổng quan</h2>
+      <a href="/admin"><svg class="ico"><use href="#i-dash"/></svg>Tổng quan</a>
+      <h2 class="adm-nav-h">Cửa hàng</h2>
+      <a href="/admin/products/new"><svg class="ico"><use href="#i-plus"/></svg>Thêm sản phẩm</a>
+      <a href="/admin/orders" aria-current="page"><svg class="ico"><use href="#i-order"/></svg>Đơn hàng<% if (pendingCount > 0) { %><span class="adm-cnt"><%= pendingCount %></span><% } %></a>
+      <a href="/catalog"><svg class="ico"><use href="#i-store"/></svg>Xem cửa hàng</a>
+      <h2 class="adm-nav-h">Tài khoản</h2>
+      <a href="/admin/users"><svg class="ico"><use href="#i-users"/></svg>Người dùng</a>
+      <a href="/account"><svg class="ico"><use href="#i-users"/></svg>Tài khoản</a>
+    </nav>
+    <div class="adm-who">
+      Đăng nhập với tư cách
+      <b><%= adminName %></b>
+      <button type="button" class="adm-logout" data-adm-logout><svg class="ico" style="width:16px;height:16px"><use href="#i-out"/></svg>Đăng xuất</button>
+    </div>
+  </aside>
+  <div class="adm-scrim" id="scrim"></div>
+
+  <div class="adm-main">
+    <header class="adm-top">
+      <button type="button" id="tg" class="adm-tg" aria-label="Mở menu quản trị" aria-controls="sb" aria-expanded="false"><svg class="ico"><use href="#i-menu"/></svg></button>
+      <div class="adm-sp"></div>
+      <a class="adm-store" href="/catalog"><svg class="ico" style="width:18px;height:18px"><use href="#i-store"/></svg><span>Xem cửa hàng</span></a>
+      <div class="adm-user"><span class="adm-av"><%= adminInitial %></span><span class="adm-nm"><%= adminName %></span><svg class="ico"><use href="#i-chev"/></svg></div>
+    </header>
+
+    <main class="adm-wrap">
+      <div class="adm-ph">
+        <div>
+          <p class="adm-crumb">Quản trị / Đơn hàng</p>
+          <h1>Quản lý đơn hàng</h1>
+          <p class="adm-subtext">Tìm kiếm, lọc trạng thái và cập nhật đơn hàng</p>
+        </div>
+        <a class="adm-btn adm-btn--outline" href="/admin">Tổng quan</a>
       </div>
-      <div class="admin-scrim" id="scrim"></div>
-      <div class="admin-layout">
-        <aside class="admin-sidebar" id="sb" aria-label="Điều hướng quản trị">
-          <%- include('../partials/admin-sidebar', { active: active }) %>
-        </aside>
-        <div class="admin-main">
-          <nav class="breadcrumb" aria-label="Breadcrumb">
-            <a href="/">Trang chủ</a>
-            <span class="sep">/</span>
-            <a href="/admin">Quản trị</a>
-            <span class="sep">/</span>
-            <span aria-current="page">Đơn hàng</span>
-          </nav>
 
-          <div class="page-head">
-            <div>
-              <h1 class="page-title">Quản lý đơn hàng</h1>
-              <p class="page-sub">Theo dõi trạng thái đơn và hủy đơn khi còn hợp lệ</p>
-            </div>
-            <a href="/admin" class="btn btn-ghost btn-sm">Tổng quan</a>
-          </div>
-
-          <nav class="status-tabs" aria-label="Lọc theo trạng thái">
+      <section class="adm-pn" aria-label="Bộ lọc đơn hàng">
+        <div class="adm-bd">
+          <form class="adm-filter" method="get" action="/admin/orders">
+            <% if (activeStatus && activeStatus !== 'all') { %>
+              <input type="hidden" name="status" value="<%= activeStatus %>">
+            <% } %>
+            <label class="adm-field">
+              <span class="adm-label">Tìm theo mã đơn, người nhận hoặc SĐT</span>
+              <input class="adm-input" type="search" name="q" value="<%= q %>" placeholder="VD: ORD-... hoặc 09xx..." maxlength="100">
+            </label>
+            <button class="adm-btn" type="submit"><svg class="ico" style="width:16px;height:16px"><use href="#i-search"/></svg>Tìm</button>
+            <% if (q) { %><a class="adm-btn adm-btn--ghost" href="/admin/orders">Xóa lọc</a><% } %>
+          </form>
+          <nav class="adm-tabs" aria-label="Lọc theo trạng thái">
             <% statusTabs.forEach(function (tab) { %>
               <a
-                href="/admin/orders?status=<%= encodeURIComponent(tab.value) %>"
-                class="status-tab<%= tab.isActive ? ' is-active' : '' %>"
+                class="adm-tab<%= tab.isActive ? ' is-active' : '' %>"
+                href="/admin/orders?status=<%= encodeURIComponent(tab.value) %><% if (q) { %>&q=<%= encodeURIComponent(q) %><% } %>"
                 <%- tab.isActive ? 'aria-current="page"' : '' %>
-              >
-                <%= tab.label %>
-                <span class="status-count"><%= tab.count %></span>
-              </a>
+              ><%= tab.label %><span class="adm-tab-cnt"><%= tab.count %></span></a>
             <% }) %>
           </nav>
-
-          <% if (orders.length === 0) { %>
-            <div class="empty-state">
-              <p class="empty-state-title">Không có đơn hàng nào</p>
-              <p class="empty-state-text">Chưa có đơn hàng nào khớp với trạng thái đang chọn.</p>
-            </div>
-          <% } else { %>
-            <section class="card" style="padding: 0; overflow: hidden;" aria-label="Danh sách đơn hàng quản trị">
-              <div style="overflow-x: auto;">
-                <table class="admin-table">
-                  <thead>
-                    <tr>
-                      <th>Mã đơn</th>
-                      <th>Ngày đặt</th>
-                      <th>Tổng tiền</th>
-                      <th>Trạng thái</th>
-                      <th>Thao tác</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <% orders.forEach(function (order) { %>
-                      <tr data-order-id="<%= order.id %>" data-order-status="<%= order.status %>">
-                        <td><a class="admin-code" href="/orders/<%= encodeURIComponent(order.id) %>"><%= order.code %></a></td>
-                        <td><%= order.createdAtLabel %></td>
-                        <td><%= order.totalLabel %></td>
-                        <td><span class="badge <%= order.statusClass %>" data-status-label="<%= order.status %>"><%= order.statusLabel %></span></td>
-                        <td>
-                          <div class="admin-actions">
-                            <a href="/orders/<%= encodeURIComponent(order.id) %>" class="btn btn-ghost btn-sm">Chi tiết</a>
-                            <% if (order.canCancel) { %>
-                              <button type="button" class="btn btn-danger btn-sm" data-action="cancel-order" data-order-id="<%= order.id %>">Hủy</button>
-                            <% } %>
-                          </div>
-                        </td>
-                      </tr>
-                    <% }) %>
-                  </tbody>
-                </table>
-              </div>
-            </section>
-          <% } %>
         </div>
+      </section>
+
+      <% if (orders.length === 0) { %>
+        <section class="adm-pn" style="margin-top:16px;">
+          <p class="adm-empty-item">Không có đơn hàng nào khớp với bộ lọc hiện tại.</p>
+        </section>
+      <% } else { %>
+        <section class="adm-pn" style="margin-top:16px;" aria-label="Danh sách đơn hàng">
+          <div class="adm-tw" role="region" aria-label="Bảng đơn hàng" tabindex="0">
+            <table class="adm-table">
+              <thead>
+                <tr>
+                  <th>Mã đơn</th>
+                  <th>Ngày đặt</th>
+                  <th>Người nhận</th>
+                  <th>Số mặt hàng</th>
+                  <th>Thanh toán</th>
+                  <th class="adm-r">Tổng tiền</th>
+                  <th>Trạng thái</th>
+                  <th class="adm-r">Thao tác</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% orders.forEach(function (order) { %>
+                  <tr data-order-id="<%= order.id %>" data-order-code="<%= order.code %>" data-order-status="<%= order.status %>">
+                    <td><a class="adm-code" href="/admin/orders/<%= encodeURIComponent(order.code) %>"><%= order.code %></a></td>
+                    <td><%= order.createdAtLabel %></td>
+                    <td>
+                      <%= order.recipient %>
+                      <% if (order.phone) { %><span class="adm-s2"><%= order.phone %></span><% } %>
+                    </td>
+                    <td><%= order.itemsCount %></td>
+                    <td>
+                      <%= order.paymentMethodLabel %>
+                      <span class="adm-s2"><%= order.paymentStatusLabel %></span>
+                    </td>
+                    <td class="adm-r"><%= order.totalLabel %></td>
+                    <td><span class="badge <%= order.statusClass %>" data-status-label="<%= order.status %>"><%= order.statusLabel %></span></td>
+                    <td class="adm-r">
+                      <div class="adm-row-actions">
+                        <a class="adm-btn adm-btn--ghost adm-btn--sm" href="/admin/orders/<%= encodeURIComponent(order.code) %>">Chi tiết</a>
+                        <% if (order.status === 'pending') { %>
+                          <button type="button" class="adm-btn adm-btn--sm" data-action="confirm-order" data-order-code="<%= order.code %>">Xác nhận</button>
+                        <% } %>
+                        <% if (order.status === 'pending' || order.status === 'confirmed') { %>
+                          <button type="button" class="adm-btn adm-btn--danger adm-btn--sm" data-action="cancel-order" data-order-id="<%= order.id %>" data-order-code="<%= order.code %>">Hủy</button>
+                        <% } %>
+                      </div>
+                    </td>
+                  </tr>
+                <% }) %>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <% if (pagination.totalPages > 1) { %>
+          <nav class="adm-pagination" aria-label="Phân trang đơn hàng">
+            <% if (pagination.page > 1) { %>
+              <a class="adm-btn adm-btn--ghost adm-btn--sm" href="<%= pageHref(pagination.page - 1) %>">‹ Trước</a>
+            <% } %>
+            <span class="adm-page-info">Trang <%= pagination.page %> / <%= pagination.totalPages %> (<%= pagination.total %> đơn)</span>
+            <% if (pagination.page < pagination.totalPages) { %>
+              <a class="adm-btn adm-btn--ghost adm-btn--sm" href="<%= pageHref(pagination.page + 1) %>">Sau ›</a>
+            <% } %>
+          </nav>
+        <% } %>
+      <% } %>
+    </main>
+  </div>
+
+  <dialog id="order-dialog" class="adm-dialog" aria-labelledby="order-dialog-title">
+    <form method="dialog" id="order-dialog-form">
+      <header><h3 id="order-dialog-title">Xác nhận thao tác</h3></header>
+      <div class="adm-dialog-body">
+        <p id="order-dialog-message" class="adm-dialog-message"></p>
+        <label class="adm-field" data-dialog-field="reason" hidden>
+          <span class="adm-label">Lý do hủy</span>
+          <input class="adm-input" name="reason" maxlength="500" placeholder="Nhập lý do hủy đơn">
+        </label>
+        <label class="adm-field" data-dialog-field="carrier" hidden>
+          <span class="adm-label">Đơn vị vận chuyển</span>
+          <input class="adm-input" name="carrier" maxlength="120" placeholder="VD: GHTK, GHN...">
+        </label>
+        <label class="adm-field" data-dialog-field="trackingCode" hidden>
+          <span class="adm-label">Mã vận đơn</span>
+          <input class="adm-input" name="trackingCode" maxlength="120" placeholder="Nhập mã vận đơn">
+        </label>
+        <p class="adm-dialog-error" data-dialog-error hidden></p>
       </div>
-    </div>
-  </main>
-  <%- include('../partials/footer') %>
+      <footer>
+        <button type="button" class="adm-btn adm-btn--ghost" data-dialog-cancel>Hủy bỏ</button>
+        <button type="button" class="adm-btn" data-dialog-confirm>Xác nhận</button>
+      </footer>
+    </form>
+  </dialog>
+
   <script src="/js/api.js"></script>
   <script src="/js/ui.js"></script>
   <script src="/js/admin.js"></script>
-  <script src="/js/orders.js"></script>
+  <script src="/js/admin-orders.js"></script>
 </body>
 </html>

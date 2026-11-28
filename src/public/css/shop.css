@@ -411,6 +411,7 @@
 .shop .acc-badge--confirmed { background: #E8F1FB; color: #2B6CB0; border-color: #C3D9F0; }
 .shop .acc-badge--shipping { background: #F0EBFA; color: #6B46C1; border-color: #D8CCF0; }
 .shop .acc-badge--delivered { background: #E7F5EE; color: #2F7A5B; border-color: #BFE3D2; }
+.shop .acc-badge--completed { background: #E7F5EE; color: #2F7A5B; border-color: #BFE3D2; }
 .shop .acc-badge--cancelled { background: #FBECEA; color: #B23B32; border-color: #F0C9C4; }
 .shop .acc-badge--default { background: var(--mint); color: var(--accent-deep); border-color: var(--line-strong); }
 .shop .acc-badge--unpaid { background: #FDF3E1; color: #9A6715; border-color: #F0D7A6; }
@@ -931,6 +932,23 @@
 .shop .acc-badge--verified { background: #E7F5EE; color: #2F7A5B; border-color: #BFE3D2; }
 .shop .acc-badge--unverified { background: #FDF3E1; color: #9A6715; border-color: #F0D7A6; }
 
+/* ----- Account: order actions ----- */
+.shop .acc-order-actions { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 8px; justify-content: flex-end; }
+.shop .acc-shipment-info { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); }
+.shop .acc-shipment-info .acc-panel-link { display: block; margin-bottom: 6px; }
+.shop .acc-delivered-banner {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px;
+  margin-bottom: 16px; padding: 16px 18px; border-radius: 16px;
+  background: var(--mint); border: 1px solid var(--accent);
+}
+.shop .acc-delivered-banner > div { display: flex; flex-direction: column; gap: 2px; font-size: 13.5px; color: var(--ink-strong); }
+.shop .acc-delivered-banner span { color: var(--ink-soft); font-size: 12.5px; }
+.shop .acc-dialog-message { font-size: 13px; color: var(--muted); margin: 0 0 4px; }
+.shop .acc-dialog-error { margin: 0; font-size: 12.5px; color: var(--danger); }
+.shop .acc-dialog-error[hidden] { display: none; }
+.shop [data-order-actions].is-hidden { display: none; }
+.shop [data-delivered-banner].is-hidden { display: none; }
+
 /* =========================================================
    ABMT ADMIN — Tổng quan & Thêm sản phẩm
    Port từ mockup v1. Toàn bộ selector được scope dưới .shop
@@ -1385,6 +1403,60 @@
 .shop .adm-variant-error:empty { display: none; }
 .shop .adm-add-variant { margin-top: 2px; }
 .shop .adm-form-actions { display: flex; flex-wrap: wrap; gap: 12px; padding-top: 4px; }
+
+/* ----- Admin orders ----- */
+.shop .adm-filter { display: flex; flex-wrap: wrap; align-items: end; gap: 12px; }
+.shop .adm-filter .adm-field { flex: 1 1 320px; }
+.shop .adm-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+.shop .adm-tab {
+  display: inline-flex; align-items: center; gap: 6px;
+  min-height: 34px; padding: 0 12px; border-radius: 999px;
+  border: 1px solid var(--line-strong); color: var(--ink-soft);
+  font-size: 12.5px; text-decoration: none;
+}
+.shop .adm-tab:hover { background: var(--canvas); color: var(--ink-strong); }
+.shop .adm-tab.is-active { background: var(--ink); border-color: var(--ink); color: var(--canvas); font-weight: 600; }
+.shop .adm-tab-cnt {
+  min-width: 20px; height: 18px; padding: 0 6px; border-radius: 999px;
+  background: var(--canvas); color: var(--ink-strong);
+  font-size: 11px; font-weight: 700;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.shop .adm-tab.is-active .adm-tab-cnt { background: rgba(253,252,249,.18); color: var(--canvas); }
+.shop .adm-row-actions { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 8px; justify-content: flex-end; }
+.shop .adm-actions-wrap { justify-content: flex-start; }
+.shop .adm-pagination { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 16px; }
+.shop .adm-page-info { font-size: 13px; color: var(--muted); }
+.shop .adm-dl { display: grid; grid-template-columns: 140px minmax(0, 1fr); gap: 10px 16px; margin: 0; }
+.shop .adm-dl dt { font-size: 12.5px; color: var(--muted); }
+.shop .adm-dl dd { margin: 0; font-size: 13.5px; color: var(--ink-strong); overflow-wrap: anywhere; }
+.shop .adm-timeline { list-style: none; margin: 0; padding: 0 0 0 18px; border-left: 2px solid var(--line); }
+.shop .adm-timeline li { position: relative; padding: 0 0 16px 14px; display: flex; flex-direction: column; gap: 3px; }
+.shop .adm-timeline li:last-child { padding-bottom: 0; }
+.shop .adm-timeline li::before {
+  content: ""; position: absolute; left: -25px; top: 4px;
+  width: 10px; height: 10px; border-radius: 50%;
+  background: var(--accent); border: 2px solid var(--surface);
+}
+.shop .adm-timeline-status { font-size: 13.5px; font-weight: 600; color: var(--ink-strong); }
+.shop .adm-timeline-meta { font-size: 12px; color: var(--muted); }
+.shop .adm-timeline-note { font-size: 12.5px; color: var(--ink-soft); }
+.shop .adm-dialog {
+  border: 1px solid var(--line); border-radius: 20px; padding: 0;
+  width: min(440px, calc(100vw - 32px)); background: var(--surface); color: var(--ink);
+  box-shadow: 0 24px 60px rgba(20,24,29,.25);
+}
+.shop .adm-dialog::backdrop { background: rgba(20,24,29,.5); }
+.shop .adm-dialog form > header { padding: 18px 20px; border-bottom: 1px solid var(--line); }
+.shop .adm-dialog h3 { margin: 0; font-size: 16px; color: var(--ink-strong); }
+.shop .adm-dialog-body { padding: 20px; display: flex; flex-direction: column; gap: 14px; }
+.shop .adm-dialog-message { margin: 0; font-size: 13.5px; color: var(--ink-soft); }
+.shop .adm-dialog-error { margin: 0; font-size: 12.5px; color: var(--danger); background: var(--peach); padding: 10px 12px; border-radius: 10px; }
+.shop .adm-dialog form > footer {
+  display: flex; justify-content: flex-end; gap: 10px;
+  padding: 16px 20px; border-top: 1px solid var(--line);
+}
+.shop .adm-dialog [hidden] { display: none !important; }
 
 /* ----- Responsive ----- */
 @media (max-width: 1180px) {
