@@ -23,7 +23,7 @@
 | `git diff --check` | **PASS** | exit 0 |
 | Commit | **DONE** | 2 file docs cụ thể, không dùng `add .` |
 | Push / tạo PR | **DONE** | Branch riêng, PR vào `main` |
-| CI PR | **Đang kiểm tra** | Sẽ ghi nhận kết quả trong commit bổ sung |
+| CI PR | **PASS** | [run 46144289364](https://github.com/xn1664494-tech/ABMT-SHOP/actions/runs/46144289364) |
 | Merge | **NOT RUN** | Chờ phê duyệt riêng; không tự merge |
 
 SKIP không được tính là PASS; không hạng mục nào bị skip để đạt kết quả.
@@ -132,4 +132,5 @@ Trình tự mở khóa CI `main`:
 - Fetch lại origin: `origin/main` tiến từ `d0443f6` → `b88c67a` (#120/#121/#122) → `433237f` (PR #123).
 - PR #123 **MERGED**, CI PR pass (`46142379491`, `46142391316`); CI `main` sau rerun pass.
 - Branch NFR được cập nhật bằng **merge commit** từ `origin/main` (`433237f`), **không rebase / cherry-pick / force push**.
-- Quyết định: commit/push 2 file docs, tạo PR, chờ CI PR. **Dừng chờ phê duyệt merge riêng**; không đụng worktree `main`, `stash@{0}`, PR #118/#119 hay branch Dev 2.
+- PR NFR [#124](https://github.com/xn1664494-tech/ABMT-SHOP/pull/124) đã tạo; CI PR [run 46144289364](https://github.com/xn1664494-tech/ABMT-SHOP/actions/runs/46144289364) **PASS**.
+- Quyết định: **dừng chờ phê duyệt merge riêng**; không tự merge, không đụng worktree `main`, `stash@{0}`, PR #118/#119 hay branch Dev 2. T8-1-3 vẫn chưa bắt đầu.
