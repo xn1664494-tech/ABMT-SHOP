@@ -229,6 +229,14 @@ test('T2-2-1: Order co day du index theo data dictionary', () => {
     indexes.some(([fields]) => fields.status === 1 && fields.createdAt === 1),
     'thieu index (status, createdAt)',
   );
+  assert.ok(
+    indexes.some(([fields]) => fields.createdAt === -1 && fields._id === -1),
+    'thieu index (createdAt, _id)',
+  );
+  assert.ok(
+    indexes.some(([fields]) => fields.user === 1 && fields.status === 1),
+    'thieu index (user, status)',
+  );
 });
 
 test('T2-2-1: toJSON an _id, __v va giu du lieu audit', async () => {

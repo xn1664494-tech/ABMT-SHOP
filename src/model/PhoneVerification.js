@@ -16,5 +16,6 @@ const phoneVerificationSchema = new mongoose.Schema(
 );
 
 phoneVerificationSchema.index({ user: 1, phone: 1, expiresAt: -1 });
+phoneVerificationSchema.index({ user: 1, createdAt: -1 });
 
 module.exports = mongoose.models.PhoneVerification || mongoose.model('PhoneVerification', phoneVerificationSchema);

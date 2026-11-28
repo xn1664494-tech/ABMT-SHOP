@@ -358,6 +358,9 @@ orderSchema.index({ user: 1, createdAt: 1 });
 // Admin lọc đơn theo trạng thái.
 orderSchema.index({ status: 1, createdAt: 1 });
 
+orderSchema.index({ createdAt: -1, _id: -1 });
+orderSchema.index({ user: 1, status: 1 });
+
 // Job hủy đơn quá hạn. Không dùng sparse: đơn legacy thiếu expiresAt vẫn phải
 // nằm trong index để migration/job quan sát được sau khi backfill.
 orderSchema.index({ status: 1, paymentStatus: 1, expiresAt: 1 });

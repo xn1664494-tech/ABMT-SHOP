@@ -14,6 +14,7 @@ const {
   PRODUCT_LIST_FIELDS,
 } = require('../utils/productFilter');
 const { toPublicProductListItem } = require('../utils/productSerializer');
+const { collectDescendantIds } = require('../utils/categoryTree');
 
 const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id);
 
@@ -35,19 +36,10 @@ const resolveCategoryFilter = async (category) => {
 };
 
 const resolveCategoryIds = async (categoryId) => {
-  const ids = [categoryId];
-  const queue = [categoryId];
-  while (queue.length) {
-    const current = queue.shift();
-    const children = await Category.find({ parentId: current, isDeleted: false })
-      .select('_id')
-      .lean();
-    for (const child of children) {
-      ids.push(child._id);
-      queue.push(child._id);
-    }
-  }
-  return ids;
+  const categories = await Category.find({ isDeleted: false })
+    .select('_id parentId')
+    .lean();
+  return collectDescendantIds(categoryId, categories);
 };
 
 const buildVisibilityFilter = ({

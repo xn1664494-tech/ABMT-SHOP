@@ -71,6 +71,7 @@ File này đóng vai trò **index**: mọi minh chứng mới nên được tạ
 | CHƯƠNG 4 §4.1–4.7 | Giao diện, luồng mua, trạng thái đơn | [`components-demo.html`](../thiet-ke-ui/components-demo.html), [`order-lifecycle.svg`](../thiet-ke-csdl/order-lifecycle.svg), [`T4-2-1_PRODUCT_FILTER.md`](T4-2-1_PRODUCT_FILTER.md), `src/views/`, `src/public/` |
 | CHƯƠNG 5 §5.1–5.8 | Chiến lược test, 8 kịch bản, nghiệm thu, bảo mật, deploy | [`T1-4-2_NFR_TEST_PLAN.md`](T1-4-2_NFR_TEST_PLAN.md), sheet `09_Kiểm thử & DoD` của [`workbook`](../ABMT_Phan_chia_cong_viec.xlsx), [`PHASE2_DEV1_CI_SETUP_REPORT.md`](PHASE2_DEV1_CI_SETUP_REPORT.md), `postman/` |
 | CHƯƠNG 5 — Test đồng thời kho | T7-2-1: 1 biến thể còn 1 sản phẩm, nhiều request đồng thời, đúng 1 đơn thành công, tồn kho 0 | [`T7-2-1_CONCURRENCY_STOCK.md`](T7-2-1_CONCURRENCY_STOCK.md) |
+| CHƯƠNG 5 — Tối ưu truy vấn P0 | T7-2-2: before/after trên Atlas, explain, test đếm query/chống N+1 | [`T7-2-2_QUERY_OPTIMIZATION.md`](T7-2-2_QUERY_OPTIMIZATION.md) |
 | CHƯƠNG 6 §6.1–6.10 | Kế hoạch 8 tuần, mốc, RACI, rủi ro, điểm chốt | [`workbook`](../ABMT_Phan_chia_cong_viec.xlsx), [`PHASE2_DEV1_WBS_SCOPE_MAPPING.md`](PHASE2_DEV1_WBS_SCOPE_MAPPING.md), [`PHASE2_DEV1_BACKLOG.md`](PHASE2_DEV1_BACKLOG.md) |
 | Kết luận / Phụ lục A–D | Kết quả, hạn chế, ma trận 96 task, DoD, checklist bảo mật | [`Bao_cao_do_an_UrbanMinimal.docx`](../Bao_cao_do_an_UrbanMinimal.docx), [`PHASE2_DEV1_FINAL_REPORT.md`](PHASE2_DEV1_FINAL_REPORT.md) |
 

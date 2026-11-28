@@ -129,6 +129,12 @@ const cancelOrder = (user, id) =>
     .set('Cookie', cookieFor(user))
     .send({ note: 'T6-4-3' });
 
+const adminCancelOrder = (user, id) =>
+  request(app)
+    .post(`/api/admin/orders/${id}/cancel`)
+    .set('Cookie', cookieFor(user))
+    .send({ reason: 'T6-4-3' });
+
 test.before(async () => {
   const dbName = (() => {
     try {
@@ -314,7 +320,7 @@ test('T6-4-3: IDOR đơn người khác bị chặn, admin vẫn xem/hủy đư�
   const adminDetail = await getOrder(admin, orderId);
   assert.equal(adminDetail.status, 200);
   assert.equal(adminDetail.body.data.id, orderId);
-  const adminCancel = await cancelOrder(admin, orderId);
+  const adminCancel = await adminCancelOrder(admin, orderId);
   assert.equal(adminCancel.status, 200, JSON.stringify(adminCancel.body));
   const afterAdmin = await Product.findById(product._id);
   assert.equal(afterAdmin.variants[0].stock, 4);

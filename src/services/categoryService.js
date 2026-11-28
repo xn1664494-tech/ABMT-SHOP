@@ -4,6 +4,7 @@ const Product = require('../model/Products');
 const slugify = require('slugify');
 const ErrorResponse = require('../utils/appError');
 const { toPublicCategory } = require('../utils/categorySerializer');
+const { collectDescendantIds } = require('../utils/categoryTree');
 
 const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id);
 
@@ -56,23 +57,16 @@ const ensureParentValid = async (parentId) => {
 };
 
 const getDescendantIds = async (categoryId) => {
-  const ids = [];
-  const queue = [categoryId];
-  while (queue.length) {
-    const current = queue.shift();
-    const children = await Category.find({ parentId: current, isDeleted: false }).select('_id');
-    for (const child of children) {
-      ids.push(child._id);
-      queue.push(child._id);
-    }
-  }
-  return ids;
+  const categories = await Category.find({ isDeleted: false })
+    .select('_id parentId')
+    .lean();
+  return collectDescendantIds(categoryId, categories).slice(1);
 };
 
 const hasCircularReference = async (categoryId, newParentId) => {
-  if (newParentId.equals(categoryId)) return true;
+  if (String(newParentId) === String(categoryId)) return true;
   const descendants = await getDescendantIds(categoryId);
-  return descendants.some((id) => id.equals(newParentId));
+  return descendants.some((id) => String(id) === String(newParentId));
 };
 
 module.exports = {

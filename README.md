@@ -217,6 +217,20 @@ Mã nguồn: `src/utils/productFilter.js` (`buildPagination`, `buildSort`, `DEFA
 - Index này **không** tối ưu các trường hợp lọc `category`/giá/keyword hoặc sort theo giá; các truy vấn đó có thể vẫn dùng index khác hoặc `SORT`.
 - Đo hiệu năng: `npm run benchmark:product-list` (mặc định 10.000 bản ghi, warm-up + nhiều vòng đo). Báo cáo: `docs/reports/T4-2-3_QUERY_OPTIMIZATION.md`.
 
+### Tối ưu truy vấn P0 (T7-2-2)
+
+- Cart/merge/checkout tải products theo `Product.find({ _id: { $in: [...] } })` thay vì `Product.findById` từng dòng.
+- Category tree tải danh mục bằng 1 query; account/admin order counts dùng 1 `Order.aggregate` thay vì nhiều `countDocuments`.
+- Index mới: `Order {createdAt:-1,_id:-1}`, `Order {user:1,status:1}`, `User {isDeleted:1,createdAt:-1,_id:-1}`, `PhoneVerification {user:1,createdAt:-1}`, `Product {category:1,isActive:1,isDeleted:1,createdAt:-1,_id:-1}`.
+- Chạy evidence before/after trên cùng DB test Atlas:
+
+```bash
+npm run evidence:query-optimization -- --label=before
+npm run evidence:query-optimization -- --label=after
+```
+
+- Báo cáo/minh chứng: `docs/reports/T7-2-2_QUERY_OPTIMIZATION.md`, `docs/reports/artifacts/T7-2-2/`. Không sửa view; không đổi CAS.
+
 ### Query helper loại bản ghi đã xóa
 
 - `User`, `Category`, `Product` dùng plugin `src/plugins/softDelete.js`.
