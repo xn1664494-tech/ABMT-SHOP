@@ -25,7 +25,7 @@ Nguồn: docx §1.4 (Bảng 4), §5.1–5.4 (Bảng 16, Bảng 18), §5.8; workb
 | NFR-05 | Bảo mật | Chống CSRF trên route ghi dùng cookie auth | double-submit cookie + header, so sánh timing-safe, kiểm tra Origin/Referer theo `APP_ORIGIN`; thiếu/sai → 403 | `src/middleware/csrf.js`, `test/auth.csrf.test.js` |
 | NFR-06 | Bảo mật | Rate limit cho auth | `AUTH_RATE_LIMIT_WINDOW_MS`, `AUTH_RATE_LIMIT_MAX`; vượt ngưỡng → 429 | `src/middleware/rateLimiters.js`, `test/auth.rate-limit.test.js` ⚠️ MemoryStore (không chia sẻ multi-instance) |
 | NFR-07 | Bảo mật | Phân quyền chặt, chống IDOR | Guest → 401, Customer vào route admin → 403, đọc profile người khác → 403; role đọc từ DB | `src/middleware/authenticate.js`, `requireAdmin.js`, `test/auth.rbac.test.js`, `test/auth.admin-route.test.js` |
-| NFR-08 | Bảo mật | Input an toàn, không mass-assignment | Zod validate + whitelist (`name`, `email`); escape khi render EJS; không hard-code secret | `src/middleware/validate.js`, `src/validators/`, `README.md:215-220` ⚠️ sanitize T7-1-2 chưa xong |
+| NFR-08 | Bảo mật | Input an toàn, không mass-assignment | Zod validate + whitelist (`name`, `email`); escape khi render EJS; không hard-code secret | `src/middleware/validate.js`, `src/validators/`, `README.md:215-220` — T7-1-2 **đã hoàn thành** qua [PR #112](https://github.com/xn1664494-tech/ABMT-SHOP/pull/112) (merge commit `a75a52b`): output encoding tại điểm render, giữ nguyên DB/API contract. [Report](PHASE4_DEV1_T7_1_2_SANITIZE_REPORT.md) · [Checklist](PHASE4_DEV1_T7_1_2_SANITIZE_CHECKLIST.md) |
 | NFR-09 | Bảo trì | Cấu trúc rõ, lỗi tập trung, có review | MVC; `errorHandler` trả JSON lỗi `{success:false,error,details?}` cho `/api`; PR review chéo | `src/app.js:48-56`, `src/middleware/errorHandler.js`; review chéo đang là nợ (backlog P1-5) |
 | NFR-10 | Sử dụng | Hiện lỗi rõ, chống bấm đúp, mobile-first | Form login/register hiển thị lỗi; toast/loading; breakpoint 360/390/768/1280px | `src/views/pages/*`, `src/public/js/ui.js`, `docs/thiet-ke-ui/components-demo.html` — chưa đo trên thiết bị thật |
 | NFR-11 | Tương thích | Chạy được Node LTS + Express 5 + MongoDB | `npm ci` → `npm run check:env` → `npm start`; health check `GET /health` | `README.md:13-18`, `.env.example`, `scripts/check-env.js`, `src/app.js:48` |
@@ -48,7 +48,12 @@ Trạng thái được đánh giá theo code hiện tại (xem [`T1-4-1_REQUIREM
 | TC07 | Phân quyền | `npm test` → `test/auth.rbac.test.js`, `test/auth.admin-route.test.js` | **PASS** | Có route thật `/api/admin/access-check` + IDOR profile |
 | TC08 | Responsive & bảo mật cơ bản | Kiểm tra thủ công EJS + `test/auth.csrf.test.js`, `test/auth.rate-limit.test.js` | **PARTIAL** | View tồn tại nhưng nhiều trang chưa có route; chưa có browser E2E |
 
-Ma trận kịch bản bảo mật tối thiểu (docx Bảng 18): RBAC/IDOR, XSS, CSRF, rate limit, mass assignment. Hiện phủ được RBAC/IDOR/CSRF/rate limit/mass assignment ở mức API; **XSS chưa có test tự động**, sanitize là T7-1-2.
+Ma trận kịch bản bảo mật tối thiểu (docx Bảng 18): RBAC/IDOR, XSS, CSRF, rate limit, mass assignment. Hiện phủ được RBAC/IDOR/CSRF/rate limit/mass assignment ở mức API; **XSS đã có 8 test tự động trong `test/nav-sanitize.test.js`** (T7-1-2, [report](PHASE4_DEV1_T7_1_2_SANITIZE_REPORT.md)) — payload XSS trong tên danh mục / tiêu đề cột / tên link, scheme href nguy hiểm, quét raw `<%- %>` và kiểm tra `renderMega`. Đã chạy trong PR #112 (CI xanh); phạm vi là output encoding của mega menu, **không phải browser E2E**. Các kịch bản chưa có test tự động vẫn giữ trạng thái chưa thực hiện.
+
+Liên kết báo cáo Phase 4 T7 (Dev 1, 2026-11-28):
+
+- T7-1-2 Sanitize: [báo cáo](PHASE4_DEV1_T7_1_2_SANITIZE_REPORT.md) · [checklist](PHASE4_DEV1_T7_1_2_SANITIZE_CHECKLIST.md) — PR [#112](https://github.com/xn1664494-tech/ABMT-SHOP/pull/112), merge `a75a52b`.
+- T7-1-3 Rà soát cấu hình: [báo cáo](PHASE4_DEV1_T7_1_3_CONFIG_REVIEW_REPORT.md) · [checklist](PHASE4_DEV1_T7_1_3_CONFIG_REVIEW_CHECKLIST.md) — PR [#115](https://github.com/xn1664494-tech/ABMT-SHOP/pull/115) / [#117](https://github.com/xn1664494-tech/ABMT-SHOP/pull/117), merge `d9324fc` / `efdd7d4`.
 
 Bổ sung theo docx §5.2 (khi làm T7): số lượng = 0, mã giảm giá hết hạn, hủy đơn đồng thời, phiên hết hạn, tồn kho biến thể vượt mức.
 
