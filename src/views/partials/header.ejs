@@ -260,17 +260,21 @@
           });
           return columns.slice(0, 3);
         }
+        // T7-1-2: renderMega tra ve HTML tho -> moi gia tri tu DB phai di qua
+        // escapeHtml(); href phai di qua safeHref() truoc khi vao attribute.
         function renderMega(root, tileClass) {
           if (!root) return '';
           var columns = quickColumns(root).map(function (col) {
             var links = col.links.map(function (link) {
               var on = activeCat === link.href.split('category=')[1] ? ' class="on"' : '';
-              return '<a href="' + link.href + '"' + on + '>' + link.name + '</a>';
+              return '<a href="' + safeHref(link.href) + '"' + on + '>'
+                + escapeHtml(link.name) + '</a>';
             }).join('');
-            return '<div><h4>' + col.title + '</h4>' + links + '</div>';
+            return '<div><h4>' + escapeHtml(col.title) + '</h4>' + links + '</div>';
           }).join('');
-          var tile = '<a class="mega-tile ' + tileClass + '" href="' + rootHref(root, '/catalog') + '">'
-            + '<b>Thời trang ' + root.name + '</b>'
+          var tile = '<a class="mega-tile ' + escapeHtml(tileClass) + '" href="'
+            + safeHref(rootHref(root, '/catalog')) + '">'
+            + '<b>Thời trang ' + escapeHtml(root.name) + '</b>'
             + '<span>' + (root.name === 'Nữ' ? 'Nhẹ nhàng, thoải mái cả ngày' : 'Gọn gàng, dễ phối mỗi ngày') + '</span>'
             + '</a>';
           return columns + tile;
