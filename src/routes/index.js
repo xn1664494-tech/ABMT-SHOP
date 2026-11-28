@@ -13,7 +13,9 @@ const { ensureCartItemIds } = require('../utils/cartItems');
 const presentation = require('../utils/productPresentation');
 const orderPresentation = require('../utils/orderPresentation');
 const { canCancelOrder } = require('../services/OrderCancellationService');
+const orderStatus = require('../utils/orderStatus');
 const { maskPhone } = require('../utils/maskPhone');
+const { getAutoCompleteDays } = require('../jobs/autoCompleteOrders');
 
 const router = express.Router();
 
@@ -52,8 +54,8 @@ const buildOrderSummary = (order, role, isOwner = true) => {
     createdAtLabel: orderPresentation.formatDate(order.createdAt),
     totalLabel: orderPresentation.formatCurrency(order.total),
     status,
-    statusLabel: orderPresentation.getStatusLabel(status),
-    statusClass: orderPresentation.getStatusClass(status),
+    statusLabel: orderStatus.getStatusLabel(status),
+    statusClass: orderStatus.getStatusClass(status),
     canCancel: canCancelOrder({ actorRole: role, isOwner, from: status }),
   };
 };
@@ -71,8 +73,8 @@ const buildOrderDetail = (order, role, isOwner) => {
     createdAtLabel: orderPresentation.formatDate(order.createdAt),
     updatedAtLabel: orderPresentation.formatDate(order.updatedAt),
     status,
-    statusLabel: orderPresentation.getStatusLabel(status),
-    statusClass: orderPresentation.getStatusClass(status),
+    statusLabel: orderStatus.getStatusLabel(status),
+    statusClass: orderStatus.getStatusClass(status),
     paymentStatusLabel: orderPresentation.getPaymentStatusLabel(order.paymentStatus),
     paymentMethodLabel: orderPresentation.getPaymentMethodLabel(order.paymentMethod),
     items: (order.items || []).map((item) => ({
@@ -98,12 +100,25 @@ const buildOrderDetail = (order, role, isOwner) => {
     totalLabel: orderPresentation.formatCurrency(order.total),
     statusHistory: (order.statusHistory || []).map((entry) => ({
       status: entry.status || 'pending',
-      statusLabel: orderPresentation.getStatusLabel(entry.status),
+      statusLabel: orderStatus.getStatusLabel(entry.status),
       at: entry.at,
       atLabel: orderPresentation.formatDate(entry.at),
       note: entry.note || '',
+      actor: entry.actor || entry.actorRole || 'system',
+      actorLabel: orderStatus.getActorLabel(entry.actor || entry.actorRole || 'system'),
     })),
+    shipment: {
+      carrier: (order.shipment && order.shipment.carrier) || '',
+      trackingCode: (order.shipment && order.shipment.trackingCode) || '',
+      shippedAtLabel: orderPresentation.formatDate(order.shipment && order.shipment.shippedAt),
+      deliveredAtLabel: orderPresentation.formatDate(order.shipment && order.shipment.deliveredAt),
+    },
+    completedAtLabel: orderPresentation.formatDate(order.completedAt),
     canCancel: canCancelOrder({ actorRole: role, isOwner, from: status }),
+    canCancelCustomer: Boolean(
+      isOwner && ['pending', 'confirmed'].includes(status),
+    ),
+    canConfirmReceived: Boolean(isOwner && status === 'delivered'),
   };
 };
 
@@ -132,7 +147,7 @@ router.get('/register', (req, res) => {
 });
 
 // Trạng thái đơn hàng dùng cho trang tài khoản
-const ORDER_STATUS_KEYS = ['pending', 'confirmed', 'shipping', 'delivered', 'cancelled'];
+const ORDER_STATUS_KEYS = orderStatus.ORDER_STATUSES;
 
 const queryValue = (req, name) => {
   const value = req.query ? req.query[name] : undefined;
@@ -143,7 +158,7 @@ const queryValue = (req, name) => {
 const escapeRegex = (value) => String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 const countOrdersByStatus = async (userId) => {
-  const counts = { pending: 0, confirmed: 0, shipping: 0, delivered: 0, cancelled: 0 };
+  const counts = {};
   await Promise.all(
     ORDER_STATUS_KEYS.map(async (status) => {
       counts[status] = await Order.countDocuments({ user: userId, status });
@@ -204,11 +219,21 @@ router.get('/account', asyncHandler(async (req, res, next) => {
     const totalPages = Math.max(1, Math.ceil(total / perPage));
     if (page > totalPages) page = totalPages;
 
-    orders = await Order.find(filter)
+    const rawOrders = await Order.find(filter)
       .sort({ createdAt: -1 })
       .skip((page - 1) * perPage)
       .limit(perPage)
       .lean();
+
+    orders = rawOrders.map((order) => {
+      const currentStatus = order.status || 'pending';
+      return {
+        ...order,
+        statusLabel: orderStatus.getStatusLabel(currentStatus),
+        statusClass: orderStatus.getStatusClass(currentStatus),
+        canConfirmReceived: currentStatus === 'delivered',
+      };
+    });
 
     pagination = { page, perPage, total, totalPages };
   } else if (tab === 'overview') {
@@ -240,6 +265,10 @@ router.get('/account', asyncHandler(async (req, res, next) => {
     status,
     q: keyword,
     pagination,
+    statusLabels: orderStatus.ORDER_STATUS_LABELS,
+    tabLabels: { ...orderStatus.ORDER_STATUS_LABELS, delivered: 'Đã giao' },
+    statusOrder: orderStatus.ORDER_STATUSES,
+    autoCompleteDays: getAutoCompleteDays(),
   });
 }));
 
@@ -271,6 +300,7 @@ router.get('/account/orders/:code', asyncHandler(async (req, res, next) => {
       order: buildOrderDetail(order, res.locals.currentUser.role, true),
       isOwner: true,
       isAdmin: res.locals.currentUser.role === 'admin',
+      autoCompleteDays: getAutoCompleteDays(),
       flash: getFlash(req),
     },
   });
@@ -723,6 +753,7 @@ router.get('/orders/:id', asyncHandler(async (req, res, next) => {
       order: buildOrderDetail(order, currentUser.role, isOwner),
       isOwner,
       isAdmin,
+      autoCompleteDays: getAutoCompleteDays(),
       flash,
     },
   });
@@ -753,6 +784,7 @@ router.get('/admin', asyncHandler(async (req, res, next) => {
   }
 
   const stats = await require('../services/adminService').getStats();
+  const pendingCount = await require('../services/adminOrderService').pendingCount();
   res.set('Cache-Control', 'no-store');
   res.render('pages/admin-dashboard', {
     title: 'Trang quản trị',
@@ -761,6 +793,8 @@ router.get('/admin', asyncHandler(async (req, res, next) => {
       stats: stats.stats,
       recentOrders: stats.recentOrders,
       lowStockProducts: stats.lowStockProducts,
+      topSellers30d: stats.topSellers30d || [],
+      pendingCount,
     },
   });
 }));
@@ -781,12 +815,14 @@ router.get('/admin/products/new', asyncHandler(async (req, res, next) => {
   const Category = require('../model/Category');
   const categories = await Category.find({ isDeleted: false }).sort({ name: 1 }).lean();
 
+  const pendingCount = await require('../services/adminOrderService').pendingCount();
   res.render('pages/admin-product-form', {
     title: 'Thêm sản phẩm',
     locals: {
       active: 'products',
       categories,
       colors: ['Đen', 'Trắng', 'Xanh', 'Đỏ', 'Xanh dương', 'Hồng', 'Tím', 'Nâu'],
+      pendingCount,
     },
   });
 }));
@@ -804,6 +840,7 @@ router.get('/admin/categories', asyncHandler(async (req, res, next) => {
   }
 
   const categories = await require('../services/categoryService').list();
+  const pendingCount = await require('../services/adminOrderService').pendingCount();
   const flash = getFlash(req);
   res.set('Cache-Control', 'no-store');
   return res.render('pages/admin-categories', {
@@ -812,6 +849,7 @@ router.get('/admin/categories', asyncHandler(async (req, res, next) => {
     locals: {
       active: 'categories',
       categories,
+      pendingCount,
       flash,
     },
   });
@@ -829,17 +867,19 @@ router.get('/admin/orders', asyncHandler(async (req, res, next) => {
     });
   }
 
-  const statusValues = Object.keys(orderPresentation.ORDER_STATUS_LABELS);
+  const adminOrderService = require('../services/adminOrderService');
+  const statusValues = orderStatus.ORDER_STATUSES;
   const requestedStatus = typeof req.query.status === 'string' ? req.query.status : 'all';
   const activeStatus =
     requestedStatus === 'all' || statusValues.includes(requestedStatus)
       ? requestedStatus
       : 'all';
-  const filter = activeStatus === 'all' ? {} : { status: activeStatus };
+  const q = typeof req.query.q === 'string' ? req.query.q.trim().slice(0, 100) : '';
 
-  const [orders, counts] = await Promise.all([
-    Order.find(filter).sort({ createdAt: -1 }).limit(100).lean(),
+  const [data, counts, pendingCount] = await Promise.all([
+    adminOrderService.listOrders({ ...req.query, status: activeStatus, q }),
     Promise.all(statusValues.map((status) => Order.countDocuments({ status }))),
+    adminOrderService.pendingCount(),
   ]);
 
   const statusTabs = [
@@ -851,7 +891,7 @@ router.get('/admin/orders', asyncHandler(async (req, res, next) => {
     },
     ...statusValues.map((status, index) => ({
       value: status,
-      label: orderPresentation.getStatusLabel(status),
+      label: orderStatus.getStatusLabel(status),
       count: Number(counts[index]) || 0,
       isActive: activeStatus === status,
     })),
@@ -864,11 +904,49 @@ router.get('/admin/orders', asyncHandler(async (req, res, next) => {
     flash,
     locals: {
       active: 'orders',
-      orders: orders.map((order) =>
-        buildOrderSummary(order, res.locals.currentUser.role, String(order.user) === String(res.locals.currentUser.id))
-      ),
+      orders: data.items,
+      pagination: data.pagination,
       statusTabs,
       activeStatus,
+      q,
+      pendingCount,
+      flash,
+    },
+  });
+}));
+
+router.get('/admin/orders/:code', asyncHandler(async (req, res, next) => {
+  if (!res.locals.currentUser) {
+    return res.redirect(302, `/login?next=/admin/orders/${encodeURIComponent(req.params.code)}`);
+  }
+  if (res.locals.currentUser.role !== 'admin') {
+    return res.status(403).render('error', {
+      title: 'Lỗi 403',
+      statusCode: 403,
+      message: 'Bạn không có quyền truy cập trang này.',
+    });
+  }
+
+  const adminOrderService = require('../services/adminOrderService');
+  const order = await adminOrderService.getOrderByCode(req.params.code);
+  if (!order) {
+    return res.status(404).render('error', {
+      title: 'Lỗi 404',
+      statusCode: 404,
+      message: 'Đơn hàng không tồn tại',
+    });
+  }
+
+  const pendingCount = await adminOrderService.pendingCount();
+  const flash = getFlash(req);
+  res.set('Cache-Control', 'no-store');
+  return res.render('pages/admin-order-detail', {
+    title: `Đơn hàng ${order.code}`,
+    flash,
+    locals: {
+      active: 'orders',
+      order,
+      pendingCount,
       flash,
     },
   });
@@ -899,6 +977,7 @@ router.get('/admin/users', asyncHandler(async (req, res, next) => {
     limit: String(limit),
     q,
   });
+  const pendingCount = await require('../services/adminOrderService').pendingCount();
 
   const flash = getFlash(req);
   res.set('Cache-Control', 'no-store');
@@ -911,6 +990,7 @@ router.get('/admin/users', asyncHandler(async (req, res, next) => {
       pagination: data.pagination,
       q,
       currentUserId: res.locals.currentUser.id,
+      pendingCount,
       flash,
     },
   });

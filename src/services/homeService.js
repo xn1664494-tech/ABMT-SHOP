@@ -1,13 +1,20 @@
 const fs = require('fs');
 const path = require('path');
 const Product = require('../model/Products');
+const {
+  getSalesWindowStartDay,
+} = require('../utils/salesDate');
 
 const PLACEHOLDER_IMAGE = '/images/placeholder/product.svg';
 const MEN_ROOT_SLUG = 'nam';
 const WOMEN_ROOT_SLUG = 'nu';
-const DELIVERED_STATUS = 'delivered';
-const BEST_SELLER_RANGE_DAYS = 30;
 const MAX_NAV_CHILDREN = 6;
+
+const BEST_SELLER_DEFAULT_WINDOW_DAYS = 90;
+const BEST_SELLER_DEFAULT_MIN_UNITS = 5;
+const BEST_SELLER_RECENT_DAYS = 30;
+const BEST_SELLER_CACHE_TTL_MS = 10 * 60 * 1000;
+const bestSellerCache = new Map();
 
 // Chuẩn hóa URL ảnh thẻ sản phẩm: luôn trả về đường dẫn dùng được.
 const normalizeImageUrl = (value) => {
@@ -36,8 +43,15 @@ const loadModel = (...fileNames) => {
 };
 
 const Category = loadModel('Category', 'Categories');
-const Order = loadModel('Order', 'Orders');
+const ProductSalesDaily = loadModel('ProductSalesDaily');
 const Voucher = loadModel('Voucher', 'Vouchers');
+
+// Đọc biến môi trường dạng số nguyên không âm, sai/thiếu thì dùng mặc định.
+const readNonNegativeInt = (name, fallback, { min = 0 } = {}) => {
+  const value = Number(process.env[name]);
+  if (!Number.isFinite(value) || value < min) return fallback;
+  return Math.trunc(value);
+};
 
 // Chỉ thêm điều kiện xóa mềm/ngừng bán khi model Product thật sự có trường tương ứng.
 const productActiveFilter = () => {
@@ -50,11 +64,12 @@ const productActiveFilter = () => {
 };
 
 // Chuyển sản phẩm sang đúng dạng thẻ sản phẩm mà view đang dùng; giá giữ kiểu số.
+// Product thật dùng name/basePrice, không phải title/price.
 const toCard = (product, salePrice = null) => ({
-  name: product.title,
+  name: product.name,
   slug: product.slug,
   image: normalizeImageUrl(product.images && product.images[0]),
-  price: product.price,
+  price: product.basePrice,
   salePrice,
 });
 
@@ -115,7 +130,7 @@ const getNewProductsByRoot = async (rootSlug, limit = 4) => {
     ...productActiveFilter(),
     category: { $in: categoryIds },
   })
-    .select('title slug images price')
+    .select('name slug images basePrice')
     .sort({ createdAt: -1 })
     .limit(limit)
     .lean();
@@ -128,35 +143,83 @@ const getSaleProducts = async (limit = 8) => {
   return [];
 };
 
-// Đơn đã giao trong 30 ngày gần nhất, cộng dồn số lượng bán theo từng sản phẩm.
+// Xếp hạng bán chạy từ ProductSalesDaily trong cửa sổ ngày cấu hình được.
+// Chỉ lấy sản phẩm đang active, chưa xóa; cache trong bộ nhớ 10 phút.
 const getBestSellers = async (limit = 8) => {
-  if (!Order) return [];
+  if (!ProductSalesDaily) return [];
 
-  const since = new Date(Date.now() - BEST_SELLER_RANGE_DAYS * 24 * 60 * 60 * 1000);
+  const safeLimit = Math.max(1, Math.trunc(Number(limit) || 8));
+  const windowDays = readNonNegativeInt(
+    'BEST_SELLER_WINDOW_DAYS',
+    BEST_SELLER_DEFAULT_WINDOW_DAYS,
+    { min: 1 },
+  );
+  const minUnits = readNonNegativeInt(
+    'BEST_SELLER_MIN_UNITS',
+    BEST_SELLER_DEFAULT_MIN_UNITS,
+  );
 
-  const ranking = await Order.aggregate([
-    { $match: { status: DELIVERED_STATUS, createdAt: { $gte: since } } },
-    { $unwind: '$items' },
-    { $group: { _id: '$items.product', totalSold: { $sum: '$items.quantity' } } },
-    { $sort: { totalSold: -1 } },
-    { $limit: limit },
+  const cacheKey = `${windowDays}:${minUnits}:${safeLimit}`;
+  const now = Date.now();
+  const cached = bestSellerCache.get(cacheKey);
+  if (cached && cached.expiresAt > now) return cached.data;
+
+  const windowStart = getSalesWindowStartDay(windowDays);
+  const recentStart = getSalesWindowStartDay(BEST_SELLER_RECENT_DAYS);
+
+  const ranking = await ProductSalesDaily.aggregate([
+    { $match: { day: { $gte: windowStart } } },
+    {
+      $group: {
+        _id: '$product',
+        units: { $sum: '$units' },
+        revenue: { $sum: '$revenue' },
+        recentUnits: {
+          $sum: {
+            $cond: [{ $gte: ['$day', recentStart] }, '$units', 0],
+          },
+        },
+      },
+    },
+    { $match: { units: { $gte: minUnits } } },
+    { $sort: { units: -1, recentUnits: -1, revenue: -1, _id: 1 } },
+    { $limit: safeLimit },
   ]);
 
-  if (!ranking.length) return [];
+  if (!ranking || ranking.length === 0) {
+    bestSellerCache.set(cacheKey, {
+      data: [],
+      expiresAt: now + BEST_SELLER_CACHE_TTL_MS,
+    });
+    return [];
+  }
 
   const products = await Product.find({
     ...productActiveFilter(),
-    _id: { $in: ranking.map((item) => item._id) },
+    _id: { $in: ranking.map((row) => row._id) },
   })
-    .select('title slug images price')
+    .select('name slug images basePrice')
     .lean();
 
-  const productMap = new Map(products.map((product) => [String(product._id), product]));
+  const productMap = new Map(
+    products.map((product) => [String(product._id), product]),
+  );
 
-  return ranking
-    .map((item) => productMap.get(String(item._id)))
+  const cards = ranking
+    .map((row) => productMap.get(String(row._id)))
     .filter(Boolean)
     .map((product) => toCard(product));
+
+  bestSellerCache.set(cacheKey, {
+    data: cards,
+    expiresAt: now + BEST_SELLER_CACHE_TTL_MS,
+  });
+
+  return cards;
+};
+
+const clearBestSellerCache = () => {
+  bestSellerCache.clear();
 };
 
 const formatDate = (value) => {
@@ -238,6 +301,7 @@ module.exports = {
   getNewProductsByRoot,
   getSaleProducts,
   getBestSellers,
+  clearBestSellerCache,
   getVouchers,
   getHomeData,
 };

@@ -20,6 +20,10 @@ npm-debug.log*
 .idea/
 .DS_Store
 Thumbs.db
+~$*
+
+# concurrency evidence log is a committed artifact
+!docs/reports/artifacts/T7-2-1/terminal.log
 
 # build output
 dist/

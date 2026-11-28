@@ -15,6 +15,8 @@
     var order = L.order || {};
     var items = Array.isArray(order.items) ? order.items : [];
     var shipping = order.shipping || {};
+    var shipment = order.shipment || {};
+    var autoCompleteDays = Number(L.autoCompleteDays) || 7;
     var history = Array.isArray(order.statusHistory) ? order.statusHistory.slice() : [];
     history.sort(function (a, b) {
       return (new Date((a && a.at) || 0).getTime() || 0) - (new Date((b && b.at) || 0).getTime() || 0);
@@ -47,8 +49,11 @@
         <div>
           <h1 class="acc-detail-code">Đơn hàng <%= order.code || '—' %></h1>
           <p class="acc-detail-date">Ngày đặt: <%= order.createdAtLabel || '—' %></p>
+          <% if (order.status === 'completed' && order.completedAtLabel) { %>
+            <p class="acc-detail-date" data-completed-date>Ngày hoàn tất: <%= order.completedAtLabel %></p>
+          <% } %>
         </div>
-        <span class="badge <%= order.statusClass %>" data-status-label="<%= order.status %>"><%= order.statusLabel %></span>
+        <span class="badge <%= order.statusClass %>" data-order-badge data-status-label="<%= order.status %>"><%= order.statusLabel %></span>
       </div>
 
       <div class="acc-detail-grid">
@@ -63,7 +68,7 @@
                   <span class="acc-timeline-dot" aria-hidden="true"></span>
                   <div>
                     <p class="acc-timeline-status" data-history-status="<%= entry.status %>"><%= entry.statusLabel %></p>
-                    <p class="acc-timeline-date"><%= entry.atLabel %></p>
+                    <p class="acc-timeline-date"><%= entry.atLabel %><% if (entry.actorLabel) { %> · <span data-history-actor><%= entry.actorLabel %></span><% } %></p>
                     <% if (entry.note) { %>
                       <p class="acc-timeline-note"><%= entry.note %></p>
                     <% } %>
@@ -124,6 +129,25 @@
                 <span class="acc-info-label">Địa chỉ</span>
                 <span class="acc-info-value"><%= shipping.address || '—' %></span>
               </div>
+              <% if (shipment.carrier || shipment.trackingCode) { %>
+                <div class="acc-shipment-info" data-shipment-info>
+                  <p class="acc-panel-link">Thông tin vận chuyển</p>
+                  <div class="acc-info-row">
+                    <span class="acc-info-label">Đơn vị</span>
+                    <span class="acc-info-value"><%= shipment.carrier || '—' %></span>
+                  </div>
+                  <div class="acc-info-row">
+                    <span class="acc-info-label">Mã vận đơn</span>
+                    <span class="acc-info-value"><%= shipment.trackingCode || '—' %></span>
+                  </div>
+                  <% if (shipment.deliveredAtLabel) { %>
+                    <div class="acc-info-row">
+                      <span class="acc-info-label">Ngày giao</span>
+                      <span class="acc-info-value"><%= shipment.deliveredAtLabel %></span>
+                    </div>
+                  <% } %>
+                </div>
+              <% } %>
             </div>
           </section>
 
@@ -170,9 +194,19 @@
         </div>
       </div>
 
-      <div class="acc-detail-actions">
-        <% if (order.canCancel) { %>
-          <button type="button" class="btn btn-danger" data-action="cancel-order" data-order-id="<%= order.id %>">Hủy đơn hàng</button>
+      <% if (order.status === 'delivered') { %>
+        <div class="acc-delivered-banner" data-delivered-banner>
+          <div>
+            <strong>Đơn đã được giao ngày <%= shipment.deliveredAtLabel || order.updatedAtLabel || '—' %>.</strong>
+            <span>Hãy xác nhận khi đã nhận hàng; đơn sẽ tự hoàn tất sau <%= autoCompleteDays %> ngày.</span>
+          </div>
+          <button type="button" class="btn btn-primary" data-action="confirm-received" data-order-code="<%= order.code %>">Đã nhận hàng</button>
+        </div>
+      <% } %>
+
+      <div class="acc-detail-actions" data-order-actions>
+        <% if (order.canCancel || order.canCancelCustomer) { %>
+          <button type="button" class="btn btn-danger" data-action="cancel-order" data-order-code="<%= order.code %>">Hủy đơn hàng</button>
         <% } %>
         <a class="btn btn-ghost" href="/account?tab=orders">Quay lại danh sách</a>
         <a class="btn btn-primary" href="/catalog">Tiếp tục mua sắm</a>
@@ -180,8 +214,25 @@
     </div>
   </main>
   <%- include('../partials/footer') %>
+
+  <dialog id="cancelOrderDialog" class="acc-dialog" aria-labelledby="cancelOrderDialogTitle">
+    <form id="cancelOrderForm" class="acc-dialog-form" novalidate>
+      <h2 class="acc-dialog-title" id="cancelOrderDialogTitle">Hủy đơn hàng</h2>
+      <p class="acc-dialog-message">Vui lòng cho biết lý do hủy đơn. Hành động này không thể hoàn tác.</p>
+      <div class="acc-field">
+        <label for="cancel-order-reason">Lý do hủy</label>
+        <input class="input" type="text" id="cancel-order-reason" name="reason" maxlength="500" placeholder="VD: Không còn nhu cầu" required>
+      </div>
+      <p class="acc-dialog-error" data-cancel-error hidden></p>
+      <div class="acc-dialog-actions">
+        <button type="button" class="btn btn-ghost" data-cancel-dialog-close>Hủy bỏ</button>
+        <button type="submit" class="btn btn-danger">Xác nhận hủy</button>
+      </div>
+    </form>
+  </dialog>
+
   <script src="/js/api.js"></script>
   <script src="/js/ui.js"></script>
-  <script src="/js/orders.js"></script>
+  <script src="/js/order-actions.js"></script>
 </body>
 </html>

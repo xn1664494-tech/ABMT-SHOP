@@ -6,6 +6,7 @@ const ORDER_STATUSES = Object.freeze([
   'confirmed',
   'shipping',
   'delivered',
+  'completed',
   'cancelled',
 ]);
 
@@ -13,7 +14,8 @@ const ORDER_STATUS_FLOW = Object.freeze({
   pending: ['confirmed', 'cancelled'],
   confirmed: ['shipping', 'cancelled'],
   shipping: ['delivered'],
-  delivered: [],
+  delivered: ['completed'],
+  completed: [],
   cancelled: [],
 });
 
@@ -147,8 +149,39 @@ const statusHistorySchema = new mongoose.Schema(
       default: null,
     },
     note: { type: String, trim: true, maxlength: 500, default: '' },
+    actor: {
+      type: String,
+      enum: {
+        values: ['customer', 'admin', 'carrier', 'system'],
+        message: 'Actor lịch sử không hợp lệ',
+      },
+      default: 'system',
+    },
     // PR-2 gửi actorRole trong payload nhưng schema cũ chưa có field này.
     actorRole: { type: String, trim: true, default: '' },
+  },
+  { _id: false },
+);
+
+const shipmentSchema = new mongoose.Schema(
+  {
+    carrier: { type: String, trim: true, default: '' },
+    trackingCode: { type: String, trim: true, default: '' },
+    shippedAt: { type: Date, default: null },
+    deliveredAt: { type: Date, default: null },
+  },
+  { _id: false },
+);
+
+const cancelSchema = new mongoose.Schema(
+  {
+    reason: { type: String, trim: true, maxlength: 500, default: '' },
+    by: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      default: null,
+    },
+    at: { type: Date, default: null },
   },
   { _id: false },
 );
@@ -249,6 +282,16 @@ const orderSchema = new mongoose.Schema(
       },
     },
     note: { type: String, trim: true, maxlength: [500, 'Ghi chú tối đa 500 ký tự'] },
+    shipment: {
+      type: shipmentSchema,
+      default: undefined,
+    },
+    adminConfirmedAt: { type: Date, default: null },
+    completedAt: { type: Date, default: null },
+    cancel: {
+      type: cancelSchema,
+      default: undefined,
+    },
     stockRestoredAt: {
       type: Date,
       default: null,
@@ -318,6 +361,9 @@ orderSchema.index({ status: 1, createdAt: 1 });
 // Job hủy đơn quá hạn. Không dùng sparse: đơn legacy thiếu expiresAt vẫn phải
 // nằm trong index để migration/job quan sát được sau khi backfill.
 orderSchema.index({ status: 1, paymentStatus: 1, expiresAt: 1 });
+
+// Job tự hoàn tất đơn delivered + tìm đơn theo completedAt.
+orderSchema.index({ status: 1, completedAt: -1 });
 
 orderSchema.statics.PENDING_TTL_MINUTES =
   Number(process.env.ORDER_PENDING_TTL_MINUTES) || 30;

@@ -1,0 +1,433 @@
+{
+  "task": "T7-2-1",
+  "name": "Test dong thoi kho",
+  "generatedAt": "2026-11-28T01:09:33.401Z",
+  "environment": {
+    "provider": "MongoDB Atlas",
+    "topology": "replicaSet",
+    "mongoVersion": "8.0.39-patch-a3d00565977",
+    "replicaSet": "atlas-xcbpo5-shard-0",
+    "nodeVersion": "v24.18.0"
+  },
+  "config": {
+    "requests": 20,
+    "rounds": 3
+  },
+  "rounds": [
+    {
+      "round": 1,
+      "requests": 20,
+      "successCount": 1,
+      "conflictCount": 19,
+      "statuses": [
+        409,
+        409,
+        409,
+        409,
+        409,
+        201,
+        409,
+        409,
+        409,
+        409,
+        409,
+        409,
+        409,
+        409,
+        409,
+        409,
+        409,
+        409,
+        409,
+        409
+      ],
+      "stockAfter": 0,
+      "orderCount": 1,
+      "timings": {
+        "minMs": 608,
+        "maxMs": 843,
+        "avgMs": 666
+      },
+      "samples": [
+        {
+          "index": 0,
+          "status": 409,
+          "ms": 648
+        },
+        {
+          "index": 1,
+          "status": 409,
+          "ms": 627
+        },
+        {
+          "index": 2,
+          "status": 409,
+          "ms": 639
+        },
+        {
+          "index": 3,
+          "status": 409,
+          "ms": 608
+        },
+        {
+          "index": 4,
+          "status": 409,
+          "ms": 622
+        },
+        {
+          "index": 5,
+          "status": 201,
+          "ms": 743
+        },
+        {
+          "index": 6,
+          "status": 409,
+          "ms": 631
+        },
+        {
+          "index": 7,
+          "status": 409,
+          "ms": 667
+        },
+        {
+          "index": 8,
+          "status": 409,
+          "ms": 642
+        },
+        {
+          "index": 9,
+          "status": 409,
+          "ms": 843
+        },
+        {
+          "index": 10,
+          "status": 409,
+          "ms": 812
+        },
+        {
+          "index": 11,
+          "status": 409,
+          "ms": 659
+        },
+        {
+          "index": 12,
+          "status": 409,
+          "ms": 640
+        },
+        {
+          "index": 13,
+          "status": 409,
+          "ms": 680
+        },
+        {
+          "index": 14,
+          "status": 409,
+          "ms": 666
+        },
+        {
+          "index": 15,
+          "status": 409,
+          "ms": 637
+        },
+        {
+          "index": 16,
+          "status": 409,
+          "ms": 702
+        },
+        {
+          "index": 17,
+          "status": 409,
+          "ms": 622
+        },
+        {
+          "index": 18,
+          "status": 409,
+          "ms": 620
+        },
+        {
+          "index": 19,
+          "status": 409,
+          "ms": 618
+        }
+      ],
+      "verdict": "PASS"
+    },
+    {
+      "round": 2,
+      "requests": 20,
+      "successCount": 1,
+      "conflictCount": 19,
+      "statuses": [
+        409,
+        201,
+        409,
+        409,
+        409,
+        409,
+        409,
+        409,
+        409,
+        409,
+        409,
+        409,
+        409,
+        409,
+        409,
+        409,
+        409,
+        409,
+        409,
+        409
+      ],
+      "stockAfter": 0,
+      "orderCount": 1,
+      "timings": {
+        "minMs": 367,
+        "maxMs": 596,
+        "avgMs": 411
+      },
+      "samples": [
+        {
+          "index": 0,
+          "status": 409,
+          "ms": 376
+        },
+        {
+          "index": 1,
+          "status": 201,
+          "ms": 430
+        },
+        {
+          "index": 2,
+          "status": 409,
+          "ms": 405
+        },
+        {
+          "index": 3,
+          "status": 409,
+          "ms": 390
+        },
+        {
+          "index": 4,
+          "status": 409,
+          "ms": 378
+        },
+        {
+          "index": 5,
+          "status": 409,
+          "ms": 376
+        },
+        {
+          "index": 6,
+          "status": 409,
+          "ms": 384
+        },
+        {
+          "index": 7,
+          "status": 409,
+          "ms": 377
+        },
+        {
+          "index": 8,
+          "status": 409,
+          "ms": 403
+        },
+        {
+          "index": 9,
+          "status": 409,
+          "ms": 391
+        },
+        {
+          "index": 10,
+          "status": 409,
+          "ms": 393
+        },
+        {
+          "index": 11,
+          "status": 409,
+          "ms": 596
+        },
+        {
+          "index": 12,
+          "status": 409,
+          "ms": 393
+        },
+        {
+          "index": 13,
+          "status": 409,
+          "ms": 429
+        },
+        {
+          "index": 14,
+          "status": 409,
+          "ms": 548
+        },
+        {
+          "index": 15,
+          "status": 409,
+          "ms": 382
+        },
+        {
+          "index": 16,
+          "status": 409,
+          "ms": 399
+        },
+        {
+          "index": 17,
+          "status": 409,
+          "ms": 389
+        },
+        {
+          "index": 18,
+          "status": 409,
+          "ms": 367
+        },
+        {
+          "index": 19,
+          "status": 409,
+          "ms": 404
+        }
+      ],
+      "verdict": "PASS"
+    },
+    {
+      "round": 3,
+      "requests": 20,
+      "successCount": 1,
+      "conflictCount": 19,
+      "statuses": [
+        409,
+        409,
+        201,
+        409,
+        409,
+        409,
+        409,
+        409,
+        409,
+        409,
+        409,
+        409,
+        409,
+        409,
+        409,
+        409,
+        409,
+        409,
+        409,
+        409
+      ],
+      "stockAfter": 0,
+      "orderCount": 1,
+      "timings": {
+        "minMs": 198,
+        "maxMs": 469,
+        "avgMs": 243
+      },
+      "samples": [
+        {
+          "index": 0,
+          "status": 409,
+          "ms": 244
+        },
+        {
+          "index": 1,
+          "status": 409,
+          "ms": 200
+        },
+        {
+          "index": 2,
+          "status": 201,
+          "ms": 265
+        },
+        {
+          "index": 3,
+          "status": 409,
+          "ms": 198
+        },
+        {
+          "index": 4,
+          "status": 409,
+          "ms": 214
+        },
+        {
+          "index": 5,
+          "status": 409,
+          "ms": 213
+        },
+        {
+          "index": 6,
+          "status": 409,
+          "ms": 219
+        },
+        {
+          "index": 7,
+          "status": 409,
+          "ms": 208
+        },
+        {
+          "index": 8,
+          "status": 409,
+          "ms": 209
+        },
+        {
+          "index": 9,
+          "status": 409,
+          "ms": 238
+        },
+        {
+          "index": 10,
+          "status": 409,
+          "ms": 224
+        },
+        {
+          "index": 11,
+          "status": 409,
+          "ms": 230
+        },
+        {
+          "index": 12,
+          "status": 409,
+          "ms": 203
+        },
+        {
+          "index": 13,
+          "status": 409,
+          "ms": 211
+        },
+        {
+          "index": 14,
+          "status": 409,
+          "ms": 227
+        },
+        {
+          "index": 15,
+          "status": 409,
+          "ms": 225
+        },
+        {
+          "index": 16,
+          "status": 409,
+          "ms": 212
+        },
+        {
+          "index": 17,
+          "status": 409,
+          "ms": 225
+        },
+        {
+          "index": 18,
+          "status": 409,
+          "ms": 469
+        },
+        {
+          "index": 19,
+          "status": 409,
+          "ms": 429
+        }
+      ],
+      "verdict": "PASS"
+    }
+  ],
+  "verdict": "PASS"
+}
