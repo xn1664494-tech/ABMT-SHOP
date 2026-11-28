@@ -5,6 +5,7 @@ const slugify = require('slugify');
 const ErrorResponse = require('../utils/appError');
 const { toPublicCategory } = require('../utils/categorySerializer');
 const { collectDescendantIds } = require('../utils/categoryTree');
+const { getCategorySnapshot, invalidateCategoryCache } = require('./categoryCacheService');
 
 const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id);
 
@@ -78,7 +79,7 @@ module.exports = {
   },
 
   async tree() {
-    const all = await Category.find({ isDeleted: false }).lean();
+    const all = await getCategorySnapshot();
     const map = {};
     const roots = [];
 
@@ -129,6 +130,7 @@ module.exports = {
 
     const cat = new Category({ name, parentId: parentId || null, order: order || 0 });
     await cat.save();
+    invalidateCategoryCache();
     return cat.toJSON();
   },
 
@@ -167,6 +169,7 @@ module.exports = {
     if (name !== undefined) cat.name = name;
 
     await cat.save();
+    invalidateCategoryCache();
     return cat.toJSON();
   },
 
@@ -192,6 +195,7 @@ module.exports = {
     cat.deletedAt = new Date();
     cat.slug = `${cat.slug}-deleted-${Date.now()}`;
     await cat.save();
+    invalidateCategoryCache();
     return cat.toJSON();
   },
 };
