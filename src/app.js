@@ -58,9 +58,11 @@ app.use(securityHeaders);
 // View engine (EJS) + static files — bổ sung từ nhánh UI
 configViewEngine(app);
 
-// Body parsers
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// T7-1-3: khai báo tường minh kích thước body (đúng default 100kb của body-parser)
+// để cấu hình được kiểm chứng bằng test, không đổi ngưỡng hiện tại.
+const BODY_LIMIT = '100kb';
+app.use(express.json({ limit: BODY_LIMIT }));
+app.use(express.urlencoded({ extended: true, limit: BODY_LIMIT }));
 app.use(cookieParser());
 
 // Routes — API chỉ mount dưới /api, trang HTML mount dưới /

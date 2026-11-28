@@ -57,6 +57,11 @@ const errorHandler = (err, req, res, next) => {
     error = new ErrorResponse('Invalid JSON payload', 400);
   }
 
+  // T7-1-3: body vượt ngưỡng (express.json/urlencoded) phải trả 413 thay vì 500.
+  if (err.type === 'entity.too.large' || err.status === 413) {
+    error = new ErrorResponse('Payload too large', 413);
+  }
+
   const statusCode = error.statusCode || 500;
   const message = error.message || 'Server error';
 
