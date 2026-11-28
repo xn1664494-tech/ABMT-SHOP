@@ -172,7 +172,7 @@
     </div>
   </main>
   <%- include('../partials/footer') %>
-  <script type="application/json" id="variants-data"><%- JSON.stringify(vs).replace(/</g, '\\u003c') %></script>
+  <script type="application/json" id="variants-data" nonce="<%= cspNonce %>"><%- JSON.stringify(vs).replace(/</g, '\\u003c') %></script>
   <script src="/js/api.js"></script>
   <script src="/js/ui.js"></script>
   <script src="/js/product-detail.js"></script>

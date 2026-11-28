@@ -5,7 +5,9 @@ const apiRoutes = require('./routes/api');
 const notFound = require('./middleware/404');
 const errorHandler = require('./middleware/errorHandler');
 const { currentUser } = require('./middleware/currentUser');
+const securityHeaders = require('./middleware/securityHeaders');
 const configViewEngine = require('./config/viewEngine');
+const htmlSafety = require('./utils/htmlSafety');
 const { installAuditLogPublisher } = require('./services/auditLogService');
 
 /**
@@ -43,12 +45,24 @@ const configureTrustProxy = (expressApp) => {
 
 configureTrustProxy(app);
 
+// T7-1-2: dung dich vu escape/safe href tai diem render EJS (khong doi du lieu DB/API).
+app.use((req, res, next) => {
+  res.locals.escapeHtml = htmlSafety.escapeHtml;
+  res.locals.safeHref = htmlSafety.safeHref;
+  next();
+});
+
+// T7-1-1: security headers + CSP nonce cho moi request, dat truoc static/routes.
+app.use(securityHeaders);
+
 // View engine (EJS) + static files — bổ sung từ nhánh UI
 configViewEngine(app);
 
-// Body parsers
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// T7-1-3: khai báo tường minh kích thước body (đúng default 100kb của body-parser)
+// để cấu hình được kiểm chứng bằng test, không đổi ngưỡng hiện tại.
+const BODY_LIMIT = '100kb';
+app.use(express.json({ limit: BODY_LIMIT }));
+app.use(express.urlencoded({ extended: true, limit: BODY_LIMIT }));
 app.use(cookieParser());
 
 // Routes — API chỉ mount dưới /api, trang HTML mount dưới /

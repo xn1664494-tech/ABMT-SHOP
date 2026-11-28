@@ -5,10 +5,22 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title><%= title %></title>
   <link rel="stylesheet" href="/css/app.css">
-  <link rel="stylesheet" href="/css/shop.css">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" media="all">
+  <style nonce="<%= cspNonce %>">
+    .admin-table { width: 100%; border-collapse: collapse; }
+    .admin-table th, .admin-table td { padding: 12px 10px; text-align: left; border-bottom: 1px solid var(--line); }
+    .admin-table th { color: var(--ink-strong); font-weight: 600; white-space: nowrap; }
+    .admin-table td { color: var(--ink); vertical-align: middle; }
+    .admin-table tbody tr:last-child td { border-bottom: none; }
+    .admin-code { color: var(--ink-strong); font-weight: 600; text-decoration: none; }
+    .admin-code:hover { text-decoration: underline; }
+    .admin-actions { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
+    .status-tabs { display: flex; gap: 8px; flex-wrap: wrap; margin: 0 0 18px; }
+    .status-tab { display: inline-flex; align-items: center; gap: 6px; padding: 8px 12px; border-radius: 999px; border: 1px solid var(--line); color: var(--ink); font-size: 14px; text-decoration: none; }
+    .status-tab:hover { border-color: var(--accent); }
+    .status-tab.is-active { background: var(--ink-strong); color: #fff; border-color: var(--ink-strong); }
+    .status-count { font-size: 12px; opacity: .75; }
+    @media (max-width: 575.98px) { .admin-actions { flex-direction: column; align-items: stretch; } }
+  </style>
 </head>
 <body class="shop">
   <div data-flash data-type="info" hidden></div>
