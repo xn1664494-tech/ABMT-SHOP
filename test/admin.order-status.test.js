@@ -318,7 +318,7 @@ test('PR-4: CAS conflict (findOneAndUpdate tra null) tra 409, khong audit', asyn
 
   assert.equal(res.status, 409);
   assert.equal(res.body.success, false);
-  assert.match(res.body.error, /thay đổi trạng thái/);
+  assert.match(res.body.error, /Trạng thái đơn đã thay đổi/);
   assert.equal(ctx.casCalls.length, 1);
   assert.equal(String(ctx.casCalls[0].filter._id), String(order._id));
   assert.equal(ctx.casCalls[0].filter.status, 'pending');

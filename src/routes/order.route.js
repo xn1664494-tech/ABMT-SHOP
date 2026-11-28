@@ -12,9 +12,16 @@ const ErrorResponse = require('../utils/appError');
 const { calculateShippingFee } = require('../model/Order');
 const addressService = require('../services/addressService');
 const { createOrder } = require('../services/CheckoutService');
-const { cancelOrder } = require('../services/OrderCancellationService');
+const { transition } = require('../services/orderStatusService');
 
 const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id);
+
+const findOrderByIdOrCode = async (value) => {
+  const key = String(value || '').trim();
+  if (!key) return null;
+  if (isValidObjectId(key)) return Order.findById(key);
+  return Order.findOne({ code: key.toUpperCase() });
+};
 
 /**
  * POST /api/orders - Tạo đơn hàng mới (yêu cầu đăng nhập + CSRF)
@@ -207,29 +214,34 @@ router.post(
 );
 
 /**
- * POST /api/orders/:id/cancel - Hủy đơn và hoàn kho (yêu cầu đăng nhập + CSRF)
+ * POST /api/orders/:code/cancel - Khách chủ đơn hủy khi pending (yêu cầu đăng nhập + CSRF)
+ * Body: { reason? }
  */
 router.post(
-  '/:id/cancel',
+  '/:code/cancel',
   authenticate,
   csrfProtection,
   asyncHandler(async (req, res, next) => {
-    if (!isValidObjectId(req.params.id)) {
-      return next(new ErrorResponse('Id đơn hàng không hợp lệ', 400));
-    }
-
     const userId = req.user._id || req.user.id;
-    const order = await Order.findById(req.params.id).select('user').lean();
+    const order = await findOrderByIdOrCode(req.params.code);
     if (!order) {
       return next(new ErrorResponse('Đơn hàng không tồn tại', 404));
     }
 
-    const cancelled = await cancelOrder({
-      orderId: req.params.id,
-      actorRole: req.user.role,
-      actorId: userId,
-      isOwner: String(order.user) === String(userId),
-      note: req.body && req.body.note ? String(req.body.note).slice(0, 500) : '',
+    if (String(order.user) !== String(userId)) {
+      return next(new ErrorResponse('Không có quyền hủy đơn hàng này', 403));
+    }
+
+    const body = req.body || {};
+    const reason = body.reason != null
+      ? String(body.reason).slice(0, 500)
+      : (body.note != null ? String(body.note).slice(0, 500) : '');
+
+    const cancelled = await transition(order._id, 'cancelled', {
+      actor: 'customer',
+      userId,
+      note: reason,
+      extra: { reason },
     });
 
     return res.status(200).json({
@@ -240,6 +252,44 @@ router.post(
         code: cancelled.code,
         status: cancelled.status,
         stockRestoredAt: cancelled.stockRestoredAt,
+        cancel: cancelled.cancel,
+      },
+    });
+  })
+);
+
+/**
+ * POST /api/orders/:code/confirm-received - Khách chủ đơn bấm "Đã nhận hàng" (yêu cầu đăng nhập + CSRF)
+ */
+router.post(
+  '/:code/confirm-received',
+  authenticate,
+  csrfProtection,
+  asyncHandler(async (req, res, next) => {
+    const userId = req.user._id || req.user.id;
+    const order = await findOrderByIdOrCode(req.params.code);
+    if (!order) {
+      return next(new ErrorResponse('Đơn hàng không tồn tại', 404));
+    }
+
+    if (String(order.user) !== String(userId)) {
+      return next(new ErrorResponse('Không có quyền xác nhận đơn hàng này', 403));
+    }
+
+    const completed = await transition(order._id, 'completed', {
+      actor: 'customer',
+      userId,
+      note: 'Khách hàng xác nhận đã nhận hàng',
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: 'Xác nhận đã nhận hàng thành công',
+      data: {
+        id: String(completed._id),
+        code: completed.code,
+        status: completed.status,
+        completedAt: completed.completedAt,
       },
     });
   })

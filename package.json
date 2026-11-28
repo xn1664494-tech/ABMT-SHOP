@@ -19,6 +19,8 @@
     "check:env": "node scripts/check-env.js",
     "seed": "node scripts/seed.js",
     "seed:categories": "node scripts/seedCategories.js",
+    "repair:categories": "node scripts/repairCategories.js",
+    "backfill:sales": "node scripts/backfill-sales.js",
     "migrate:cart-ttl": "node scripts/migrate-cart-ttl-index.js",
     "test:seed-verify": "node --test test/index.seed.verify.test.js",
     "benchmark:product-list": "node scripts/benchmark-product-list.js"

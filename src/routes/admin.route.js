@@ -17,7 +17,14 @@ const {
   listUsersQuerySchema,
   updateUserRoleSchema,
 } = require('../validators/adminUserValidator');
-const { updateOrderStatusSchema } = require('../validators/adminOrderValidator');
+const {
+  updateOrderStatusSchema,
+  confirmOrderSchema,
+  shipOrderSchema,
+  cancelOrderSchema,
+  simulateDeliverySchema,
+} = require('../validators/adminOrderValidator');
+const ErrorResponse = require('../utils/appError');
 const AuditLogController = require('../controllers/auditLogController');
 const { auditLogsQuerySchema } = require('../validators/auditLogValidator');
 
@@ -151,6 +158,98 @@ router.patch(
   csrfProtection,
   validate(updateOrderStatusSchema),
   AdminOrderController.updateStatus,
+);
+
+const setOrderAction = (action) => (req, res, next) => {
+  req.action = action;
+  return next();
+};
+
+/**
+ * POST /api/admin/orders/:code/confirm - Xac nhan don (pending -> confirmed).
+ */
+router.post(
+  '/orders/:code/confirm',
+  authenticate,
+  authorize('admin'),
+  csrfProtection,
+  validate(confirmOrderSchema),
+  setOrderAction({
+    to: 'confirmed',
+    actor: 'admin',
+    message: 'Xác nhận đơn hàng thành công',
+  }),
+  AdminOrderController.transitionAction,
+);
+
+/**
+ * POST /api/admin/orders/:code/ship - Ban giao van chuyen (confirmed -> shipping).
+ */
+router.post(
+  '/orders/:code/ship',
+  authenticate,
+  authorize('admin'),
+  csrfProtection,
+  validate(shipOrderSchema),
+  setOrderAction({
+    to: 'shipping',
+    actor: 'admin',
+    message: 'Bàn giao vận chuyển thành công',
+  }),
+  AdminOrderController.transitionAction,
+);
+
+/**
+ * POST /api/admin/orders/:code/cancel - Huy don (pending/confirmed -> cancelled).
+ */
+router.post(
+  '/orders/:code/cancel',
+  authenticate,
+  authorize('admin'),
+  csrfProtection,
+  validate(cancelOrderSchema),
+  setOrderAction({
+    to: 'cancelled',
+    actor: 'admin',
+    message: 'Hủy đơn hàng thành công',
+  }),
+  AdminOrderController.transitionAction,
+);
+
+/**
+ * POST /api/admin/orders/:code/mark-paid - Xac nhan da nhan tien (bank_transfer).
+ */
+router.post(
+  '/orders/:code/mark-paid',
+  authenticate,
+  authorize('admin'),
+  csrfProtection,
+  validate(confirmOrderSchema),
+  AdminOrderController.markPaid,
+);
+
+/**
+ * POST /api/admin/orders/:code/simulate-delivery
+ * Gia lap carrier webhook chi khi khong phai production hoac co flag cho phep.
+ */
+router.post(
+  '/orders/:code/simulate-delivery',
+  authenticate,
+  authorize('admin'),
+  csrfProtection,
+  validate(simulateDeliverySchema),
+  (req, res, next) => {
+    const allowed =
+      process.env.NODE_ENV !== 'production' ||
+      process.env.ALLOW_CARRIER_SIMULATION === 'true';
+    if (!allowed) {
+      return next(
+        new ErrorResponse('Giả lập giao hàng không được phép trong môi trường prod', 403),
+      );
+    }
+    return next();
+  },
+  AdminOrderController.simulateDelivery,
 );
 
 module.exports = router;

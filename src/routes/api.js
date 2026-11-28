@@ -10,6 +10,7 @@ router.use('/categories', require('./category.route'));
 router.use('/products', require('./products.route'));
 router.use('/cart', currentUser, require('./cart.route'));
 router.use('/orders', require('./order.route'));
+router.use('/shipping', require('./shipping.route'));
 router.use('/address', require('./address.route'));
 
 module.exports = router;

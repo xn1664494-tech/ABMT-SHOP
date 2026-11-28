@@ -149,7 +149,11 @@ const run = async () => {
   await mongoose.disconnect();
 };
 
-run().catch((error) => {
-  process.stderr.write(`seed:categories that bai: ${error.message}\n`);
-  process.exitCode = 1;
-});
+module.exports = { CATEGORY_TREE, PRODUCTS };
+
+if (require.main === module) {
+  run().catch((error) => {
+    process.stderr.write(`seed:categories that bai: ${error.message}\n`);
+    process.exitCode = 1;
+  });
+}
