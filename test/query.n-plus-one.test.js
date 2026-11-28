@@ -202,6 +202,7 @@ test('T7-2-2: countOrdersByStatus dung 1 aggregate, khong countDocuments', async
     confirmed: 1,
     shipping: 1,
     delivered: 1,
+    completed: 0,
     cancelled: 1,
   });
 });

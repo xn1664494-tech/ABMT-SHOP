@@ -3,6 +3,7 @@ const express = require('express');
 const path = require('path');
 const app = require('./app');
 const connectDB = require('./config/db');
+const { startAutoCompleteOrders } = require('./jobs/autoCompleteOrders');
 
 const port = process.env.PORT || 3000;
 
@@ -12,6 +13,7 @@ if (require.main === module) {
     .then(() => {
       app.listen(port, () => {
         console.log(`Server dang chay tren cong: ${port}`);
+        startAutoCompleteOrders();
       });
     })
     .catch((error) => {

@@ -170,9 +170,9 @@ test('T6-4-1: danh sach hien dung nhan status va chi nut huy khi hop le', async 
 
   assert.equal(res.status, 200);
   assert.equal(res.headers['cache-control'], 'no-store');
-  assert.match(res.text, /data-status-label="pending">Chờ xử lý</);
+  assert.match(res.text, /data-status-label="pending">Chờ xác nhận</);
   assert.match(res.text, /data-status-label="confirmed">Đã xác nhận</);
-  assert.match(res.text, /data-status-label="delivered">Đã giao</);
+  assert.match(res.text, /data-status-label="delivered">Đã giao - chờ bạn xác nhận</);
   assert.match(res.text, /data-status-label="cancelled">Đã hủy</);
   assert.equal((res.text.match(/data-action="cancel-order"/g) || []).length, 1);
   assert.match(res.text, /data-order-status="pending"[\s\S]*?data-action="cancel-order"/);
@@ -197,7 +197,7 @@ test('T6-4-1: chi tiet hien dung status, lich su, tong tien va escape XSS', asyn
   assert.equal(res.status, 200);
   assert.equal(res.headers['cache-control'], 'no-store');
   assert.match(res.text, /data-status-label="shipping">Đang giao</);
-  assert.match(res.text, /data-history-status="pending"[\s\S]*?Chờ xử lý/);
+  assert.match(res.text, /data-history-status="pending"[\s\S]*?Chờ xác nhận/);
   assert.match(res.text, /data-history-status="shipping"[\s\S]*?Đang giao/);
   assert.match(res.text, /398\.000₫/);
   assert.match(res.text, /Áo đen/);

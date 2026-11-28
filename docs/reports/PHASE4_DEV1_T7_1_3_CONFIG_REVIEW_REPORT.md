@@ -79,4 +79,16 @@ Xem **`docs/reports/PHASE4_DEV1_T7_1_3_CONFIG_REVIEW_CHECKLIST.md`** — đầy 
 
 ## 7. PR, CI và merge
 
-Sẽ được cập nhật qua docs PR riêng sau khi PR T7-1-3 merge vào `main` (giống cách đã làm cho #113/#114), không push trực tiếp lên `main`.
+| Mục | Giá trị |
+|---|---|
+| PR | [#115](https://github.com/xn1664494-tech/ABMT-SHOP/pull/115) — `feature/phase4-dev1-t7-1-3-config-review` → `main` |
+| Base trước merge | `9544e76b614bfd5923a969d5633e0424f6b432c6` |
+| Head PR | `aaa75f5616472ae9d6d3ce931490ab334142835f` |
+| CI PR | [run 46092080940](https://github.com/xn1664494-tech/ABMT-SHOP/actions/runs/46092080940) — **pass**, mọi step xanh |
+| Phê duyệt | Người dùng giao toàn quyền thực hiện + merge sau khi CI xanh |
+| Merge commit trên `main` | `d9324fcbfc461f12514a297a5c8ef94a680efbd8` (2026-11-28T01:18:11Z) |
+| CI `main` sau merge | [run 46092416644](https://github.com/xn1664494-tech/ABMT-SHOP/actions/runs/46092416644) — **pass**, mọi step xanh |
+
+Annotation duy nhất trên cả hai run: Node.js 20 deprecated trên runner (`actions/checkout@v4`, `actions/setup-node@v4` chạy bằng Node.js 24) — không chặn.
+
+Phần cập nhật §7 này được thực hiện qua docs PR riêng từ `origin/main` = `d9324fc`, không push trực tiếp lên `main`.

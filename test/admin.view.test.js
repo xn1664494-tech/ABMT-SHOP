@@ -84,7 +84,7 @@ const orderRows = [
   },
 ];
 
-const createOrderQuery = (input) => {
+const createOrderQuery = (input, single = false) => {
   let result = [...input];
   const query = {
     select() {
@@ -93,12 +93,19 @@ const createOrderQuery = (input) => {
     sort() {
       return query;
     },
+    skip(count) {
+      result = result.slice(count);
+      return query;
+    },
     limit(count) {
       result = result.slice(0, count);
       return query;
     },
+    populate() {
+      return query;
+    },
     lean() {
-      return Promise.resolve(result);
+      return Promise.resolve(single ? result[0] || null : result);
     },
     then(resolve, reject) {
       return Promise.resolve(result).then(resolve, reject);
@@ -143,6 +150,12 @@ const fakeOrderModel = {
     }
 
     return Array.from(counts, ([_id, count]) => ({ _id, count }));
+  },
+  findOne(filter = {}) {
+    const found = orderRows.find((order) =>
+      Object.entries(filter).every(([key, value]) => order[key] === value),
+    ) || null;
+    return createOrderQuery(found ? [found] : [], true);
   },
 };
 installFakeModel('../../src/model/Order', fakeOrderModel);
@@ -250,7 +263,7 @@ test('trang don hang loc theo trang thai va hien nut huy hop le', async () => {
   assert.match(res.text, /DH-001/);
   assert.doesNotMatch(res.text, /DH-002/);
   assert.match(res.text, /data-action="cancel-order"/);
-  assert.match(res.text, /Chờ xử lý/);
+  assert.match(res.text, /Chờ xác nhận/);
 });
 
 test('trang nguoi dung hien ket qua tim kiem va selector quyen', async () => {

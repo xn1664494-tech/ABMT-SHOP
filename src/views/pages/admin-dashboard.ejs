@@ -18,6 +18,8 @@
     var stats = (L && L.stats) ? L.stats : {};
     var recentOrders = Array.isArray(L.recentOrders) ? L.recentOrders : [];
     var lowStockProducts = Array.isArray(L.lowStockProducts) ? L.lowStockProducts : [];
+    var topSellers = Array.isArray(L.topSellers30d) ? L.topSellers30d : [];
+    var pendingCount = Number(L.pendingCount) || 0;
     var totalProducts = Number(stats.totalProducts) || 0;
     var totalOrders = Number(stats.totalOrders) || 0;
     var totalRevenue = Number(stats.totalRevenue) || 0;
@@ -96,7 +98,7 @@
       <h2 class="adm-nav-h">Cửa hàng</h2>
       <a href="/admin/products/new"><svg class="ico"><use href="#i-plus"/></svg>Thêm sản phẩm</a>
       <a href="/admin/categories"><svg class="ico"><use href="#i-box"/></svg>Danh mục</a>
-      <a href="/admin/orders"><svg class="ico"><use href="#i-order"/></svg>Đơn hàng</a>
+      <a href="/admin/orders"><svg class="ico"><use href="#i-order"/></svg>Đơn hàng<% if (pendingCount > 0) { %><span class="adm-cnt"><%= pendingCount %></span><% } %></a>
       <a href="/catalog"><svg class="ico"><use href="#i-store"/></svg>Xem cửa hàng</a>
       <h2 class="adm-nav-h">Tài khoản</h2>
       <a href="/admin/users"><svg class="ico"><use href="#i-users"/></svg>Người dùng</a>
@@ -216,6 +218,34 @@
           <% } %>
         </section>
       </div>
+
+      <section class="adm-pn" aria-labelledby="h-top" style="margin-top:16px;">
+        <header><h3 id="h-top">Top bán chạy 30 ngày</h3><span class="adm-hint">Theo số lượng bán ra</span></header>
+        <% if (topSellers.length > 0) { %>
+          <div class="adm-tw" role="region" aria-label="Bảng sản phẩm bán chạy" tabindex="0">
+            <table class="adm-table">
+              <thead>
+                <tr><th>Sản phẩm</th><th class="adm-r">Đã bán</th><th class="adm-r">Đơn</th><th class="adm-r">Doanh thu</th></tr>
+              </thead>
+              <tbody>
+                <% topSellers.forEach(function (product) { %>
+                  <tr>
+                    <td>
+                      <span class="adm-code"><%= product.name %></span>
+                      <% if (product.slug) { %><span class="adm-s2"><%= product.slug %></span><% } %>
+                    </td>
+                    <td class="adm-r"><%= Number(product.units) || 0 %></td>
+                    <td class="adm-r"><%= Number(product.orders) || 0 %></td>
+                    <td class="adm-r"><%= fmt(product.revenue) %>₫</td>
+                  </tr>
+                <% }) %>
+              </tbody>
+            </table>
+          </div>
+        <% } else { %>
+          <p class="adm-empty-item">Chưa có dữ liệu bán hàng trong 30 ngày gần đây.</p>
+        <% } %>
+      </section>
     </main>
   </div>
 
