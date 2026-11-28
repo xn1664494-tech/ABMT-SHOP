@@ -10,6 +10,7 @@
 require('dotenv').config();
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
+const slugify = require('slugify');
 const { buildSku } = require('../src/utils/sku');
 
 const SEED_EMAILS = [
@@ -128,6 +129,10 @@ const PRODUCTS = [
   },
 ];
 
+const SEED_PRODUCT_SLUGS = PRODUCTS.map((product) =>
+  slugify(product.name, { lower: true, strict: true, locale: 'vi', trim: true }),
+);
+
 const Category = require('../src/model/Category');
 const Product = require('../src/model/Products');
 const User = require('../src/model/User');
@@ -197,7 +202,12 @@ const run = async () => {
     // Idempotent: xoa ban ghi theo khoa seed (khong deleteMany({}) toan bo collection).
     await User.deleteMany({ email: { $in: SEED_EMAILS } });
     await Category.deleteMany({ slug: { $in: SEED_SLUGS } });
-    await Product.deleteMany({ slug: { $in: SEED_SLUGS } });
+    await Product.deleteMany({
+      $or: [
+        { slug: { $in: [...SEED_SLUGS, ...SEED_PRODUCT_SLUGS] } },
+        { 'variants.sku': { $in: SEED_SKUS } },
+      ],
+    });
 
     // Tao admin.
     const passwordHash = await bcrypt.hash(SEED_ADMIN_PASSWORD, 10);

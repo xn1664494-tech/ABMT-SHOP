@@ -148,6 +148,7 @@ userSchema
 
 // Index trạng thái theo mô tả tài liệu.
 userSchema.index({ status: 1 });
+userSchema.index({ isDeleted: 1, createdAt: -1, _id: -1 });
 
 userSchema.plugin(softDeletePlugin);
 

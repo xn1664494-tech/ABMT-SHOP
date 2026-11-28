@@ -87,6 +87,9 @@ const orderRows = [
 const createOrderQuery = (input) => {
   let result = [...input];
   const query = {
+    select() {
+      return query;
+    },
     sort() {
       return query;
     },
@@ -128,6 +131,18 @@ const fakeOrderModel = {
   },
   async countDocuments(filter = {}) {
     return orderRows.filter((order) => !filter.status || order.status === filter.status).length;
+  },
+  async aggregate(pipeline = []) {
+    const match = pipeline.find((stage) => stage.$match)?.$match || {};
+    const counts = new Map();
+
+    for (const order of orderRows) {
+      if (match.status && order.status !== match.status) continue;
+      if (match.user && String(order.user) !== String(match.user)) continue;
+      counts.set(order.status, (counts.get(order.status) || 0) + 1);
+    }
+
+    return Array.from(counts, ([_id, count]) => ({ _id, count }));
   },
 };
 installFakeModel('../../src/model/Order', fakeOrderModel);
