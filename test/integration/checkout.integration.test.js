@@ -18,8 +18,11 @@ const Cart = require('../../src/model/Cart');
 const Review = require('../../src/model/Review');
 const { ORDER_CODE_REGEX } = require('../../src/utils/orderCode');
 
+const LEGACY_TEST_URI = process.env.TEST_MONGODB_URI;
 const TEST_URI =
-  process.env.TEST_MONGODB_URI || 'mongodb://127.0.0.1:27017/abmt_shop_test';
+  process.env.MONGODB_URI_TEST ||
+  LEGACY_TEST_URI ||
+  'mongodb://127.0.0.1:27017/abmt_shop_test';
 
 const RUN_ID = `it-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 const PREFIX = `${RUN_ID}-`;
@@ -81,7 +84,7 @@ test.before(async () => {
   }
 
   try {
-    await mongoose.connect(TEST_URI, { serverSelectionTimeoutMS: 3000 });
+    await mongoose.connect(TEST_URI, { serverSelectionTimeoutMS: 10000 });
     await Promise.all([
       Category.init(),
       Product.init(),

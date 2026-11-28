@@ -15,6 +15,8 @@ const orderPresentation = require('../utils/orderPresentation');
 const { canCancelOrder } = require('../services/OrderCancellationService');
 const orderStatus = require('../utils/orderStatus');
 const { maskPhone } = require('../utils/maskPhone');
+const { ORDER_SUMMARY_FIELDS } = require('../utils/orderFields');
+const orderStats = require('../services/orderStatsService');
 const { getAutoCompleteDays } = require('../jobs/autoCompleteOrders');
 
 const router = express.Router();
@@ -157,15 +159,7 @@ const queryValue = (req, name) => {
 
 const escapeRegex = (value) => String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
-const countOrdersByStatus = async (userId) => {
-  const counts = {};
-  await Promise.all(
-    ORDER_STATUS_KEYS.map(async (status) => {
-      counts[status] = await Order.countDocuments({ user: userId, status });
-    })
-  );
-  return counts;
-};
+const countOrdersByStatus = async (userId) => orderStats.countOrdersByStatus(userId);
 
 // Trang tài khoản của tôi (đích mặc định sau khi đăng nhập)
 router.get('/account', asyncHandler(async (req, res, next) => {
@@ -220,6 +214,7 @@ router.get('/account', asyncHandler(async (req, res, next) => {
     if (page > totalPages) page = totalPages;
 
     const rawOrders = await Order.find(filter)
+      .select(ORDER_SUMMARY_FIELDS)
       .sort({ createdAt: -1 })
       .skip((page - 1) * perPage)
       .limit(perPage)
@@ -238,6 +233,7 @@ router.get('/account', asyncHandler(async (req, res, next) => {
     pagination = { page, perPage, total, totalPages };
   } else if (tab === 'overview') {
     recentOrders = await Order.find({ user: user._id })
+      .select(ORDER_SUMMARY_FIELDS)
       .sort({ createdAt: -1 })
       .limit(3)
       .lean();
@@ -695,6 +691,7 @@ router.get('/orders', asyncHandler(async (req, res, next) => {
   }
 
   const orders = await Order.find({ user: currentUser.id })
+    .select(ORDER_SUMMARY_FIELDS)
     .sort({ createdAt: -1 })
     .limit(50)
     .lean();
@@ -878,7 +875,7 @@ router.get('/admin/orders', asyncHandler(async (req, res, next) => {
 
   const [data, counts, pendingCount] = await Promise.all([
     adminOrderService.listOrders({ ...req.query, status: activeStatus, q }),
-    Promise.all(statusValues.map((status) => Order.countDocuments({ status }))),
+    orderStats.countOrdersByStatus(),
     adminOrderService.pendingCount(),
   ]);
 
@@ -886,13 +883,13 @@ router.get('/admin/orders', asyncHandler(async (req, res, next) => {
     {
       value: 'all',
       label: 'Tất cả',
-      count: counts.reduce((sum, count) => sum + (Number(count) || 0), 0),
+      count: statusValues.reduce((sum, status) => sum + (Number(counts[status]) || 0), 0),
       isActive: activeStatus === 'all',
     },
-    ...statusValues.map((status, index) => ({
+    ...statusValues.map((status) => ({
       value: status,
       label: orderStatus.getStatusLabel(status),
-      count: Number(counts[index]) || 0,
+      count: Number(counts[status]) || 0,
       isActive: activeStatus === status,
     })),
   ];

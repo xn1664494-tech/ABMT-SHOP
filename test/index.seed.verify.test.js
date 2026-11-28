@@ -9,7 +9,10 @@
  *   $env:SEED_CONFIRM="1"; npm run seed
  *   npm run test:seed-verify
  */
-require('dotenv').config();
+const path = require('node:path');
+const dotenv = require('dotenv');
+dotenv.config({ path: path.resolve(__dirname, '../.env.test'), quiet: true });
+dotenv.config({ quiet: true });
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const mongoose = require('mongoose');
@@ -19,9 +22,14 @@ process.env.NODE_ENV = 'test';
 const User = require('../src/model/User');
 const Category = require('../src/model/Category');
 const Product = require('../src/model/Products');
+const Order = require('../src/model/Order');
+const PhoneVerification = require('../src/model/PhoneVerification');
 
 const TEST_URI =
-  process.env.TEST_MONGODB_URI || process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/abmt_shop_test';
+  process.env.MONGODB_URI_TEST ||
+  process.env.TEST_MONGODB_URI ||
+  process.env.MONGODB_URI ||
+  'mongodb://127.0.0.1:27017/abmt_shop_test';
 
 let available = false;
 let skipReason = '';
@@ -37,7 +45,8 @@ test.before(async () => {
   })();
 
   if (!dbName || !/test/i.test(dbName)) {
-    skipReason = 'TEST_MONGODB_URI / MONGODB_URI phai tro toi database co ten chua "test"';
+    skipReason =
+      'MONGODB_URI_TEST / TEST_MONGODB_URI / MONGODB_URI phai tro toi database co ten chua "test"';
     return;
   }
 
@@ -46,6 +55,8 @@ test.before(async () => {
     await User.init();
     await Category.init();
     await Product.init();
+    await Order.init();
+    await PhoneVerification.init();
     available = true;
   } catch (error) {
     skipReason = `Khong ket noi duoc MongoDB test (${error.name})`;
@@ -74,6 +85,12 @@ test('VERIFY-INDEX: User co index email unique + status', async (t) => {
     'thieu unique index email',
   );
   assert.ok(idx.some((i) => i.key.status === 1), 'thieu index status');
+  assert.ok(
+    idx.some(
+      (i) => i.key.isDeleted === 1 && i.key.createdAt === -1 && i.key._id === -1,
+    ),
+    'thieu compound index (isDeleted, createdAt, _id)',
+  );
 });
 
 test('VERIFY-INDEX: Category co index slug unique + (parentId, order)', async (t) => {
@@ -89,7 +106,7 @@ test('VERIFY-INDEX: Category co index slug unique + (parentId, order)', async (t
   );
 });
 
-test('VERIFY-INDEX: Product co index slug unique, (category, basePrice), variants.sku unique sparse, multikey size/color, (isActive, isDeleted)', async (t) => {
+test('VERIFY-INDEX: Product co index slug unique, (category, basePrice), variants.sku unique sparse, multikey size/color, (isActive, isDeleted), category list', async (t) => {
   if (skipIfUnavailable(t)) return;
   const idx = await Product.collection.indexes();
   assert.ok(
@@ -112,6 +129,39 @@ test('VERIFY-INDEX: Product co index slug unique, (category, basePrice), variant
     idx.some((i) => i.key.isActive === 1 && i.key.isDeleted === 1),
     'thieu compound index (isActive, isDeleted)',
   );
+  assert.ok(
+    idx.some(
+      (i) =>
+        i.key.category === 1 &&
+        i.key.isActive === 1 &&
+        i.key.isDeleted === 1 &&
+        i.key.createdAt === -1 &&
+        i.key._id === -1,
+    ),
+    'thieu compound index category list',
+  );
+});
+
+test('VERIFY-INDEX: Order co index list va status count', async (t) => {
+  if (skipIfUnavailable(t)) return;
+  const idx = await Order.collection.indexes();
+  assert.ok(
+    idx.some((i) => i.key.createdAt === -1 && i.key._id === -1),
+    'thieu compound index (createdAt, _id)',
+  );
+  assert.ok(
+    idx.some((i) => i.key.user === 1 && i.key.status === 1),
+    'thieu compound index (user, status)',
+  );
+});
+
+test('VERIFY-INDEX: PhoneVerification co index (user, createdAt)', async (t) => {
+  if (skipIfUnavailable(t)) return;
+  const idx = await PhoneVerification.collection.indexes();
+  assert.ok(
+    idx.some((i) => i.key.user === 1 && i.key.createdAt === -1),
+    'thieu compound index (user, createdAt)',
+  );
 });
 
 test('VERIFY-SEED: so luong du lieu seed (chay sau script seed)', async (t) => {
@@ -119,8 +169,9 @@ test('VERIFY-SEED: so luong du lieu seed (chay sau script seed)', async (t) => {
   const adminCount = await User.countDocuments({ role: 'admin' });
   assert.ok(adminCount >= 1, 'phai co it nhat 1 admin');
   // Seed tao 2 root + 6 con = 8 danh muc, va 7 san pham.
+  // DB test cung co the chua du lieu cua seedCategories/evidence khac.
   const catCount = await Category.countDocuments();
-  assert.equal(catCount, 8, 'phai co 8 danh muc (2 root + 6 con)');
+  assert.ok(catCount >= 8, 'phai co it nhat 8 danh muc (2 root + 6 con)');
   const prodCount = await Product.countDocuments();
-  assert.equal(prodCount, 7, 'phai co 7 san pham');
+  assert.ok(prodCount >= 7, 'phai co it nhat 7 san pham');
 });

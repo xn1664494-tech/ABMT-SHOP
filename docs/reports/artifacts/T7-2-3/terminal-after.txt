@@ -1,0 +1,12 @@
+T7-2-3 evidence after
+Provider: MongoDB Atlas
+Database: abmt_shop_test
+MongoDB: 8.0.39-patch-a3d00565977
+Node: v24.18.0
+Warm runs: 50
+Cache module: present
+
+Endpoint | Cold | Warm mean | Warm median | Warm p95 | Cold reads | Warm reads
+GET /login (Mega Menu)       |   435.974 ms |     4.597 ms |     4.329 ms |      6.29 ms |       1 |         0
+GET /api/categories/tree     |    38.235 ms |     2.138 ms |     2.043 ms |     2.716 ms |       1 |         0
+GET /health (nav middleware) |    35.781 ms |     1.814 ms |      1.75 ms |     2.182 ms |       1 |         0

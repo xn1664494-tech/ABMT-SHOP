@@ -4,6 +4,8 @@ const Product = require('../model/Products');
 const slugify = require('slugify');
 const ErrorResponse = require('../utils/appError');
 const { toPublicCategory } = require('../utils/categorySerializer');
+const { collectDescendantIds } = require('../utils/categoryTree');
+const { getCategorySnapshot, invalidateCategoryCache } = require('./categoryCacheService');
 
 const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id);
 
@@ -56,23 +58,16 @@ const ensureParentValid = async (parentId) => {
 };
 
 const getDescendantIds = async (categoryId) => {
-  const ids = [];
-  const queue = [categoryId];
-  while (queue.length) {
-    const current = queue.shift();
-    const children = await Category.find({ parentId: current, isDeleted: false }).select('_id');
-    for (const child of children) {
-      ids.push(child._id);
-      queue.push(child._id);
-    }
-  }
-  return ids;
+  const categories = await Category.find({ isDeleted: false })
+    .select('_id parentId')
+    .lean();
+  return collectDescendantIds(categoryId, categories).slice(1);
 };
 
 const hasCircularReference = async (categoryId, newParentId) => {
-  if (newParentId.equals(categoryId)) return true;
+  if (String(newParentId) === String(categoryId)) return true;
   const descendants = await getDescendantIds(categoryId);
-  return descendants.some((id) => id.equals(newParentId));
+  return descendants.some((id) => String(id) === String(newParentId));
 };
 
 module.exports = {
@@ -84,7 +79,7 @@ module.exports = {
   },
 
   async tree() {
-    const all = await Category.find({ isDeleted: false }).lean();
+    const all = await getCategorySnapshot();
     const map = {};
     const roots = [];
 
@@ -135,6 +130,7 @@ module.exports = {
 
     const cat = new Category({ name, parentId: parentId || null, order: order || 0 });
     await cat.save();
+    invalidateCategoryCache();
     return cat.toJSON();
   },
 
@@ -173,6 +169,7 @@ module.exports = {
     if (name !== undefined) cat.name = name;
 
     await cat.save();
+    invalidateCategoryCache();
     return cat.toJSON();
   },
 
@@ -198,6 +195,7 @@ module.exports = {
     cat.deletedAt = new Date();
     cat.slug = `${cat.slug}-deleted-${Date.now()}`;
     await cat.save();
+    invalidateCategoryCache();
     return cat.toJSON();
   },
 };

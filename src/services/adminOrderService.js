@@ -3,6 +3,7 @@ const User = require('../model/User');
 const { escapeRegex, buildPagination } = require('../utils/productFilter');
 const orderPresentation = require('../utils/orderPresentation');
 const orderStatus = require('../utils/orderStatus');
+const { ADMIN_ORDER_LIST_FIELDS } = require('../utils/orderFields');
 
 const PAGE_SIZE = 15;
 
@@ -43,6 +44,7 @@ const listOrders = async (query = {}) => {
 
   const [orders, total] = await Promise.all([
     Order.find(filter)
+      .select(ADMIN_ORDER_LIST_FIELDS)
       .sort({ createdAt: -1, _id: -1 })
       .skip(skip)
       .limit(limit)

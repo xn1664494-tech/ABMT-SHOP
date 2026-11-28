@@ -66,6 +66,17 @@ const createFakeProductModel = (products = []) => ({
       products.find((product) => String(product._id) === String(id)) || null,
     );
   },
+  find(filter = {}) {
+    const ids = filter._id && Array.isArray(filter._id.$in) ? filter._id.$in : null;
+    const found = products.filter((product) => {
+      if (ids && !ids.some((id) => String(id) === String(product._id))) return false;
+      return Object.entries(filter).every(([key, value]) => {
+        if (key === '_id') return true;
+        return matches(product, { [key]: value });
+      });
+    });
+    return thenable(found);
+  },
 });
 
 const installFakeModel = (relativePath, model) => {

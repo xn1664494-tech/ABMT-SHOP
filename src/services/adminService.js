@@ -2,6 +2,7 @@ const Order = require('../model/Order');
 const Product = require('../model/Products');
 const ProductSalesDaily = require('../model/ProductSalesDaily');
 const User = require('../model/User');
+const { ORDER_RECENT_FIELDS } = require('../utils/orderFields');
 const {
   SALES_TIME_ZONE,
   toSalesDay,
@@ -49,6 +50,7 @@ const getStats = async () => {
     Product.countDocuments({ isDeleted: false, isActive: true }),
     User.countDocuments({ role: 'customer', isDeleted: false }),
     Order.find({})
+      .select(ORDER_RECENT_FIELDS)
       .sort({ createdAt: -1 })
       .limit(10)
       .populate('user', 'name')

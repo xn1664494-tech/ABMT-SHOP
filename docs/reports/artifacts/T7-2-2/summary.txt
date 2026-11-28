@@ -1,0 +1,26 @@
+T7-2-2 query optimization evidence (after)
+Provider: MongoDB Atlas
+Database: abmt_shop_test
+MongoDB: 8.0.39-patch-a3d00565977
+Node: v24.18.0
+
+| Endpoint | Read before | Read after | Write before | Write after | Total before | Total after |
+|---|---:|---:|---:|---:|---:|---:|
+| GET /api/cart (5 items) | 7 | 3 | 0 | 0 | 7 | 3 |
+| POST /api/cart/merge (5 guest items) | 9 | 5 | 2 | 2 | 11 | 7 |
+| GET /account?tab=orders | 10 | 6 | 0 | 0 | 10 | 6 |
+| GET /admin/orders | 7 | 3 | 0 | 0 | 7 | 3 |
+| GET /admin/users | 3 | 3 | 0 | 0 | 3 | 3 |
+| GET /api/products?category=t722-nam-root | 6 | 4 | 0 | 0 | 6 | 4 |
+| POST /api/orders (5 items) | 7 | 3 | 7 | 7 | 14 | 10 |
+
+
+| Explain | Index before | Index after | COLLSCAN before/after | SORT before/after |
+|---|---|---|---|---|
+| Order.find({}).sort(createdAt) | - | createdAt_-1__id_-1 | true/false | true/false |
+| Order.aggregate(status by user) | - | user_1_status_1 | false/false | false/false |
+| User.admin list sort createdAt | - | isDeleted_1_createdAt_-1__id_-1 | true/false | true/false |
+| PhoneVerification.latest by user | user_1 | user_1_createdAt_-1 | false/false | true/false |
+| Product.category list sort createdAt | isActive_1_isDeleted_1_createdAt_-1__id_-1 | category_1_isActive_1_isDeleted_1_createdAt_-1__id_-1 | false/false | false/true |
+
+Artifacts khong chua URI hoac credentials.

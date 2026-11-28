@@ -6,6 +6,17 @@ const { ensureCartItemIds } = require('../utils/cartItems');
 const ErrorResponse = require('../utils/appError');
 
 const CART_COOKIE_MAX_AGE = 30 * 24 * 60 * 60 * 1000;
+const PRODUCT_CART_LOOKUP_FIELDS = 'isDeleted isActive basePrice variants';
+
+const loadProductsByIds = async (ids = []) => {
+  const uniqueIds = [...new Set(ids.map((id) => String(id)))].filter(Boolean);
+  if (!uniqueIds.length) return new Map();
+
+  const products = await Product.find({ _id: { $in: uniqueIds } })
+    .select(PRODUCT_CART_LOOKUP_FIELDS)
+    .lean();
+  return new Map(products.map((product) => [String(product._id), product]));
+};
 
 /**
  * Ghi cookie định danh giỏ khách (cartId) để giữ giỏ qua nhiều request.
@@ -67,8 +78,10 @@ const buildSummary = (items = []) => {
  * (variant.price, fallback basePrice). Bỏ qua dòng không tìm thấy biến thể.
  */
 const refreshItemPrices = async (items = []) => {
+  const productsById = await loadProductsByIds(items.map((item) => item.product));
+
   for (const item of items) {
-    const product = await Product.findById(item.product);
+    const product = productsById.get(String(item.product));
     if (!product || product.isDeleted) continue;
 
     const variant = (product.variants || []).find((v) => v.sku === item.sku);
@@ -99,9 +112,12 @@ const mergeGuestIntoUser = async (
   if (!userCart || !guestCart) return userCart;
 
   const clamp = onOverflow === 'clamp';
+  const productsById = await loadProductsByIds(
+    (guestCart.items || []).map((item) => item.product),
+  );
 
   for (const guestItem of guestCart.items || []) {
-    const product = await Product.findById(guestItem.product);
+    const product = productsById.get(String(guestItem.product));
     const variant =
       product && !product.isDeleted
         ? (product.variants || []).find((v) => v.sku === guestItem.sku)

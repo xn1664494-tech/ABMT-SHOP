@@ -110,6 +110,12 @@ const cancelOrder = (user, id) =>
     .set('Cookie', cookieFor(user))
     .send({});
 
+const adminCancelOrder = (user, id) =>
+  request(app)
+    .post(`/api/admin/orders/${id}/cancel`)
+    .set('Cookie', cookieFor(user))
+    .send({ reason: 'IT-T6-2-1' });
+
 test.before(async () => {
   const dbName = (() => {
     try {
@@ -309,7 +315,7 @@ test('IT-T6-2-1: admin huy confirmed cua user khac, customer bi 403', async (t) 
   const denied = await cancelOrder(user, createdOrder.body.data.id);
   assert.equal(denied.status, 403);
 
-  const cancelled = await cancelOrder(admin, createdOrder.body.data.id);
+  const cancelled = await adminCancelOrder(admin, createdOrder.body.data.id);
   assert.equal(cancelled.status, 200);
   assert.equal(cancelled.body.data.status, 'cancelled');
   assert.equal((await Product.findById(product._id)).variants[0].stock, 1);

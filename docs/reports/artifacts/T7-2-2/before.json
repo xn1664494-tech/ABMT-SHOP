@@ -1,0 +1,456 @@
+{
+  "label": "before",
+  "generatedAt": "2026-11-28T01:41:33.088Z",
+  "environment": {
+    "provider": "MongoDB Atlas",
+    "databaseName": "abmt_shop_test",
+    "mongoVersion": "8.0.39-patch-a3d00565977",
+    "nodeVersion": "v24.18.0",
+    "topology": {
+      "type": "ReplicaSetWithPrimary",
+      "servers": {
+        "ac-lhzwess-shard-00-01.9zab9pj.mongodb.net:27017": {
+          "address": "ac-lhzwess-shard-00-01.9zab9pj.mongodb.net:27017",
+          "type": "RSSecondary",
+          "hosts": [
+            "ac-lhzwess-shard-00-00.9zab9pj.mongodb.net:27017",
+            "ac-lhzwess-shard-00-01.9zab9pj.mongodb.net:27017",
+            "ac-lhzwess-shard-00-02.9zab9pj.mongodb.net:27017"
+          ],
+          "passives": [],
+          "arbiters": [],
+          "tags": {
+            "availabilityZone": "ape1-az2",
+            "provider": "AWS",
+            "cacheState": "READY",
+            "diskState": "READY",
+            "region": "AP_EAST_1",
+            "nodeType": "ELECTABLE",
+            "workloadType": "OPERATIONAL"
+          },
+          "minWireVersion": 0,
+          "maxWireVersion": 25,
+          "roundTripTime": 43,
+          "minRoundTripTime": 0,
+          "lastUpdateTime": 1749,
+          "lastWriteDate": {
+            "$date": "2026-11-28T01:41:28Z"
+          },
+          "error": null,
+          "topologyVersion": {
+            "processId": {
+              "$oid": "6b046a0cf7631ea7df174160"
+            },
+            "counter": 3
+          },
+          "setName": "atlas-xcbpo5-shard-0",
+          "setVersion": 114,
+          "electionId": null,
+          "logicalSessionTimeoutMinutes": 30,
+          "maxMessageSizeBytes": 48000000,
+          "maxWriteBatchSize": 100000,
+          "maxBsonObjectSize": 16777216,
+          "primary": "ac-lhzwess-shard-00-02.9zab9pj.mongodb.net:27017",
+          "me": "ac-lhzwess-shard-00-01.9zab9pj.mongodb.net:27017",
+          "$clusterTime": {
+            "clusterTime": {
+              "$timestamp": {
+                "t": 1795830088,
+                "i": 1
+              }
+            },
+            "signature": {
+              "hash": {
+                "0": 170,
+                "1": 82,
+                "2": 106,
+                "3": 113,
+                "4": 44,
+                "5": 200,
+                "6": 110,
+                "7": 118,
+                "8": 233,
+                "9": 211,
+                "10": 155,
+                "11": 146,
+                "12": 190,
+                "13": 249,
+                "14": 227,
+                "15": 64,
+                "16": 32,
+                "17": 182,
+                "18": 137,
+                "19": 132
+              },
+              "keyId": 7652370693304091000
+            }
+          },
+          "iscryptd": false
+        },
+        "ac-lhzwess-shard-00-02.9zab9pj.mongodb.net:27017": {
+          "address": "ac-lhzwess-shard-00-02.9zab9pj.mongodb.net:27017",
+          "type": "RSPrimary",
+          "hosts": [
+            "ac-lhzwess-shard-00-00.9zab9pj.mongodb.net:27017",
+            "ac-lhzwess-shard-00-01.9zab9pj.mongodb.net:27017",
+            "ac-lhzwess-shard-00-02.9zab9pj.mongodb.net:27017"
+          ],
+          "passives": [],
+          "arbiters": [],
+          "tags": {
+            "nodeType": "ELECTABLE",
+            "region": "AP_EAST_1",
+            "workloadType": "OPERATIONAL",
+            "cacheState": "READY",
+            "diskState": "READY",
+            "availabilityZone": "ape1-az3",
+            "provider": "AWS"
+          },
+          "minWireVersion": 0,
+          "maxWireVersion": 25,
+          "roundTripTime": 39,
+          "minRoundTripTime": 0,
+          "lastUpdateTime": 1828,
+          "lastWriteDate": {
+            "$date": "2026-11-28T01:41:28Z"
+          },
+          "error": null,
+          "topologyVersion": {
+            "processId": {
+              "$oid": "6b0469d403d2b634f9f8a72c"
+            },
+            "counter": 6
+          },
+          "setName": "atlas-xcbpo5-shard-0",
+          "setVersion": 114,
+          "electionId": {
+            "$oid": "7fffffff0000000000000086"
+          },
+          "logicalSessionTimeoutMinutes": 30,
+          "maxMessageSizeBytes": 48000000,
+          "maxWriteBatchSize": 100000,
+          "maxBsonObjectSize": 16777216,
+          "primary": "ac-lhzwess-shard-00-02.9zab9pj.mongodb.net:27017",
+          "me": "ac-lhzwess-shard-00-02.9zab9pj.mongodb.net:27017",
+          "$clusterTime": {
+            "clusterTime": {
+              "$timestamp": {
+                "t": 1795830088,
+                "i": 1
+              }
+            },
+            "signature": {
+              "hash": {
+                "0": 170,
+                "1": 82,
+                "2": 106,
+                "3": 113,
+                "4": 44,
+                "5": 200,
+                "6": 110,
+                "7": 118,
+                "8": 233,
+                "9": 211,
+                "10": 155,
+                "11": 146,
+                "12": 190,
+                "13": 249,
+                "14": 227,
+                "15": 64,
+                "16": 32,
+                "17": 182,
+                "18": 137,
+                "19": 132
+              },
+              "keyId": 7652370693304091000
+            }
+          },
+          "iscryptd": false
+        },
+        "ac-lhzwess-shard-00-00.9zab9pj.mongodb.net:27017": {
+          "address": "ac-lhzwess-shard-00-00.9zab9pj.mongodb.net:27017",
+          "type": "RSSecondary",
+          "hosts": [
+            "ac-lhzwess-shard-00-00.9zab9pj.mongodb.net:27017",
+            "ac-lhzwess-shard-00-01.9zab9pj.mongodb.net:27017",
+            "ac-lhzwess-shard-00-02.9zab9pj.mongodb.net:27017"
+          ],
+          "passives": [],
+          "arbiters": [],
+          "tags": {
+            "workloadType": "OPERATIONAL",
+            "diskState": "READY",
+            "availabilityZone": "ape1-az1",
+            "cacheState": "READY",
+            "nodeType": "ELECTABLE",
+            "region": "AP_EAST_1",
+            "provider": "AWS"
+          },
+          "minWireVersion": 0,
+          "maxWireVersion": 25,
+          "roundTripTime": 72,
+          "minRoundTripTime": 0,
+          "lastUpdateTime": 1863,
+          "lastWriteDate": {
+            "$date": "2026-11-28T01:41:28Z"
+          },
+          "error": null,
+          "topologyVersion": {
+            "processId": {
+              "$oid": "6b04699b11dfffd0404fec48"
+            },
+            "counter": 4
+          },
+          "setName": "atlas-xcbpo5-shard-0",
+          "setVersion": 114,
+          "electionId": null,
+          "logicalSessionTimeoutMinutes": 30,
+          "maxMessageSizeBytes": 48000000,
+          "maxWriteBatchSize": 100000,
+          "maxBsonObjectSize": 16777216,
+          "primary": "ac-lhzwess-shard-00-02.9zab9pj.mongodb.net:27017",
+          "me": "ac-lhzwess-shard-00-00.9zab9pj.mongodb.net:27017",
+          "$clusterTime": {
+            "clusterTime": {
+              "$timestamp": {
+                "t": 1795830088,
+                "i": 1
+              }
+            },
+            "signature": {
+              "hash": {
+                "0": 170,
+                "1": 82,
+                "2": 106,
+                "3": 113,
+                "4": 44,
+                "5": 200,
+                "6": 110,
+                "7": 118,
+                "8": 233,
+                "9": 211,
+                "10": 155,
+                "11": 146,
+                "12": 190,
+                "13": 249,
+                "14": 227,
+                "15": 64,
+                "16": 32,
+                "17": 182,
+                "18": 137,
+                "19": 132
+              },
+              "keyId": 7652370693304091000
+            }
+          },
+          "iscryptd": false
+        }
+      },
+      "stale": false,
+      "compatible": true,
+      "heartbeatFrequencyMS": 10000,
+      "localThresholdMS": 15,
+      "setName": "atlas-xcbpo5-shard-0",
+      "maxElectionId": {
+        "$oid": "7fffffff0000000000000086"
+      },
+      "maxSetVersion": 114,
+      "commonWireVersion": 25,
+      "logicalSessionTimeoutMinutes": 30
+    }
+  },
+  "seed": {
+    "users": 2,
+    "categories": 3,
+    "products": 5,
+    "carts": 2,
+    "orders": 7,
+    "phoneVerifications": 3,
+    "deterministicIds": true
+  },
+  "endpoints": [
+    {
+      "name": "GET /api/cart (5 items)",
+      "status": 200,
+      "ms": 209,
+      "readQueries": 7,
+      "writeQueries": 0,
+      "totalQueries": 7,
+      "byMethod": {
+        "users.findOne": 1,
+        "carts.findOne": 1,
+        "products.findOne": 5
+      }
+    },
+    {
+      "name": "POST /api/cart/merge (5 guest items)",
+      "status": 200,
+      "ms": 316,
+      "readQueries": 9,
+      "writeQueries": 2,
+      "totalQueries": 11,
+      "byMethod": {
+        "users.findOne": 2,
+        "carts.findOne": 2,
+        "products.findOne": 5,
+        "carts.updateOne": 1,
+        "carts.deleteOne": 1
+      }
+    },
+    {
+      "name": "GET /account?tab=orders",
+      "status": 200,
+      "ms": 276,
+      "readQueries": 10,
+      "writeQueries": 0,
+      "totalQueries": 10,
+      "byMethod": {
+        "users.findOne": 2,
+        "categories.find": 1,
+        "orders.countDocuments": 6,
+        "orders.find": 1
+      }
+    },
+    {
+      "name": "GET /admin/orders",
+      "status": 200,
+      "ms": 106,
+      "readQueries": 7,
+      "writeQueries": 0,
+      "totalQueries": 7,
+      "byMethod": {
+        "users.findOne": 1,
+        "orders.countDocuments": 5,
+        "orders.find": 1
+      }
+    },
+    {
+      "name": "GET /admin/users",
+      "status": 200,
+      "ms": 114,
+      "readQueries": 3,
+      "writeQueries": 0,
+      "totalQueries": 3,
+      "byMethod": {
+        "users.findOne": 1,
+        "users.countDocuments": 1,
+        "users.find": 1
+      }
+    },
+    {
+      "name": "GET /api/products?category=t722-nam-root",
+      "status": 200,
+      "ms": 213,
+      "readQueries": 6,
+      "writeQueries": 0,
+      "totalQueries": 6,
+      "byMethod": {
+        "categories.findOne": 1,
+        "categories.find": 3,
+        "products.countDocuments": 1,
+        "products.find": 1
+      }
+    },
+    {
+      "name": "POST /api/orders (5 items)",
+      "status": 201,
+      "ms": 590,
+      "readQueries": 7,
+      "writeQueries": 7,
+      "totalQueries": 14,
+      "byMethod": {
+        "users.findOne": 1,
+        "carts.findOne": 1,
+        "products.findOne": 5,
+        "products.updateOne": 5,
+        "orders.insertOne": 1,
+        "carts.deleteOne": 1
+      }
+    }
+  ],
+  "explains": [
+    {
+      "name": "Order.find({}).sort(createdAt)",
+      "stages": [
+        "SORT",
+        "COLLSCAN"
+      ],
+      "winningIndex": null,
+      "indexNames": [],
+      "hasCollscan": true,
+      "hasSort": true,
+      "totalKeysExamined": 0,
+      "totalDocsExamined": 8,
+      "nReturned": 8,
+      "executionTimeMillis": 0
+    },
+    {
+      "name": "Order.aggregate(status by user)",
+      "stages": [
+        "project",
+        "group",
+        "nlj"
+      ],
+      "winningIndex": null,
+      "indexNames": [],
+      "hasCollscan": false,
+      "hasSort": false,
+      "totalKeysExamined": 8,
+      "totalDocsExamined": 8,
+      "nReturned": 5,
+      "executionTimeMillis": 0
+    },
+    {
+      "name": "User.admin list sort createdAt",
+      "stages": [
+        "PROJECTION_SIMPLE",
+        "SORT",
+        "COLLSCAN"
+      ],
+      "winningIndex": null,
+      "indexNames": [],
+      "hasCollscan": true,
+      "hasSort": true,
+      "totalKeysExamined": 0,
+      "totalDocsExamined": 3,
+      "nReturned": 3,
+      "executionTimeMillis": 0
+    },
+    {
+      "name": "PhoneVerification.latest by user",
+      "stages": [
+        "SORT",
+        "FETCH",
+        "IXSCAN"
+      ],
+      "winningIndex": "user_1",
+      "indexNames": [
+        "user_1"
+      ],
+      "hasCollscan": false,
+      "hasSort": true,
+      "totalKeysExamined": 3,
+      "totalDocsExamined": 3,
+      "nReturned": 1,
+      "executionTimeMillis": 0
+    },
+    {
+      "name": "Product.category list sort createdAt",
+      "stages": [
+        "LIMIT",
+        "FETCH",
+        "IXSCAN"
+      ],
+      "winningIndex": "isActive_1_isDeleted_1_createdAt_-1__id_-1",
+      "indexNames": [
+        "isActive_1_isDeleted_1_createdAt_-1__id_-1"
+      ],
+      "hasCollscan": false,
+      "hasSort": false,
+      "totalKeysExamined": 11,
+      "totalDocsExamined": 11,
+      "nReturned": 5,
+      "executionTimeMillis": 0
+    }
+  ]
+}

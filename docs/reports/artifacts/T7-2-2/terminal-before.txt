@@ -1,0 +1,17 @@
+T7-2-2 evidence before
+Provider: MongoDB Atlas
+Database: abmt_shop_test
+MongoDB: 8.0.39-patch-a3d00565977
+Node: v24.18.0
+GET /api/cart (5 items): read=7 write=0 total=7 status=200 ms=209
+POST /api/cart/merge (5 guest items): read=9 write=2 total=11 status=200 ms=316
+GET /account?tab=orders: read=10 write=0 total=10 status=200 ms=276
+GET /admin/orders: read=7 write=0 total=7 status=200 ms=106
+GET /admin/users: read=3 write=0 total=3 status=200 ms=114
+GET /api/products?category=t722-nam-root: read=6 write=0 total=6 status=200 ms=213
+POST /api/orders (5 items): read=7 write=7 total=14 status=201 ms=590
+EXPLAIN Order.find({}).sort(createdAt): index=- collscan=true sort=true
+EXPLAIN Order.aggregate(status by user): index=- collscan=false sort=false
+EXPLAIN User.admin list sort createdAt: index=- collscan=true sort=true
+EXPLAIN PhoneVerification.latest by user: index=user_1 collscan=false sort=true
+EXPLAIN Product.category list sort createdAt: index=isActive_1_isDeleted_1_createdAt_-1__id_-1 collscan=false sort=false

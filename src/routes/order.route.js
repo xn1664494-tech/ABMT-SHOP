@@ -12,7 +12,10 @@ const ErrorResponse = require('../utils/appError');
 const { calculateShippingFee } = require('../model/Order');
 const addressService = require('../services/addressService');
 const { createOrder } = require('../services/CheckoutService');
+const { ORDER_SUMMARY_FIELDS } = require('../utils/orderFields');
 const { transition } = require('../services/orderStatusService');
+
+const PRODUCT_ORDER_LOOKUP_FIELDS = 'name images basePrice variants isDeleted';
 
 const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id);
 
@@ -146,11 +149,19 @@ router.post(
       return next(new ErrorResponse('Phương thức thanh toán không hợp lệ', 400));
     }
 
+    const productIds = [...new Set(itemsToOrder.map((item) => String(item.product)))];
+    const products = await Product.find({ _id: { $in: productIds } })
+      .select(PRODUCT_ORDER_LOOKUP_FIELDS)
+      .lean();
+    const productsById = new Map(
+      products.map((product) => [String(product._id), product]),
+    );
+
     const orderItems = [];
     let subtotal = 0;
 
     for (const item of itemsToOrder) {
-      const productObj = await Product.findById(item.product);
+      const productObj = productsById.get(String(item.product));
       if (!productObj || productObj.isDeleted) {
         return next(new ErrorResponse(`Sản phẩm ${item.sku} không còn tồn tại`, 404));
       }
@@ -309,6 +320,7 @@ router.get(
 
     const [orders, total] = await Promise.all([
       Order.find({ user: userId })
+        .select(ORDER_SUMMARY_FIELDS)
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit)
