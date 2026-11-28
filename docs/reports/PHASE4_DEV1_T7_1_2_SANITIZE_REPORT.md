@@ -97,15 +97,25 @@ Không assertion nào bị xóa, không test nào bị skip để đạt kết q
 - Không đụng secret, `.env`, Mongo URI thật, credential production.
 - Không đổi API contract hay business logic.
 - Không đụng các worktree khác, không `git stash`, `checkout -- .`, `add .`, `add -A`, cherry-pick, rebase, force push, reset, clean, xóa branch.
-- Không commit/push trực tiếp lên `main`; **không merge PR**.
+- Không commit/push trực tiếp lên `main`; mọi thay đổi lên `main` đều đi qua PR và chỉ merge sau khi có phê duyệt riêng.
 - **Không bắt đầu T7-1-3.**
 
 Worktree `main` (`D:\ABMT_Shop\ABMT-SHOP`) giữ nguyên trạng thái ngoài phạm vi; mọi thay đổi nằm riêng trong worktree T7-1-2.
 
 ---
 
-## 7. Trạng thái PR
+## 7. PR, CI và trạng thái merge
 
-- Base: `origin/main` = `5a01ad6`.
-- PR sẽ được tạo hướng vào `main` từ branch `feature/phase4-dev1-t7-1-2-sanitize`.
-- Chờ CI xanh, sau đó **dừng để chờ phê duyệt merge riêng** — không tự merge.
+| Mục | Giá trị |
+|---|---|
+| PR | [#112](https://github.com/xn1664494-tech/ABMT-SHOP/pull/112) — `feature/phase4-dev1-t7-1-2-sanitize` → `main` |
+| Base trước merge | `5a01ad6dcc41770132b7a7fb7216654bcf442d28` |
+| Head PR | `5a85c53df5315e97621a4d8fcc3ee805a65974df` |
+| CI PR | [run 46088339951](https://github.com/xn1664494-tech/ABMT-SHOP/actions/runs/46088339951) — **pass**, mọi step xanh |
+| Phê duyệt | Người dùng phê duyệt merge riêng sau khi CI xanh |
+| Merge commit trên `main` | `a75a52b4c612855df1693bd4f972569fb9ab15eb` (2026-11-28T00:39:12Z) |
+| CI `main` sau merge | [run 46089030889](https://github.com/xn1664494-tech/ABMT-SHOP/actions/runs/46089030889) — **pass**, mọi step xanh |
+
+Annotation duy nhất trên cả hai run: Node.js 20 deprecated trên runner (`actions/checkout@v4`, `actions/setup-node@v4` chạy bằng Node.js 24) — không chặn.
+
+Phần cập nhật §6/§7 này được thực hiện qua docs PR riêng từ `origin/main` = `a75a52b`, không push trực tiếp lên `main`.
