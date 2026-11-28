@@ -91,7 +91,8 @@ Dữ liệu được đối chiếu trực tiếp từ: `.env.example`, `README.
 | Link tương đối trong 4 file thay đổi | **PASS** — 60/60 link trỏ tới file tồn tại (script đọc UTF-8, bỏ qua `https?://`) |
 | Ký tự ngoài phạm vi (CJK do lỗi gõ) | **PASS** — 0 kết quả |
 | `git diff --check` | **PASS** — exit 0 |
-| CI PR | **Đang kiểm tra** — sẽ cập nhật trong commit bổ sung |
+| PR docs | [#125](https://github.com/xn1664494-tech/ABMT-SHOP/pull/125) — OPEN, chờ phê duyệt merge riêng |
+| CI PR | **PASS** — [run 46147698984](https://github.com/xn1664494-tech/ABMT-SHOP/actions/runs/46147698984) |
 
 ---
 
