@@ -73,6 +73,7 @@ File này đóng vai trò **index**: mọi minh chứng mới nên được tạ
 | CHƯƠNG 5 — Test đồng thời kho | T7-2-1: 1 biến thể còn 1 sản phẩm, nhiều request đồng thời, đúng 1 đơn thành công, tồn kho 0 | [`T7-2-1_CONCURRENCY_STOCK.md`](T7-2-1_CONCURRENCY_STOCK.md) |
 | CHƯƠNG 5 — Tối ưu truy vấn P0 | T7-2-2: before/after trên Atlas, explain, test đếm query/chống N+1 | [`T7-2-2_QUERY_OPTIMIZATION.md`](T7-2-2_QUERY_OPTIMIZATION.md) |
 | CHƯƠNG 5 — Cache cây danh mục | T7-2-3: cache snapshot chung cho API tree/Mega Menu, before/after trên Atlas | [`T7-2-3_CATEGORY_CACHE.md`](T7-2-3_CATEGORY_CACHE.md) |
+| CHƯƠNG 5 — Deploy & vận hành | T8-1-3: cách deploy, biến môi trường, xử lý sự cố thường gặp (docs-only) | [`T8-1-3_OPERATIONS_RUNBOOK.md`](T8-1-3_OPERATIONS_RUNBOOK.md), [`T8-1-3_OPERATIONS_CHECKLIST.md`](T8-1-3_OPERATIONS_CHECKLIST.md), [`PHASE4_DEV1_T8-1-3_OPERATIONS_DOCUMENTATION_REPORT.md`](PHASE4_DEV1_T8-1-3_OPERATIONS_DOCUMENTATION_REPORT.md) |
 | CHƯƠNG 6 §6.1–6.10 | Kế hoạch 8 tuần, mốc, RACI, rủi ro, điểm chốt | [`workbook`](../ABMT_Phan_chia_cong_viec.xlsx), [`PHASE2_DEV1_WBS_SCOPE_MAPPING.md`](PHASE2_DEV1_WBS_SCOPE_MAPPING.md), [`PHASE2_DEV1_BACKLOG.md`](PHASE2_DEV1_BACKLOG.md) |
 | Kết luận / Phụ lục A–D | Kết quả, hạn chế, ma trận 96 task, DoD, checklist bảo mật | [`Bao_cao_do_an_UrbanMinimal.docx`](../Bao_cao_do_an_UrbanMinimal.docx), [`PHASE2_DEV1_FINAL_REPORT.md`](PHASE2_DEV1_FINAL_REPORT.md) |
 
