@@ -1,0 +1,88 @@
+{
+  "label": "after",
+  "generatedAt": "2026-11-28T09:24:57.399Z",
+  "environment": {
+    "provider": "MongoDB Atlas",
+    "dbName": "abmt_shop_test",
+    "mongodbVersion": "8.0.39-patch-a3d00565977",
+    "node": "v24.18.0",
+    "warmRuns": 50,
+    "cacheModulePresent": true
+  },
+  "scenarios": [
+    {
+      "name": "GET /login (Mega Menu)",
+      "status": 200,
+      "cold": {
+        "ms": 435.974,
+        "readQueries": 1,
+        "totalQueries": 14,
+        "byMethod": {
+          "categories.find": 1,
+          "users.createIndex": 3,
+          "orders.createIndex": 2,
+          "phoneverifications.createIndex": 2,
+          "productsalesdailies.createIndex": 2,
+          "products.createIndex": 2,
+          "carts.createIndex": 2
+        }
+      },
+      "warm": {
+        "runs": 50,
+        "mean": 4.597,
+        "median": 4.329,
+        "p95": 6.29,
+        "readQueriesMean": 0,
+        "readQueriesMax": 0
+      },
+      "bytes": 21448
+    },
+    {
+      "name": "GET /api/categories/tree",
+      "status": 200,
+      "cold": {
+        "ms": 38.235,
+        "readQueries": 1,
+        "totalQueries": 6,
+        "byMethod": {
+          "categories.find": 1,
+          "orders.createIndex": 1,
+          "products.createIndex": 1,
+          "carts.createIndex": 1,
+          "auditlogs.createIndex": 1,
+          "phoneverifications.createIndex": 1
+        }
+      },
+      "warm": {
+        "runs": 50,
+        "mean": 2.138,
+        "median": 2.043,
+        "p95": 2.716,
+        "readQueriesMean": 0,
+        "readQueriesMax": 0
+      },
+      "bytes": 5423
+    },
+    {
+      "name": "GET /health (nav middleware)",
+      "status": 200,
+      "cold": {
+        "ms": 35.781,
+        "readQueries": 1,
+        "totalQueries": 1,
+        "byMethod": {
+          "categories.find": 1
+        }
+      },
+      "warm": {
+        "runs": 50,
+        "mean": 1.814,
+        "median": 1.75,
+        "p95": 2.182,
+        "readQueriesMean": 0,
+        "readQueriesMax": 0
+      },
+      "bytes": 15
+    }
+  ]
+}

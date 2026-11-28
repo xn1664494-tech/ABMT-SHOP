@@ -14,8 +14,11 @@ process.env.NODE_ENV = 'test';
 const Category = require('../../src/model/Category');
 const Product = require('../../src/model/Products');
 
+const LEGACY_TEST_URI = process.env.TEST_MONGODB_URI;
 const TEST_URI =
-  process.env.TEST_MONGODB_URI || 'mongodb://127.0.0.1:27017/abmt_shop_test';
+  process.env.MONGODB_URI_TEST ||
+  LEGACY_TEST_URI ||
+  'mongodb://127.0.0.1:27017/abmt_shop_test';
 
 const RUN_ID = `it-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 const PREFIX = `${RUN_ID}-`;
@@ -61,7 +64,7 @@ test.before(async () => {
   }
 
   try {
-    await mongoose.connect(TEST_URI, { serverSelectionTimeoutMS: 3000 });
+    await mongoose.connect(TEST_URI, { serverSelectionTimeoutMS: 10000 });
     await Category.init();
     await Product.init();
     available = true;

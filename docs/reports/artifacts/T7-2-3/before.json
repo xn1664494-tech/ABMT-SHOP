@@ -1,0 +1,83 @@
+{
+  "label": "before",
+  "generatedAt": "2026-11-28T09:23:11.180Z",
+  "environment": {
+    "provider": "MongoDB Atlas",
+    "dbName": "abmt_shop_test",
+    "mongodbVersion": "8.0.39-patch-a3d00565977",
+    "node": "v24.18.0",
+    "warmRuns": 50,
+    "cacheModulePresent": false
+  },
+  "scenarios": [
+    {
+      "name": "GET /login (Mega Menu)",
+      "status": 200,
+      "cold": {
+        "ms": 447.474,
+        "readQueries": 1,
+        "totalQueries": 16,
+        "byMethod": {
+          "categories.find": 1,
+          "users.createIndex": 3,
+          "orders.createIndex": 3,
+          "phoneverifications.createIndex": 2,
+          "productsalesdailies.createIndex": 2,
+          "carts.createIndex": 2,
+          "products.createIndex": 2,
+          "auditlogs.createIndex": 1
+        }
+      },
+      "warm": {
+        "runs": 50,
+        "mean": 4.473,
+        "median": 4.359,
+        "p95": 6.567,
+        "readQueriesMean": 0,
+        "readQueriesMax": 0
+      },
+      "bytes": 21448
+    },
+    {
+      "name": "GET /api/categories/tree",
+      "status": 200,
+      "cold": {
+        "ms": 47.269,
+        "readQueries": 1,
+        "totalQueries": 2,
+        "byMethod": {
+          "categories.find": 1,
+          "orders.createIndex": 1
+        }
+      },
+      "warm": {
+        "runs": 50,
+        "mean": 36.24,
+        "median": 36.043,
+        "p95": 38.613,
+        "readQueriesMean": 1,
+        "readQueriesMax": 1
+      },
+      "bytes": 5423
+    },
+    {
+      "name": "GET /health (nav middleware)",
+      "status": 200,
+      "cold": {
+        "ms": 2.876,
+        "readQueries": 0,
+        "totalQueries": 0,
+        "byMethod": {}
+      },
+      "warm": {
+        "runs": 50,
+        "mean": 2.217,
+        "median": 1.947,
+        "p95": 3.249,
+        "readQueriesMean": 0,
+        "readQueriesMax": 0
+      },
+      "bytes": 15
+    }
+  ]
+}

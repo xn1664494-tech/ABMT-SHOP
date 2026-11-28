@@ -1,0 +1,7 @@
+T7-2-3 category cache — before/after
+Warm runs: 50 per endpoint
+
+Endpoint | Cold ms before/after | Warm mean ms before/after | Warm p95 ms before/after | Warm read queries before/after
+GET /login (Mega Menu) | 447.474/435.974 | 4.473/4.597 | 6.567/6.29 | 0/0
+GET /api/categories/tree | 47.269/38.235 | 36.24/2.138 | 38.613/2.716 | 1/0
+GET /health (nav middleware) | 2.876/35.781 | 2.217/1.814 | 3.249/2.182 | 0/0
