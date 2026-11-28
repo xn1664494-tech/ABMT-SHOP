@@ -14,9 +14,10 @@ Dependency `T6-1-3` đã DONE theo `docs/reports/PHASE3_DEV1_FINAL_ACCEPTANCE.md
 |---|---|
 | Branch | `feature/phase4-dev1-t7-1-1-security-review` |
 | Nguồn ban đầu | `origin/main` @ `2574ede28e64b5bbfb6f14bbd37b6b9e771b62e4` |
-| Sync mới nhất | `origin/main` @ `68705ec0b8f1e5894492ea8602a44b3580ea803c` (sau PR #108, #111, #110) qua merge commit `c91ed8d` |
+| Sync trước merge | `origin/main` @ `68705ec0b8f1e5894492ea8602a44b3580ea803c` (sau PR #108, #111, #110) qua merge commit `c91ed8d` |
+| Merge vào `main` | PR #109 — merge commit `5a01ad6dcc41770132b7a7fb7216654bcf442d28`; `main` hiện `076786a59abc58ee09df14f39f6b5170dfcb110d` (sau #112, #113) |
 | Worktree | `D:\ABMT_Shop\ABMT-SHOP-PHASE4-WORK` (ngoài working tree `main`) |
-| Working tree `main` | Không đụng vào; 2 file modified + 14 untracked + `stash@{0}` giữ nguyên |
+| Working tree `main` | Không đụng vào; các file modified/untracked hiện có và `stash@{0}` đều giữ nguyên |
 
 ---
 
@@ -165,7 +166,7 @@ Không chạy DB thật, migration, cron, seed production; không đọc `.env`,
 | Conflict merge với `origin/main` (PR #108) | Đã resolve trong commit merge `9a17270`: giữ nguyên template mới của #108 rồi áp lại nonce cho `admin-chart-data`, đồng thời thêm nonce cho `phone-verify-modal.ejs` do #108 thêm mới |
 | 6 test fail sau merge PR #108 — đã khắc phục trên `main` | PR #110 khôi phục 2 import bị rơi và 3 link admin; PR #111 sửa fixture `phoneVerified`. Không phải hồi quy từ CSP và không nằm trong phạm vi T7-1-1, nên branch này chỉ sync lại từ `main`, không tự sửa |
 | Conflict merge với `origin/main` (PR #110) | Đã resolve trong commit merge `c91ed8d`: lấy bản UTF-8 đúng từ `main` (có 3 link admin) rồi áp lại duy nhất nonce CSP cho `admin-chart-data`; không rebase/force push |
-| CI PR #109 sau sync PR #110 | Đã **xanh** (run `46026946122`); vẫn chờ phê duyệt riêng trước khi merge |
+| CI PR #109 sau sync PR #110 | Đã **xanh** (run `46026946122`, run bổ sung `46028369440`); sau phê duyệt riêng đã merge vào `main` tại `5a01ad6` |
 
 ---
 
@@ -198,7 +199,9 @@ https://github.com/xn1664494-tech/ABMT-SHOP/pull/109
 
 ## 14. Merge commit SHA
 
-**Không có.** PR #109 chưa merge vì CI chưa xanh. Không merge vào `main` khi có fail.
+`5a01ad6dcc41770132b7a7fb7216654bcf442d28` — PR [#109](https://github.com/xn1664494-tech/ABMT-SHOP/pull/109) đã **MERGED** vào `main` sau khi CI xanh và có phê duyệt riêng. CI `main` sau merge: [run 46029366081](https://github.com/xn1664494-tech/ABMT-SHOP/actions/runs/46029366081) — `success`, mọi step pass.
+
+Cập nhật §14/§15 qua docs PR riêng từ `origin/main` = `076786a`; không push trực tiếp lên `main`.
 
 ---
 
@@ -207,9 +210,9 @@ https://github.com/xn1664494-tech/ABMT-SHOP/pull/109
 | Trường | Giá trị |
 |---|---|
 | Task | T7-1-1 Security Review |
-| Trạng thái code | Hoàn thành, đã sync `origin/main` mới nhất (`68705ec`) qua merge commit `c91ed8d`; conflict PR #108 và PR #110 đều đã resolve |
+| Trạng thái code | Hoàn thành, đã sync `origin/main` (`68705ec`) qua merge commit `c91ed8d`; conflict PR #108 và PR #110 đều đã resolve; PR #109 đã merge vào `main` |
 | DoD code | Đạt (với các giới hạn đã nêu rõ tại §10) |
-| CI | **Xanh**: `main` https://github.com/xn1664494-tech/ABMT-SHOP/actions/runs/46024539029 và PR #109 https://github.com/xn1664494-tech/ABMT-SHOP/actions/runs/46026946122 đều `success`, mọi step pass. CI cũ https://github.com/xn1664494-tech/ABMT-SHOP/actions/runs/46011823304 có 6 fail đã được `main` khắc phục |
-| Merge | **Chưa merge** — tuân thủ điều kiện "chỉ merge khi CI xanh, không conflict" và chờ phê duyệt riêng |
-| Chờ phê duyệt | Cần owner phê duyệt riêng để merge PR #109 sau khi CI mới xanh |
-| Task tiếp theo | Chưa bắt đầu T7-1-2; chỉ chuyển sau khi có xác nhận merge thành công T7-1-1 như yêu cầu |
+| CI | **Xanh**: PR #109 [`46026946122`](https://github.com/xn1664494-tech/ABMT-SHOP/actions/runs/46026946122) và [`46028369440`](https://github.com/xn1664494-tech/ABMT-SHOP/actions/runs/46028369440), `main` sau merge [`46029366081`](https://github.com/xn1664494-tech/ABMT-SHOP/actions/runs/46029366081) — đều `success`, mọi step pass. CI cũ [`46011823304`](https://github.com/xn1664494-tech/ABMT-SHOP/actions/runs/46011823304) có 6 fail đã được `main` khắc phục |
+| Merge | **Đã merge** — `5a01ad6`, PR #109 `MERGED`, tuân thủ điều kiện CI xanh + phê duyệt riêng |
+| Chờ phê duyệt | Không còn; đã có phê duyệt riêng trước khi merge |
+| Task tiếp theo | T7-1-2 đã hoàn tất qua PR [#112](https://github.com/xn1664494-tech/ABMT-SHOP/pull/112) (`a75a52b`); tiếp theo là T7-1-3 — rà soát cấu hình |
