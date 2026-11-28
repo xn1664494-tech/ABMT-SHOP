@@ -7,6 +7,7 @@ const errorHandler = require('./middleware/errorHandler');
 const { currentUser } = require('./middleware/currentUser');
 const securityHeaders = require('./middleware/securityHeaders');
 const configViewEngine = require('./config/viewEngine');
+const htmlSafety = require('./utils/htmlSafety');
 const { installAuditLogPublisher } = require('./services/auditLogService');
 
 /**
@@ -43,6 +44,13 @@ const configureTrustProxy = (expressApp) => {
 };
 
 configureTrustProxy(app);
+
+// T7-1-2: dung dich vu escape/safe href tai diem render EJS (khong doi du lieu DB/API).
+app.use((req, res, next) => {
+  res.locals.escapeHtml = htmlSafety.escapeHtml;
+  res.locals.safeHref = htmlSafety.safeHref;
+  next();
+});
 
 // T7-1-1: security headers + CSP nonce cho moi request, dat truoc static/routes.
 app.use(securityHeaders);
